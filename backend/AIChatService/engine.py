@@ -502,27 +502,6 @@ VULNERABILITIES = {
                      "autofill", "password autocomplete", "credit card autocomplete",
                      "autocomplete off", "autocomplete on"],
     },
-    "tabnabbing": {
-        "name": "Reverse Tabnabbing",
-        "explanation": (
-            "When a page opens an external link via target=\"_blank\" without "
-            "rel=\"noopener\", the new page can reach back through window.opener and "
-            "redirect the original tab to a phishing page — while the user is looking "
-            "at the new tab."
-        ),
-        "severity": "Low",
-        "fix": (
-            "Add rel=\"noopener noreferrer\" to every <a target=\"_blank\"> link. "
-            "Modern browsers default to noopener for target=\"_blank\", but older "
-            "browsers and older markup need the explicit attribute."
-        ),
-        "patterns": [
-            r"(reverse\s+tab[-\s]?nabbing|tab[-\s]?nabbing|window\.opener\s+(attack|hijack)|noopener\s+missing)",
-        ],
-        "keywords": ["tabnabbing", "reverse tabnabbing", "tab nabbing",
-                     "window.opener", "noopener", "target blank", "rel noopener",
-                     "tab-nabbing"],
-    },
     "server_banner": {
         "name": "Server / Technology Version Disclosure",
         "explanation": (

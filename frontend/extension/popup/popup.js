@@ -672,20 +672,7 @@ function runPageScanners(pageUrl) {
     }
   } catch (e) {}
 
-  // 28. Reverse Tabnabbing
-  try {
-    const links = document.querySelectorAll('a[target="_blank"]');
-    let risky = 0;
-    links.forEach(a => {
-      const rel = (a.getAttribute('rel') || '').toLowerCase();
-      if (!rel.includes('noopener') && !rel.includes('noreferrer')) risky++;
-    });
-    if (risky > 0) {
-      addVuln('Reverse Tabnabbing', 'Low', `${risky} external link(s) with target="_blank" are missing rel="noopener" / "noreferrer".`, pageUrl, 'Add rel="noopener noreferrer" to every target="_blank" link to prevent the opened page from hijacking window.opener.');
-    }
-  } catch (e) {}
-
-  // 29. Server / Technology Version Disclosure
+  // 28. Server / Technology Version Disclosure
   try {
     const findings = [];
     const gen = document.querySelector('meta[name="generator" i]');

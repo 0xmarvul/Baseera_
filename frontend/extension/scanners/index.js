@@ -31,6 +31,5 @@ const SCANNER_LIST = [
   { id: 'source-maps', name: 'Source Map Exposure', severity: 'Medium', file: 'source-maps.js' },
   { id: 'autocomplete-sensitive', name: 'Sensitive Autocomplete', severity: 'Medium', file: 'autocomplete-sensitive.js' },
   { id: 'form-external-action', name: 'External Form Action', severity: 'Medium', file: 'form-external-action.js' },
-  { id: 'tabnabbing', name: 'Reverse Tabnabbing', severity: 'Low', file: 'tabnabbing.js' },
   { id: 'server-banner', name: 'Version Disclosure', severity: 'Low', file: 'server-banner.js' }
 ];
