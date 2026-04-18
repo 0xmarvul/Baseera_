@@ -3,9 +3,12 @@
 // Also detects directory listing via <title>Index of /...</title>.
 function scanSensitiveFiles(pageUrl) {
   const results = [];
-  const patterns = /\/(\.git(\/|$)|\.svn\/|\.hg\/|\.env(\.|$)|\.htaccess|\.DS_Store|\.idea\/|\.vscode\/|\.aws\/|\.npmrc|\.bak|\.old|\.orig|\.swp|id_rsa|Thumbs\.db|wp-admin|wp-config|phpmyadmin|phpinfo\.php|server-status|web\.config|composer\.lock|package-lock\.json|backup|database\.sql|config\.(php|json|yml|yaml))/i;
+  // Anchored on "/" so "/administration-team" won't falsely match /admin.
+  const patterns = /\/(\.git(\/|$)|\.svn\/|\.hg\/|\.env(\.|$|\/)|\.htaccess|\.htpasswd|\.DS_Store|\.idea\/|\.vscode\/|\.aws\/|\.npmrc|\.bak|\.old|\.orig|\.swp|id_rsa|id_dsa|Thumbs\.db|wp-admin|wp-config|phpmyadmin|phpinfo\.php|server-status|server-info|web\.config|composer\.lock|package-lock\.json|database\.sql|config\.(php|json|yml|yaml|inc\.php)|admin(istrator)?(\/|$|\?|\.php)|admin[-_]?(panel|cp|console)(\/|$|\?)|swagger(-ui)?(\/|$|\?)|api-docs(\/|$|\?)|openapi(\.json|\.yaml|\/|$)|graphql(\/|$|\?)|graphiql(\/|$|\?)|actuator(\/|$|\?)|jolokia(\/|$|\?)|console(\/|$|\?)|(private|internal|intranet)(\/|$|\?)|(backup|backups|bak|old|archive)(\/|$|\?|\.))/i;
 
   const urls = new Set();
+  // Also test the page itself — if the user is *on* an admin page, flag it.
+  if (pageUrl) urls.add(pageUrl);
   document.querySelectorAll('a[href], link[href], script[src], img[src], iframe[src], source[src]').forEach(el => {
     const v = el.getAttribute('href') || el.getAttribute('src') || '';
     if (v) urls.add(v);
