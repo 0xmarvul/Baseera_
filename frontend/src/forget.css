@@ -1,0 +1,91 @@
+.btn-forget-primary {
+    width: 100%;
+    height: 48px;
+    background: linear-gradient(90deg, #096 0%, #0092B8 100%);
+    border-radius: 14px;
+    border: none;
+    color: #fff;
+    font-family: Arimo;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 24px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 4px;
+}
+
+.login-form .login-form-title {
+    text-align: center;
+    width: 100%;
+    margin-bottom: 12px;
+}
+
+.btn-forget-primary:hover {
+    opacity: 0.9;
+}
+
+.forget-input-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 376px;
+    margin: 0 auto;
+}
+
+/* Higher specificity to override login.css .login-form .fa-envelope rule */
+.forget-input-wrapper .forget-input-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #90A1B9;
+    font-size: 16px;
+    z-index: 1;
+    pointer-events: none;
+    margin-left: 0;
+    margin-top: 0;
+}
+
+/* Center the lock icon at the top of the card (override login.css negative margin) */
+.login-icon {
+    margin: 0 auto 27px;
+}
+
+.forget-pass {
+    display: flex;
+    justify-content: center;
+}
+
+.forget-pass a {
+    display: flex;
+    justify-content: center;
+    color: #00D492;
+    font-family: Arimo;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 24px;
+    text-decoration: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .btn-forget-primary {
+        font-size: 14px;
+    }
+
+    .forget-pass a {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .btn-forget-primary {
+        height: 44px;
+        font-size: 14px;
+    }
+
+    .forget-pass a {
+        font-size: 13px;
+        line-height: 20px;
+    }
+}

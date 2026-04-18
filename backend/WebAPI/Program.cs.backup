@@ -1,0 +1,79 @@
+using Microsoft.EntityFrameworkCore;
+using Serilog;
+using WebAPI.Extensions;
+using WebAPI.Middleware;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File(
+        path: "Logs/log-.txt",
+        rollingInterval: RollingInterval.Day,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
+    )
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
+Log.Information("Starting Security Scanner API...");
+
+try
+{
+    // Add services
+    builder.Services.AddControllers();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerDocumentation();
+
+    // Database
+    builder.Services.AddDatabaseConfiguration(builder.Configuration);
+
+    // Application Services
+    builder.Services.AddApplicationServices();
+
+    // Authentication
+    builder.Services.AddJwtAuthentication(builder.Configuration);
+
+    // Validators
+    builder.Services.AddValidators();
+
+    // CORS
+    builder.Services.AddCorsPolicy(builder.Configuration);
+
+    var app = builder.Build();
+
+    // Middleware
+    app.UseMiddleware<ErrorHandlingMiddleware>();
+    app.UseMiddleware<RequestLoggingMiddleware>();
+
+    // Swagger
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
+
+    // Static Files for Reports
+    app.UseStaticFiles();
+
+    app.UseHttpsRedirection();
+    app.UseCors("AllowAll");
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.MapControllers();
+
+    Log.Information("Security Scanner API started successfully on {Url}", "http://localhost:5000");
+
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application start-up failed");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

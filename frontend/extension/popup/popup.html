@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Baseera Security Scanner</title>
+  <link rel="stylesheet" href="popup.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Arimo:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <div class="popup-header">
+      <div class="header-brand">
+        <img src="../icons/logo.png" alt="Baseera" class="brand-logo" />
+        <span class="brand-name">Baseera</span>
+      </div>
+      <div class="header-right">
+        <span id="auth-status" class="auth-badge auth-badge--guest">Not logged in</span>
+        <button class="gear-btn" id="settings-btn" title="Settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Current Page URL Card -->
+    <div class="url-section">
+      <div class="url-card">
+        <div class="url-card-label">Current Page</div>
+        <div class="url-card-row">
+          <div class="url-display" id="current-url">Loading...</div>
+          <button class="refresh-btn" id="refresh-btn" title="Refresh URL">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- State 1: Idle / Ready to Scan -->
+    <div id="state-idle" class="state-panel">
+      <div class="idle-center">
+        <div class="idle-shield">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="url(#shieldGrad)" stroke-width="1.5" fill="rgba(0,188,125,0.08)"/>
+            <defs>
+              <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#00BC7D"/>
+                <stop offset="100%" style="stop-color:#00B8DB"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <p class="idle-title">Ready to scan this website</p>
+        <p class="idle-subtitle">Click below to start a comprehensive security analysis</p>
+      </div>
+      <div class="idle-actions">
+        <button class="start-scan-btn" id="scan-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          Start Scan
+        </button>
+        <a href="#" id="view-prev-link" class="view-prev-link">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+          View Previous Results
+        </a>
+      </div>
+      <div class="status-indicator">
+        <span class="status-dot status-dot--idle"></span>
+        <span class="status-text">No active scan</span>
+      </div>
+    </div>
+
+    <!-- State 2: Scanning in Progress -->
+    <div id="state-scanning" class="state-panel" style="display:none;">
+      <div class="scanning-center">
+        <div class="scanning-pulse">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="url(#scanGrad)" stroke-width="1.5" stroke-dasharray="4 2"/>
+            <circle cx="12" cy="12" r="5" fill="rgba(0,188,125,0.15)" stroke="url(#scanGrad)" stroke-width="1.5"/>
+            <circle cx="12" cy="12" r="2" fill="url(#scanGrad)"/>
+            <defs>
+              <linearGradient id="scanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#00BC7D"/>
+                <stop offset="100%" style="stop-color:#00B8DB"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <p class="scanning-title">Scanning in progress...</p>
+        <p class="scanning-subtitle">Analyzing vulnerabilities and security headers</p>
+      </div>
+      <div class="scan-checklist" id="scan-checklist">
+        <div class="checklist-item" id="check-ssl">
+          <span class="check-icon check-pending"></span>
+          <span class="check-label">Checking SSL certificate</span>
+        </div>
+        <div class="checklist-item" id="check-scripts">
+          <span class="check-icon check-pending"></span>
+          <span class="check-label">Analyzing scripts and resources</span>
+        </div>
+        <div class="checklist-item" id="check-vulns">
+          <span class="check-icon check-pending"></span>
+          <span class="check-label">Detecting potential vulnerabilities</span>
+        </div>
+        <div class="checklist-item" id="check-headers">
+          <span class="check-icon check-pending"></span>
+          <span class="check-label">Examining security headers</span>
+        </div>
+        <div class="checklist-item" id="check-exploits">
+          <span class="check-icon check-pending"></span>
+          <span class="check-label">Checking for known exploits</span>
+        </div>
+      </div>
+      <button class="cancel-scan-btn" id="cancel-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+        Cancel Scan
+      </button>
+    </div>
+
+    <!-- State 3: Scan Completed -->
+    <div id="state-results" class="state-panel" style="display:none;">
+      <div class="results-center" id="results-center">
+        <!-- filled dynamically -->
+      </div>
+      <div class="vuln-summary-card" id="vuln-summary-card" style="display:none;">
+        <div class="summary-title">Vulnerability Summary</div>
+        <div class="summary-boxes">
+          <div class="summary-box summary-box--critical">
+            <span class="summary-count" id="count-critical">0</span>
+            <span class="summary-label">Critical</span>
+          </div>
+          <div class="summary-box summary-box--high">
+            <span class="summary-count" id="count-high">0</span>
+            <span class="summary-label">High</span>
+          </div>
+          <div class="summary-box summary-box--medium">
+            <span class="summary-count" id="count-medium">0</span>
+            <span class="summary-label">Medium</span>
+          </div>
+          <div class="summary-box summary-box--low">
+            <span class="summary-count" id="count-low">0</span>
+            <span class="summary-label">Low</span>
+          </div>
+        </div>
+      </div>
+      <button class="rescan-btn" id="rescan-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+        Rescan Website
+      </button>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="popup-footer">
+      <a href="#" id="open-app-link" class="footer-dashboard-link">Open Dashboard</a>
+      <div class="footer-brand-text">Designed for Chrome, Firefox, Edge &amp; Safari</div>
+    </div>
+  </div>
+
+  <script src="../scanners/index.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

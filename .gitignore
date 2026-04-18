@@ -1,0 +1,26 @@
+# .NET build output
+backend/**/bin/
+backend/**/obj/
+backend/**/*.user
+backend/**/*.suo
+backend/.vs/
+
+# .NET secrets and logs
+backend/**/appsettings.*.json.bak
+backend/**/Logs/
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.env.local
+frontend/Baseera/node_modules/
+
+# Python
+backend/AIChatService/__pycache__/
+backend/AIChatService/*.pyc
+backend/AIChatService/.venv/
+
+# OS
+.DS_Store
+Thumbs.db
