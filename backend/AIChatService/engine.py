@@ -357,6 +357,192 @@ VULNERABILITIES = {
                      "content security policy issue", "csp violation",
                      "csp header missing", "weak csp", "csp policy"],
     },
+    "outdated_components": {
+        "name": "Vulnerable and Outdated Components",
+        "explanation": (
+            "Using libraries or frameworks with known vulnerabilities (e.g., old jQuery, "
+            "AngularJS 1.x, lodash <4.17.21) lets attackers exploit published CVEs "
+            "directly in the browser. This is OWASP Top 10 A06: Vulnerable and Outdated Components."
+        ),
+        "severity": "High",
+        "fix": (
+            "Upgrade libraries to the latest patched version. "
+            "Run dependency scanners (Retire.js, npm audit, Snyk, Dependabot) in CI. "
+            "Remove libraries you no longer use and prefer actively maintained alternatives "
+            "(e.g., migrate off Moment.js to date-fns or dayjs)."
+        ),
+        "patterns": [
+            r"(outdated\s+(component|library|librar|dependenc)|vulnerable\s+(component|library|librar|dependenc)|old\s+jquery|retire\.?js)",
+        ],
+        "keywords": ["outdated components", "vulnerable components", "outdated library",
+                     "outdated libraries", "outdated dependency", "old jquery",
+                     "old library", "vulnerable dependency", "vulnerable library",
+                     "retire.js", "retirejs", "outdated frameworks"],
+    },
+    "dom_xss": {
+        "name": "DOM-based XSS",
+        "explanation": (
+            "DOM-based XSS happens entirely in the browser: untrusted data from sources "
+            "like location.hash, document.referrer, or window.name is written into a "
+            "dangerous sink (innerHTML, document.write, eval) without sanitization, "
+            "letting an attacker run arbitrary JavaScript."
+        ),
+        "severity": "High",
+        "fix": (
+            "Treat location.*, document.referrer, and window.name as untrusted input. "
+            "Use textContent instead of innerHTML. Avoid eval() and document.write(). "
+            "Enable a strict Content-Security-Policy as defense-in-depth."
+        ),
+        "patterns": [
+            r"(dom[-\s]based\s+xss|dom\s*xss|client[-\s]side\s+xss)",
+        ],
+        "keywords": ["dom xss", "dom-based xss", "dom based xss", "client-side xss",
+                     "client side xss", "browser xss"],
+    },
+    "postmessage_insecure": {
+        "name": "Insecure postMessage Communication",
+        "explanation": (
+            "window.postMessage handlers that don't verify event.origin will accept "
+            "messages from any website, allowing a malicious frame or opened window to "
+            "feed data (and often XSS payloads) directly into the victim page."
+        ),
+        "severity": "High",
+        "fix": (
+            "Always validate event.origin against an explicit allow-list at the top of "
+            "every message handler. Validate the shape and type of event.data before "
+            "acting on it. Never eval or innerHTML postMessage payloads."
+        ),
+        "patterns": [
+            r"(post[-\s]?message|postmessage\s+(insecure|without\s+origin)|window\.postmessage)",
+        ],
+        "keywords": ["postmessage", "post message", "insecure postmessage",
+                     "message event", "cross origin messaging", "origin check",
+                     "postmessage vulnerability", "post message vulnerability"],
+    },
+    "session_in_url": {
+        "name": "Session Token in URL",
+        "explanation": (
+            "Placing session IDs, access tokens, or auth tokens in the URL query string "
+            "exposes them via browser history, proxy logs, referrer headers, and "
+            "shoulder-surfing. Attackers who capture the URL can hijack the session."
+        ),
+        "severity": "High",
+        "fix": (
+            "Transport tokens in the Authorization header or in HttpOnly, Secure cookies. "
+            "Never put jsessionid, phpsessid, access_token, or similar values in query parameters. "
+            "For OAuth redirects, use the PKCE flow and short-lived authorization codes."
+        ),
+        "patterns": [
+            r"(session\s+(id\s+)?in\s+url|token\s+in\s+url|jsessionid|phpsessid|access_token\s+in\s+url)",
+        ],
+        "keywords": ["session token in url", "token in url", "jsessionid", "phpsessid",
+                     "session in url", "session id in url", "token in query",
+                     "access token in url"],
+    },
+    "insecure_storage": {
+        "name": "Insecure Client-Side Storage",
+        "explanation": (
+            "Storing secrets, JWTs, session tokens, or PII in localStorage or "
+            "sessionStorage makes them readable by any JavaScript running on the page, "
+            "including injected XSS payloads. Unlike HttpOnly cookies, web storage is "
+            "fully exposed to the DOM."
+        ),
+        "severity": "High",
+        "fix": (
+            "Keep session tokens in HttpOnly, Secure, SameSite cookies. "
+            "If you need client-side state, store only non-sensitive, non-identifying data. "
+            "Never write passwords, full card numbers, or SSNs to web storage."
+        ),
+        "patterns": [
+            r"(insecure\s+storage|localstorage\s+(secret|token|password)|sessionstorage\s+(secret|token|password)|client[-\s]side\s+storage)",
+        ],
+        "keywords": ["insecure storage", "localstorage", "sessionstorage",
+                     "local storage", "session storage", "client-side storage",
+                     "client side storage", "storage vulnerability",
+                     "token in localstorage", "jwt in localstorage"],
+    },
+    "source_map_exposure": {
+        "name": "Source Map Exposure",
+        "explanation": (
+            "Source map (.map) files reconstruct the original, unminified source code of "
+            "a JavaScript bundle. If deployed to production, they hand attackers a clean "
+            "view of internal logic, secrets accidentally bundled, and API contracts."
+        ),
+        "severity": "Medium",
+        "fix": (
+            "Do not deploy .map files to production, or block them at the web-server level. "
+            "If you need them for error reporting (Sentry etc.), upload to the error tracker "
+            "directly and keep them off the public origin."
+        ),
+        "patterns": [
+            r"(source\s*map\s+(exposure|exposed|leak)|sourcemap\s+(exposure|exposed|leak)|\.map\s+file\s+exposed)",
+        ],
+        "keywords": ["source map", "source maps", "source map exposure",
+                     "sourcemap", "sourcemap exposure", ".map file",
+                     "sourcemappingurl", "source map leak"],
+    },
+    "autocomplete_sensitive": {
+        "name": "Sensitive Form Autocomplete",
+        "explanation": (
+            "Password and credit-card fields that allow browser autocomplete can be auto-"
+            "populated on shared or compromised devices, and can leak PAN / credentials "
+            "into browser profile syncs."
+        ),
+        "severity": "Medium",
+        "fix": (
+            "Use autocomplete=\"new-password\" for signup/reset forms and "
+            "autocomplete=\"current-password\" for login forms. "
+            "Set autocomplete=\"off\" on credit-card inputs to avoid storing full PANs. "
+            "Always serve these forms over HTTPS."
+        ),
+        "patterns": [
+            r"(autocomplete\s+(attribute|issue|vulnerability|sensitive)|password\s+autocomplete|credit\s+card\s+autocomplete|autofill\s+(issue|vulnerability))",
+        ],
+        "keywords": ["autocomplete", "sensitive autocomplete", "autocomplete attribute",
+                     "autofill", "password autocomplete", "credit card autocomplete",
+                     "autocomplete off", "autocomplete on"],
+    },
+    "tabnabbing": {
+        "name": "Reverse Tabnabbing",
+        "explanation": (
+            "When a page opens an external link via target=\"_blank\" without "
+            "rel=\"noopener\", the new page can reach back through window.opener and "
+            "redirect the original tab to a phishing page — while the user is looking "
+            "at the new tab."
+        ),
+        "severity": "Low",
+        "fix": (
+            "Add rel=\"noopener noreferrer\" to every <a target=\"_blank\"> link. "
+            "Modern browsers default to noopener for target=\"_blank\", but older "
+            "browsers and older markup need the explicit attribute."
+        ),
+        "patterns": [
+            r"(reverse\s+tab[-\s]?nabbing|tab[-\s]?nabbing|window\.opener\s+(attack|hijack)|noopener\s+missing)",
+        ],
+        "keywords": ["tabnabbing", "reverse tabnabbing", "tab nabbing",
+                     "window.opener", "noopener", "target blank", "rel noopener",
+                     "tab-nabbing"],
+    },
+    "server_banner": {
+        "name": "Server / Technology Version Disclosure",
+        "explanation": (
+            "When HTML meta tags (e.g., <meta name=\"generator\">) or comments reveal the "
+            "exact framework and version (WordPress 5.4.1, Drupal 7.x, nginx/1.14), "
+            "attackers can map the target to known CVEs and pick pre-built exploits."
+        ),
+        "severity": "Low",
+        "fix": (
+            "Remove the generator meta tag. Strip Server and X-Powered-By headers at the "
+            "reverse proxy. Don't include build version comments in shipped HTML/JS. "
+            "Treat version information as internal-only."
+        ),
+        "patterns": [
+            r"(version\s+disclosure|server\s+banner|banner\s+disclosure|x[-\s]powered[-\s]by|framework\s+version\s+leak|server\s+version\s+leak)",
+        ],
+        "keywords": ["version disclosure", "server banner", "banner disclosure",
+                     "x-powered-by", "server version", "framework version",
+                     "version leak", "generator meta", "information leak"],
+    },
 }
 
 # ---------------------------------------------------------------------------
