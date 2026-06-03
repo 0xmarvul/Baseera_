@@ -40,13 +40,11 @@ function Footer() {
           <li>Vulnerability Detection</li>
           <li>Severity Triage</li>
             <li>AI Explanations</li>
-              <li>Scan History</li>
         </ul>
 
         <ul>
            <h6>Contact</h6>
           <li className="info"><img src={icon19} alt="email" /><a href="mailto:0xbaseera@gmail.com"> 0xbaseera@gmail.com</a></li>
-          <li className="info"><img src={icon17} alt="telephone" />+20 111 143 9728</li>
             <li className="info"><img src={icon18} alt="location" />Cairo, Egypt</li>
 
         </ul>

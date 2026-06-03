@@ -167,17 +167,6 @@ function Contact() {
               </div>
             </div>
 
-            {/* Phone */}
-            <div className="info-card">
-              <div className="info-icon phone-icon">
-                <i class="fa-solid fa-phone"></i>
-              </div>
-              <div className="info-content">
-                <h3 className="info-title">Phone Number</h3>
-                <p className="info-text">+1 (555) 123-4567</p>
-              </div>
-            </div>
-
             {/* Location */}
             <div className="info-card">
               <div className="info-icon location-icon">
