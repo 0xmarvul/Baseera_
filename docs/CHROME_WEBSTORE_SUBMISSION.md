@@ -113,7 +113,6 @@ remediation steps.
 • No background scanning — you click "Scan" to start.
 • No third-party analytics, ads, or trackers.
 • Scan results are sent to the Baseera dashboard ONLY if you sign in.
-• Source code is open: github.com/0xMarvul/Baseera
 
 ⚙️ HOW TO USE
 1. Install the extension.
