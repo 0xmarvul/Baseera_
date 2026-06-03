@@ -9,8 +9,8 @@ function scanXSS(pageUrl) {
     if (dangerousPatterns.test(s.textContent || '')) {
       results.push({
         type: 'XSS',
-        severity: 'Critical',
-        description: 'Unsafe inline JavaScript detected (eval/innerHTML/document.write).',
+        severity: 'Medium',
+        description: 'Potentially unsafe inline JavaScript patterns detected (eval/innerHTML/document.write). Code-smell, not a confirmed XSS.',
         location: pageUrl,
         recommendation: 'Avoid eval(); use textContent instead of innerHTML; remove document.write().'
       });
@@ -22,8 +22,8 @@ function scanXSS(pageUrl) {
   if (handlers.length > 0) {
     results.push({
       type: 'XSS',
-      severity: 'High',
-      description: `${handlers.length} inline event handler(s) found.`,
+      severity: 'Low',
+      description: `${handlers.length} inline event handler(s) found (code-quality issue, not a vulnerability on its own).`,
       location: pageUrl,
       recommendation: 'Use addEventListener instead of inline event handlers.'
     });

@@ -13,8 +13,8 @@ function scanMissingHeaders(pageUrl) {
     if (!document.querySelector(sel)) {
       results.push({
         type: `Missing ${c.attr}`,
-        severity: 'Medium',
-        description: `No ${c.attr} meta tag detected on this page.`,
+        severity: 'Low',
+        description: `No ${c.attr} meta tag detected on this page (defense-in-depth hardening, not a direct vulnerability).`,
         location: pageUrl,
         recommendation: c.rec
       });

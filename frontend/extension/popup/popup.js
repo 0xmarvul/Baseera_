@@ -304,12 +304,12 @@ function runPageScanners(pageUrl) {
     const dangerousPatterns = /eval\s*\(|innerHTML\s*=|document\.write\s*\(|javascript:/i;
     scripts.forEach(s => {
       if (dangerousPatterns.test(s.textContent)) {
-        addVuln('XSS', 'Critical', 'Potentially unsafe inline JavaScript detected (eval/innerHTML/document.write).', pageUrl, 'Avoid eval(), use textContent instead of innerHTML, and remove document.write().');
+        addVuln('XSS', 'Medium', 'Potentially unsafe inline JavaScript patterns detected (eval/innerHTML/document.write). This is a code-smell, not a confirmed XSS — review manually.', pageUrl, 'Avoid eval(), use textContent instead of innerHTML, and remove document.write().');
       }
     });
     const allElements = document.querySelectorAll('[onclick],[onmouseover],[onerror],[onload],[onfocus],[onblur]');
     if (allElements.length > 0) {
-      addVuln('XSS', 'High', `Found ${allElements.length} element(s) with inline event handlers.`, pageUrl, 'Use addEventListener instead of inline event handlers.');
+      addVuln('XSS', 'Low', `Found ${allElements.length} element(s) with inline event handlers (code-quality issue, not a vulnerability on its own).`, pageUrl, 'Use addEventListener instead of inline event handlers.');
     }
     const jsUrls = document.querySelectorAll('a[href^="javascript:" i], form[action^="javascript:" i]');
     if (jsUrls.length > 0) {
@@ -637,7 +637,7 @@ function runPageScanners(pageUrl) {
     ];
     checks.forEach(c => {
       if (!document.querySelector(`meta[http-equiv="${c.attr}" i]`)) {
-        addVuln(`Missing ${c.attr}`, 'Medium', `No ${c.attr} meta tag detected on this page.`, pageUrl, c.rec);
+        addVuln(`Missing ${c.attr}`, 'Low', `No ${c.attr} meta tag detected on this page (defense-in-depth hardening, not a direct vulnerability).`, pageUrl, c.rec);
       }
     });
   } catch (e) {}
@@ -665,7 +665,7 @@ function runPageScanners(pageUrl) {
       return ac === '' || ac === 'on' || ac === 'true';
     });
     if (risky.length > 0) {
-      addVuln('Sensitive Autocomplete', 'Medium', `${risky.length} password input(s) allow browser autocomplete.`, pageUrl, 'Set autocomplete="new-password" on signup/reset forms and autocomplete="current-password" on login forms.');
+      addVuln('Sensitive Autocomplete', 'Low', `${risky.length} password input(s) allow browser autocomplete.`, pageUrl, 'Set autocomplete="new-password" on signup/reset forms and autocomplete="current-password" on login forms.');
     }
     const ccNames = /(cc|card|credit)[-_]?(number|num|no|pan)/i;
     const ccFields = Array.from(document.querySelectorAll('input[name], input[id], input[autocomplete]')).filter(i => {
@@ -674,7 +674,7 @@ function runPageScanners(pageUrl) {
     });
     const ccRisky = ccFields.filter(f => (f.getAttribute('autocomplete') || '').toLowerCase() !== 'off');
     if (ccRisky.length > 0) {
-      addVuln('Sensitive Autocomplete', 'Medium', `${ccRisky.length} credit-card input(s) do not set autocomplete="off".`, pageUrl, 'Set autocomplete="off" on credit-card inputs to avoid storing full PAN in browser profiles.');
+      addVuln('Sensitive Autocomplete', 'Low', `${ccRisky.length} credit-card input(s) do not set autocomplete="off".`, pageUrl, 'Set autocomplete="off" on credit-card inputs to avoid storing full PAN in browser profiles.');
     }
   } catch (e) {}
 

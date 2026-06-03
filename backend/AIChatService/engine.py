@@ -529,9 +529,11 @@ VULNERABILITIES = {
         "explanation": (
             "Password and credit-card fields that allow browser autocomplete can be auto-"
             "populated on shared or compromised devices, and can leak PAN / credentials "
-            "into browser profile syncs."
+            "into browser profile syncs. Note: modern guidance (NIST 800-63B) actually "
+            "favors password-manager autofill, so this is treated as a low-tier hygiene "
+            "finding rather than a true vulnerability."
         ),
-        "severity": "Medium",
+        "severity": "Low",
         "fix": (
             "Use autocomplete=\"new-password\" for signup/reset forms and "
             "autocomplete=\"current-password\" for login forms. "

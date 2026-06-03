@@ -27,9 +27,9 @@ const SCANNER_LIST = [
   { id: 'dom-xss-sinks', name: 'DOM-based XSS', severity: 'High', file: 'dom-xss-sinks.js' },
   { id: 'postmessage-unsafe', name: 'Insecure postMessage', severity: 'High', file: 'postmessage-unsafe.js' },
   { id: 'session-in-url', name: 'Session Token in URL', severity: 'High', file: 'session-in-url.js' },
-  { id: 'missing-headers', name: 'Missing Security Headers', severity: 'Medium', file: 'missing-headers.js' },
+  { id: 'missing-headers', name: 'Missing Security Headers', severity: 'Low', file: 'missing-headers.js' },
   { id: 'source-maps', name: 'Source Map Exposure', severity: 'Medium', file: 'source-maps.js' },
-  { id: 'autocomplete-sensitive', name: 'Sensitive Autocomplete', severity: 'Medium', file: 'autocomplete-sensitive.js' },
+  { id: 'autocomplete-sensitive', name: 'Sensitive Autocomplete', severity: 'Low', file: 'autocomplete-sensitive.js' },
   { id: 'form-external-action', name: 'External Form Action', severity: 'Medium', file: 'form-external-action.js' },
   { id: 'server-banner', name: 'Version Disclosure', severity: 'Low', file: 'server-banner.js' }
 ];
