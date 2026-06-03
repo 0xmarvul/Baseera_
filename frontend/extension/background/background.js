@@ -1,8 +1,16 @@
 // Baseera Security Scanner - Background Service Worker
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('Baseera Security Scanner installed');
+  // First-run hook reserved for migrations / welcome page.
 });
+
+async function getAppBaseUrl() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['baseeraAppBaseUrl'], (r) => {
+      resolve(r.baseeraAppBaseUrl || 'http://localhost:5173');
+    });
+  });
+}
 
 // Listen for messages from popup or content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -59,9 +67,10 @@ chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => 
 });
 
 // When a Baseera website tab finishes loading, sync auth state
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
-    const baseeraOrigins = ['http://localhost:5173', 'https://localhost'];
+    const appBaseUrl = await getAppBaseUrl();
+    const baseeraOrigins = [appBaseUrl, 'http://localhost:5173', 'https://localhost'];
     const isBaseeraTab = baseeraOrigins.some(origin => tab.url.startsWith(origin));
 
     if (isBaseeraTab) {
