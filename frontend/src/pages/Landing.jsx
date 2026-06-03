@@ -66,8 +66,8 @@ function Landing() {
 
           <p className="home-subtitle reveal reveal-delay-2">
             Baseera is a passive web security scanner that detects 28 classes
-            of vulnerabilities — from XSS and SQL injection to leaked API keys
-            and missing security headers — without ever modifying the page or
+            of vulnerabilities, from XSS and SQL injection to leaked API keys
+            and missing security headers, without ever modifying the page or
             sending data to third parties.
           </p>
 
@@ -100,7 +100,7 @@ function Landing() {
                 <p>
                   Add Baseera to Chrome and scan any website with a single
                   click. The extension runs 28 passive scanners directly in
-                  your browser — no requests sent, no page modifications, no
+                  your browser. No requests sent, no page modifications, no
                   tracking.
                 </p>
               </div>
@@ -116,7 +116,7 @@ function Landing() {
                 </div>
                 <div className="feature-item">
                   <Check size={18} strokeWidth={3} className="lucide-check" />
-                  <h6>100% client-side — your data never leaves your browser</h6>
+                  <h6>100% client-side, your data never leaves your browser</h6>
                 </div>
               </div>
 
@@ -275,11 +275,11 @@ function Landing() {
             <div className="protection-features">
               <div className="protection-feature-item">
                 <Check size={18} strokeWidth={3} className="lucide-check" />
-                <span>Read-only — no traffic generated, no pages modified</span>
+                <span>Read-only, no traffic generated, no pages modified</span>
               </div>
               <div className="protection-feature-item">
                 <Check size={18} strokeWidth={3} className="lucide-check" />
-                <span>User-initiated — scans run only when you click</span>
+                <span>User-initiated. Scans run only when you click</span>
               </div>
               <div className="protection-feature-item">
                 <Check size={18} strokeWidth={3} className="lucide-check" />
@@ -336,7 +336,7 @@ function Landing() {
       <p className="protection-description">
       Open the website you want to inspect, click the Baseera icon, and hit
       Start Scan. All 28 scanners run locally against the page&apos;s DOM and
-      surface findings within seconds — no installation per site, no
+      surface findings within seconds. No installation per site, no
       configuration.
       </p>
 
@@ -363,7 +363,7 @@ function Landing() {
       <p className="protection-description">
       Findings are grouped by severity and synced to your Bugs Dashboard if
       you&apos;re signed in. Ask the built-in AI assistant what each issue
-      means and how to fix it &mdash; with concrete examples for every
+      means and how to fix it, with concrete examples for every
       vulnerability type.
       </p>
 
@@ -386,7 +386,7 @@ function Landing() {
       <h1 className="secure-text reveal">
     <span className="text">Built</span> For The Modern Web</h1>
     <p className="Secure-description reveal reveal-delay-1">A focused, honest toolkit
-       for finding common web vulnerabilities — designed and built as a graduation
+       for finding common web vulnerabilities. Designed and built as a graduation
        project, free for anyone to use.</p>
          <div className="security-solutions-cards">
           <div className="security-solution-card reveal reveal-delay-1">

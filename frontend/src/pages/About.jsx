@@ -52,7 +52,7 @@ function About() {
             <div className="about-title">
                 <h1>About <span className="about-text">Baseera</span></h1>
                     <div className="about-description">
-Baseera (meaning &quot;insight&quot; or &quot;vision&quot; in Arabic) is a focused web security toolkit that helps developers and students discover, understand, and fix the most common classes of web vulnerabilities — all from a single Chrome extension and dashboard.            </div>
+Baseera (meaning &quot;insight&quot; or &quot;vision&quot; in Arabic) is a focused web security toolkit that helps developers and students discover, understand, and fix the most common classes of web vulnerabilities, all from a single Chrome extension and dashboard.            </div>
             </div>
             </div>
             <section className="our-Mission">
@@ -65,7 +65,7 @@ Baseera (meaning &quot;insight&quot; or &quot;vision&quot; in Arabic) is a focus
                     Our Mission
                 </h4>
                 <p className="mission-description">
-                    To make web security review accessible to anyone with a browser. Most vulnerability scanners are paid, complex, or invasive. Baseera proves that a passive, transparent, in-browser scanner can still cover 28 real vulnerability classes — and explain each one in language a developer can act on.
+                    To make web security review accessible to anyone with a browser. Most vulnerability scanners are paid, complex, or invasive. Baseera proves that a passive, transparent, in-browser scanner can still cover 28 real vulnerability classes, and explain each one in language a developer can act on.
                 </p>
             </div>
             </div>
@@ -86,7 +86,7 @@ Baseera (meaning &quot;insight&quot; or &quot;vision&quot; in Arabic) is a focus
                     Passive Detection
                 </h4>
                 <p className="do-description">
-            28 scanners read the DOM of the page you choose and report findings — no requests sent, nothing modified.
+            28 scanners read the DOM of the page you choose and report findings. No requests sent, nothing modified.
                 </p>
                 </div>
             </div>
@@ -113,7 +113,7 @@ Baseera (meaning &quot;insight&quot; or &quot;vision&quot; in Arabic) is a focus
                   AI Explanations
                 </h4>
                 <p className="do-description">
-           Ask the in-app assistant what any vulnerability means and how to fix it — answers in plain language.
+           Ask the in-app assistant what any vulnerability means and how to fix it. Answers in plain language.
                 </p>
             </div>
             </div>
@@ -145,7 +145,7 @@ Sign in to sync scan results to your Bugs Dashboard and track findings over time
             <div className="why-content">
                 <h4 className="why-title">Clarity And Insight</h4>
                 <p className="why-description">
-                    Baseera means &quot;insight&quot; in Arabic — and that&apos;s the goal: clear visibility into what is actually wrong with the page you&apos;re looking at.
+                    Baseera means &quot;insight&quot; in Arabic, and that&apos;s the goal: clear visibility into what is actually wrong with the page you&apos;re looking at.
                 </p>
             </div>
         </div>
@@ -171,7 +171,7 @@ Sign in to sync scan results to your Bugs Dashboard and track findings over time
             <div className="why-content">
                 <h4 className="why-title">Privacy By Design</h4>
                 <p className="why-description">
-                    All scanning runs in your browser. The extension cannot read pages in the background — only the one you choose to scan, only when you click Start Scan.
+                    All scanning runs in your browser. The extension cannot read pages in the background. Only the one you choose to scan, only when you click Start Scan.
                 </p>
             </div>
         </div>
@@ -182,7 +182,7 @@ Sign in to sync scan results to your Bugs Dashboard and track findings over time
     <div className="join-content">
   <h2 className="join-title">Ready To Scan Your First Site?</h2>
   <p className="join-description">
-    Install the extension, open any page, and run Baseera against it. No account needed to get started — sign in only if you want your findings saved.
+    Install the extension, open any page, and run Baseera against it. No account needed to get started. Sign in only if you want your findings saved.
   </p>
   
   <div className="home-actions">
