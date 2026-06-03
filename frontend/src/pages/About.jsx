@@ -22,7 +22,7 @@ import {
 
 import Navbar from "../components/Navbar";
 import LandingNavbar from "../components/LandingNavbar";
-import Fotter from "../components/Fotter";
+import Footer from "../components/Footer";
 
 
 
@@ -196,7 +196,7 @@ Sign in to sync scan results to your Bugs Dashboard and track findings over time
 </section>
 
 
-    <Fotter />
+    <Footer />
     </>
     );
 }

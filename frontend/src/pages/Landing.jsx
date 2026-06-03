@@ -24,7 +24,7 @@ import {
 import icon11 from "../assets/ImageWithFallback.png";
 import icon14 from "../assets/img1.jpg";
 import icon15 from "../assets/img2.jpg";
-import Fotter from "../components/Fotter";
+import Footer from "../components/Footer";
 
 /* 🔹 Lightning Component */
 const CardLightning = ({ position }) => {
@@ -429,7 +429,7 @@ function Landing() {
 
           </div>
     </section>
-    <Fotter />
+    <Footer />
     </>
   );
 }

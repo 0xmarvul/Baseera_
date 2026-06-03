@@ -3,7 +3,7 @@ import "../index.css";
 import "../contact.css";
 import Navbar from "../components/Navbar";
 import LandingNavbar from "../components/LandingNavbar";
-import Fotter from "../components/Fotter";
+import Footer from "../components/Footer";
 import apiClient from "../api/axios.config";
 
 function Contact() {
@@ -262,7 +262,7 @@ function Contact() {
       </section>
 
       {/* Footer Component */}
-      <Fotter />
+      <Footer />
 
       {showPopup && (
         <div className="contact-popup" role="dialog" aria-modal="true">
