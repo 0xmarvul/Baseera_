@@ -180,7 +180,7 @@ The extension **DOES NOT** handle:
 
 ### Privacy Policy URL
 ```
-https://0xMarvul.github.io/Baseera/privacy-policy
+https://0xMarvul.github.io/Baseera/privacy-policy.html
 ```
 
 > ⚠️ This URL only works after you enable GitHub Pages on the
