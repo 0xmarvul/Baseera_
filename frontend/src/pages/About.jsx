@@ -8,14 +8,18 @@ import "../about.css";
 
 import { Link, useNavigate } from 'react-router-dom'
 
-import icon1 from "../assets/about.png";
-import icon2 from "../assets/Mission.png";
-import icon3 from "../assets/networksecurity.png";
-import icon4 from "../assets/Row.png";
-import icon5 from "../assets/Icon(6).png";
-import icon7 from "../assets/lock.png";
-import icon8 from "../assets/support.png";
-import icon9 from "../assets/yes.png";  
+import {
+  Eye,
+  Target,
+  Network,
+  FileText,
+  Zap,
+  Lock,
+  Headphones,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
+
 import Navbar from "../components/Navbar";
 import LandingNavbar from "../components/LandingNavbar";
 import Fotter from "../components/Fotter";
@@ -42,7 +46,7 @@ function About() {
        <LandingNavbar/>
         <section className="about-section">
             <div className="about-icon">
-                <img src={icon1} alt="about icon" width={30} height={30} />
+                <Eye size={30} strokeWidth={2} className="lucide-accent" />
             </div>
             <div className="about">
             <div className="about-title">
@@ -54,7 +58,7 @@ Baseera (meaning "insight" or "vision" in Arabic) is a modern cybersecurity plat
             <section className="our-Mission">
             <div className="box">
             <div className="mission-icon">
-    <img src={icon2} alt=" Mission icon" width={30} height={30} />
+    <Target size={30} strokeWidth={2} className="lucide-accent" />
             </div>
             <div className="mission-text">
                 <h4 className="mission-title">
@@ -75,7 +79,7 @@ Baseera (meaning "insight" or "vision" in Arabic) is a modern cybersecurity plat
                 <div className="do">
             <div className="do-box">
                 <div className="do-icon">
-            <img src={icon3} alt="  icon" width={24} height={24} />
+            <Network size={24} strokeWidth={2} className="lucide-accent" />
         </div>
           <div className="content">
                 <h4 className="do-title">
@@ -88,7 +92,7 @@ Baseera (meaning "insight" or "vision" in Arabic) is a modern cybersecurity plat
             </div>
              <div className="do-box">
                  <div className="do-icon">
-             <img src={icon2} alt="  icon" width={24} height={24} />
+             <Sparkles size={24} strokeWidth={2} className="lucide-accent" />
         </div>
          <div className="content">
                 <h4 className="do-title">
@@ -99,10 +103,10 @@ Baseera (meaning "insight" or "vision" in Arabic) is a modern cybersecurity plat
                 </p>
                 </div>
             </div>
-               
+
               <div className="do-box">
                  <div className="do-icon">
-             <img src={icon5} alt="  icon" width={24} height={24} />
+             <Zap size={24} strokeWidth={2} className="lucide-accent" />
         </div>
         <div className="content">
                 <h4 className="do-title">
@@ -115,7 +119,7 @@ Baseera (meaning "insight" or "vision" in Arabic) is a modern cybersecurity plat
             </div>
   <div className="do-box">
                  <div className="do-icon">
-             <img src={icon4} alt="  icon" width={24} height={24} />
+             <FileText size={24} strokeWidth={2} className="lucide-accent" />
         </div>
         <div className="content">
                 <h4 className="do-title">
@@ -136,7 +140,7 @@ Beautiful reports that communicate security posture clearly                </p>
         {/* Card 1 */}
         <div className="why-card">
             <div className="why-icon">
-                <img src={icon9} alt="icon" width={24} height={24} />
+                <Eye size={24} strokeWidth={2} className="lucide-accent" />
             </div>
             <div className="why-content">
                 <h4 className="why-title">Clarity and Insight</h4>
@@ -149,7 +153,7 @@ Beautiful reports that communicate security posture clearly                </p>
         {/* Card 2 */}
         <div className="why-card">
             <div className="why-icon">
-                <img src={icon8} alt="icon" width={24} height={24} />
+                <Headphones size={24} strokeWidth={2} className="lucide-accent" />
             </div>
             <div className="why-content">
                 <h4 className="why-title">Expert Support</h4>
@@ -162,7 +166,7 @@ Beautiful reports that communicate security posture clearly                </p>
         {/* Card 3 */}
         <div className="why-card">
             <div className="why-icon">
-                <img src={icon7} alt="icon" width={24} height={24} />
+                <Lock size={24} strokeWidth={2} className="lucide-accent" />
             </div>
             <div className="why-content">
                 <h4 className="why-title">Enterprise-Grade Security</h4>
@@ -183,9 +187,8 @@ Beautiful reports that communicate security posture clearly                </p>
   
   <div className="home-actions">
                  <Link className="get-btn" to={isAuthenticated ? "/landing#Extension" : "/Login"} onClick={handleGetStarted}>
-                             Get Started  <i className="arrow fa-solid fa-arrow-right"></i>
-            
-                               </Link> 
+                             Get Started <ArrowRight size={18} strokeWidth={2.4} />
+                               </Link>
             <button className="ghost-btn" onClick={handleLearnMore}>Learn More</button>
           </div>
           </div>

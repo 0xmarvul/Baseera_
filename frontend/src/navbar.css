@@ -1,7 +1,7 @@
 .navbar {
   background-color: #1d293d;
   font-family: Inter;
-  font-size: 15.36px;
+  font-size: 17px;
   font-style: normal;
   font-weight: 700;
   line-height: normal;
@@ -10,12 +10,14 @@
   z-index: 1000;
   transition: all 0.3s ease;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding-top: 22px;
+  padding-bottom: 22px;
 }
 
 .navbar-inner {
   max-width: 100%;
-  padding-left: 40px;
-  padding-right: 20px;
+  padding-left: 72px !important;
+  padding-right: 72px !important;
 }
 
 .navbar.bg-body,
@@ -36,9 +38,16 @@
 }
 
 .navbar-nav {
-  gap: 24px;
+  gap: 44px;
   display: flex;
   align-items: center;
+}
+
+.navbar-nav .nav-link {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  font-size: 17px;
+  letter-spacing: 0.2px;
 }
 
 .navbar-collapse {
@@ -52,14 +61,14 @@
   display: flex;
   padding: 4.48px 30.8px 4.48px 0px;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin-right: auto;
-  margin-left: 12px;
+  margin-left: 0;
 }
 
 .navbar-brand img {
-  width: 23.04px;
-  height: 23.04px;
+  width: 26px;
+  height: 26px;
 }
 
 .nav-item {
@@ -71,7 +80,7 @@
 .navbar-brand-text {
   color: #fff;
   font-family: Inter;
-  font-size: 15.36px;
+  font-size: 18px;
   font-style: normal;
   font-weight: 700;
   line-height: normal;
@@ -81,7 +90,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-left: 24px;
+  margin-left: 40px;
 }
 
 .login-link {
@@ -99,12 +108,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 24px;
+  padding: 12px 28px;
   border-radius: 26843500px;
   border: none !important;
   background: linear-gradient(90deg, #00bc7d 0%, #00b8db 100%) !important;
   color: #fff !important;
   font-weight: 700;
+  font-size: 16px;
   line-height: 1;
   white-space: nowrap;
 }
@@ -135,11 +145,24 @@
 }
 
 /* Responsive Design */
+@media (max-width: 1200px) {
+  .navbar-inner {
+    padding-left: 40px !important;
+    padding-right: 40px !important;
+  }
+
+  .navbar-nav {
+    gap: 28px;
+  }
+}
+
 @media (max-width: 992px) {
   .navbar-inner {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    padding-left: 24px !important;
+    padding-right: 24px !important;
   }
 
   .navbar-brand {

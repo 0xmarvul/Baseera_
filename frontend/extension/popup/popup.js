@@ -292,7 +292,7 @@ function runPageScanners(pageUrl) {
     vulnerabilities.push({ type, severity, description, location: location || pageUrl, recommendation });
   }
 
-  // 1. XSS - Check for inline scripts, eval(), innerHTML usage
+  // 1. XSS - inline-handler, javascript: URL, iframe srcdoc, reflected-parameter
   try {
     const scripts = document.querySelectorAll('script:not([src])');
     const dangerousPatterns = /eval\s*\(|innerHTML\s*=|document\.write\s*\(|javascript:/i;
@@ -301,13 +301,27 @@ function runPageScanners(pageUrl) {
         addVuln('XSS', 'Critical', 'Potentially unsafe inline JavaScript detected (eval/innerHTML/document.write).', pageUrl, 'Avoid eval(), use textContent instead of innerHTML, and remove document.write().');
       }
     });
-    const allElements = document.querySelectorAll('[onclick],[onmouseover],[onerror],[onload]');
+    const allElements = document.querySelectorAll('[onclick],[onmouseover],[onerror],[onload],[onfocus],[onblur]');
     if (allElements.length > 0) {
       addVuln('XSS', 'High', `Found ${allElements.length} element(s) with inline event handlers.`, pageUrl, 'Use addEventListener instead of inline event handlers.');
     }
-    const links = document.querySelectorAll('a[href^="javascript:"]');
-    if (links.length > 0) {
-      addVuln('XSS', 'Critical', `Found ${links.length} link(s) using javascript: URLs.`, pageUrl, 'Avoid javascript: URLs in href attributes.');
+    const jsUrls = document.querySelectorAll('a[href^="javascript:" i], form[action^="javascript:" i]');
+    if (jsUrls.length > 0) {
+      addVuln('XSS', 'Critical', `Found ${jsUrls.length} element(s) using javascript: URLs (href/action).`, pageUrl, 'Avoid javascript: URLs. Bind click/submit handlers via addEventListener.');
+    }
+    if (document.querySelectorAll('iframe[srcdoc]').length > 0) {
+      addVuln('XSS', 'High', 'iframe with srcdoc attribute detected (inline HTML injection surface).', pageUrl, 'Avoid srcdoc with untrusted content; sandbox iframes with restrictive attributes.');
+    }
+    // Reflected URL parameter in body
+    const body = document.body ? document.body.innerHTML : '';
+    const params = new URLSearchParams(location.search);
+    const hash = location.hash.slice(1);
+    const values = [...Array.from(params.values()), hash].filter(v => v && v.length >= 6);
+    for (const v of values) {
+      if (body.indexOf(v) !== -1) {
+        addVuln('Reflected XSS', 'High', `URL parameter value appears verbatim in page body (possible reflected XSS).`, pageUrl, 'HTML-encode user input before inserting into the DOM. Prefer textContent over innerHTML.');
+        break;
+      }
     }
   } catch (e) {}
 
@@ -329,19 +343,33 @@ function runPageScanners(pageUrl) {
     }
   } catch (e) {}
 
-  // 4. API Keys Exposure
+  // 4. API Keys Exposure - expanded provider coverage
   try {
     const html = document.documentElement.innerHTML;
     const patterns = [
-      { regex: /AIza[0-9A-Za-z-_]{35}/g, name: 'Google API Key' },
-      { regex: /AKIA[0-9A-Z]{16}/g, name: 'AWS Access Key' },
-      { regex: /sk-[a-zA-Z0-9]{32,}/g, name: 'OpenAI/Stripe Secret Key' },
-      { regex: /ghp_[a-zA-Z0-9]{36}/g, name: 'GitHub Personal Access Token' },
-      { regex: /firebase.*apiKey.*['"]\w{20,}/i, name: 'Firebase API Key' }
+      { regex: /AIza[0-9A-Za-z\-_]{35}/, name: 'Google API Key' },
+      { regex: /AKIA[0-9A-Z]{16}/, name: 'AWS Access Key' },
+      { regex: /sk-[A-Za-z0-9]{48}/, name: 'OpenAI API Key' },
+      { regex: /sk_live_[0-9a-zA-Z]{24,}/, name: 'Stripe Secret Key (live)' },
+      { regex: /pk_live_[0-9a-zA-Z]{24,}/, name: 'Stripe Publishable Key (live)' },
+      { regex: /rk_live_[0-9a-zA-Z]{24,}/, name: 'Stripe Restricted Key (live)' },
+      { regex: /ghp_[A-Za-z0-9]{36}/, name: 'GitHub Personal Access Token' },
+      { regex: /gho_[A-Za-z0-9]{36}/, name: 'GitHub OAuth Token' },
+      { regex: /xox[baprs]-[0-9A-Za-z\-]{10,}/, name: 'Slack Token' },
+      { regex: /AC[a-f0-9]{32}/, name: 'Twilio Account SID' },
+      { regex: /SK[a-f0-9]{32}/, name: 'Twilio API Key' },
+      { regex: /SG\.[\w\-]{22}\.[\w\-]{43}/, name: 'SendGrid API Key' },
+      { regex: /key-[0-9a-zA-Z]{32}/, name: 'Mailgun API Key' },
+      { regex: /sq0(?:atp|csp)-[0-9A-Za-z\-_]{22,43}/, name: 'Square Token' },
+      { regex: /eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}/, name: 'JWT Token' },
+      { regex: /-----BEGIN (?:RSA |EC |OPENSSH |DSA |)PRIVATE KEY-----/, name: 'Private Key Block' },
+      { regex: /AccountKey=[A-Za-z0-9+/=]{40,}/, name: 'Azure Storage Account Key' },
+      { regex: /"type":\s*"service_account"/, name: 'GCP Service Account JSON' },
+      { regex: /firebase[^,]{0,30}apiKey[^,]{0,10}["'][A-Za-z0-9_\-]{20,}["']/i, name: 'Firebase API Key' },
     ];
     patterns.forEach(p => {
       if (p.regex.test(html)) {
-        addVuln('API Keys Exposure', 'Critical', `Exposed ${p.name} detected in page source.`, pageUrl, 'Move API keys to server-side environment variables.');
+        addVuln('API Keys Exposure', 'Critical', `Exposed ${p.name} detected in page source.`, pageUrl, 'Move secrets to server-side environment variables. Rotate any leaked credential immediately.');
       }
     });
   } catch (e) {}
@@ -445,13 +473,23 @@ function runPageScanners(pageUrl) {
     }
   } catch (e) {}
 
-  // 14. Sensitive File Paths (admin, .git, .env in links)
+  // 14. Sensitive File Paths + admin/debug surfaces (links, scripts, iframes, comments, and the page URL itself)
   try {
-    const allLinks = Array.from(document.querySelectorAll('a[href]')).map(a => a.href);
-    const sensitivePatterns = /\/(\.git|\.env|\.htaccess|wp-admin|phpmyadmin|admin|backup|config)/i;
-    const sensitiveLinks = allLinks.filter(href => sensitivePatterns.test(href));
-    if (sensitiveLinks.length > 0) {
-      addVuln('Sensitive Files', 'High', `Found ${sensitiveLinks.length} link(s) to potentially sensitive paths.`, sensitiveLinks[0], 'Restrict access to sensitive directories and files.');
+    const patterns = /\/(\.git(\/|$)|\.svn\/|\.hg\/|\.env(\.|$|\/)|\.htaccess|\.htpasswd|\.DS_Store|\.idea\/|\.vscode\/|\.aws\/|\.npmrc|\.bak|\.old|\.orig|\.swp|id_rsa|id_dsa|Thumbs\.db|wp-admin|wp-config|phpmyadmin|phpinfo\.php|server-status|server-info|web\.config|composer\.lock|package-lock\.json|database\.sql|config\.(php|json|yml|yaml|inc\.php)|admin(istrator)?(\/|$|\?|\.php)|admin[-_]?(panel|cp|console)(\/|$|\?)|swagger(-ui)?(\/|$|\?)|api-docs(\/|$|\?)|openapi(\.json|\.yaml|\/|$)|graphql(\/|$|\?)|graphiql(\/|$|\?)|actuator(\/|$|\?)|jolokia(\/|$|\?)|console(\/|$|\?)|(private|internal|intranet)(\/|$|\?)|(backup|backups|bak|old|archive)(\/|$|\?|\.))/i;
+    const urls = new Set();
+    if (pageUrl) urls.add(pageUrl);
+    document.querySelectorAll('a[href], link[href], script[src], img[src], iframe[src], source[src]').forEach(el => {
+      const v = el.getAttribute('href') || el.getAttribute('src') || '';
+      if (v) urls.add(v);
+    });
+    const walker = document.createTreeWalker(document, NodeFilter.SHOW_COMMENT, null, false);
+    let n; while ((n = walker.nextNode())) { urls.add(n.nodeValue || ''); }
+    const hits = [...urls].filter(u => patterns.test(u));
+    if (hits.length > 0) {
+      addVuln('Sensitive Files', 'High', `Found ${hits.length} reference(s) to potentially sensitive paths.`, hits[0].slice(0, 200), 'Block access at the web server level. Remove backup and VCS files from production.');
+    }
+    if (typeof document.title === 'string' && document.title.toLowerCase().startsWith('index of /')) {
+      addVuln('Directory Listing', 'Medium', 'Directory listing is enabled on this endpoint.', pageUrl, 'Disable directory listing (Options -Indexes in Apache, autoindex off in Nginx).');
     }
   } catch (e) {}
 
@@ -512,6 +550,168 @@ function runPageScanners(pageUrl) {
       if (content.includes("'unsafe-inline'") || content.includes("'unsafe-eval'") || content.includes('*')) {
         addVuln('Weak CSP', 'High', "Content-Security-Policy contains unsafe directives ('unsafe-inline', 'unsafe-eval', or wildcards).", pageUrl, "Remove 'unsafe-inline' and 'unsafe-eval' from CSP and use nonces or hashes instead.");
       }
+    }
+  } catch (e) {}
+
+  // 21. Outdated JavaScript Libraries
+  try {
+    const lt = (a, b) => {
+      const pa = String(a).split('.').map(Number);
+      const pb = String(b).split('.').map(Number);
+      for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+        const x = pa[i] || 0, y = pb[i] || 0;
+        if (x !== y) return x < y;
+      }
+      return false;
+    };
+    const report = (name, version, minSafe) => addVuln('Outdated Components', 'High',
+      `${name} ${version} is older than the recommended ${minSafe}. Known CVEs may apply.`,
+      pageUrl,
+      `Upgrade ${name} to ${minSafe} or later. Audit regularly with Retire.js, npm audit, or Snyk.`);
+    try { if (window.jQuery && window.jQuery.fn && window.jQuery.fn.jquery && lt(window.jQuery.fn.jquery, '3.5.0')) report('jQuery', window.jQuery.fn.jquery, '3.5.0'); } catch (e) {}
+    try { if (window.angular && window.angular.version && window.angular.version.full && window.angular.version.full.startsWith('1.')) report('AngularJS', window.angular.version.full, '(migrate off — AngularJS 1.x is end-of-life)'); } catch (e) {}
+    try { if (window._ && window._.VERSION && lt(window._.VERSION, '4.17.21')) report('lodash', window._.VERSION, '4.17.21'); } catch (e) {}
+    try {
+      const b = document.querySelector('link[href*="bootstrap"], script[src*="bootstrap"]');
+      if (b) {
+        const src = b.getAttribute('href') || b.getAttribute('src') || '';
+        const m = src.match(/bootstrap[.\-/@](\d+\.\d+\.\d+)/i);
+        if (m && lt(m[1], '4.3.1')) report('Bootstrap', m[1], '4.3.1');
+      }
+    } catch (e) {}
+    try { if (window.Vue && window.Vue.version && window.Vue.version.startsWith('2.')) report('Vue 2.x', window.Vue.version, '3.x (Vue 2 reached end-of-life Dec 2023)'); } catch (e) {}
+    try { if (window.moment && window.moment.version) report('Moment.js', window.moment.version, 'a modern alternative (date-fns, dayjs, Luxon)'); } catch (e) {}
+  } catch (e) {}
+
+  // 22. DOM-based XSS Sinks (source → sink in inline scripts)
+  try {
+    const sourceRe = /\b(location\.(hash|search|href)|document\.(URL|documentURI|referrer)|window\.name)\b/;
+    const sinkRe = /\b(innerHTML|outerHTML)\s*=|document\.write\s*\(|\beval\s*\(|setTimeout\s*\(\s*["'`]|setInterval\s*\(\s*["'`]|\bFunction\s*\(/;
+    const scripts = document.querySelectorAll('script:not([src])');
+    let hits = 0;
+    scripts.forEach(s => {
+      const code = s.textContent || '';
+      if (sourceRe.test(code) && sinkRe.test(code)) hits++;
+    });
+    if (hits > 0) {
+      addVuln('DOM-based XSS', 'High', `${hits} inline script(s) pipe an untrusted source (location/referrer/window.name) into a dangerous sink.`, pageUrl, 'Treat location.*, document.referrer, and window.name as untrusted. Sanitize before rendering; prefer textContent and safe DOM APIs.');
+    }
+  } catch (e) {}
+
+  // 23. Insecure postMessage (listener without origin check)
+  try {
+    const listenerRe = /addEventListener\s*\(\s*["'`]message["'`]/;
+    const originRe = /\b(e|ev|evt|event|msg)\.origin\b/;
+    const scripts = document.querySelectorAll('script:not([src])');
+    let hits = 0;
+    scripts.forEach(s => {
+      const code = s.textContent || '';
+      if (listenerRe.test(code) && !originRe.test(code)) hits++;
+    });
+    if (hits > 0) {
+      addVuln('Insecure postMessage', 'High', `${hits} 'message' event listener(s) do not verify event.origin.`, pageUrl, 'Always validate event.origin against an allow-list inside message handlers; never trust the payload blindly.');
+    }
+  } catch (e) {}
+
+  // 24. Session / Token in URL
+  try {
+    const url = String(pageUrl || location.href);
+    if (/[?&#](jsessionid|phpsessid|sid|sessionid|token|access_token|id_token|auth|apikey|api_key)=/i.test(url)) {
+      addVuln('Session Token in URL', 'High', 'Session or authentication token transmitted via URL parameters.', pageUrl, 'Move tokens into the Authorization header or HttpOnly cookies. URLs are logged in proxies, browser history, and referrer headers.');
+    }
+  } catch (e) {}
+
+  // 25. Missing Security Headers (meta equivalents)
+  try {
+    const checks = [
+      { attr: 'X-Content-Type-Options', rec: 'Add X-Content-Type-Options: nosniff to prevent MIME sniffing.' },
+      { attr: 'Referrer-Policy', rec: 'Add Referrer-Policy: strict-origin-when-cross-origin (or stricter).' },
+      { attr: 'Permissions-Policy', rec: 'Add Permissions-Policy to restrict powerful features (camera, microphone, geolocation).' },
+      { attr: 'Cross-Origin-Opener-Policy', rec: 'Add Cross-Origin-Opener-Policy: same-origin to mitigate Spectre-class side-channel leaks.' },
+    ];
+    checks.forEach(c => {
+      if (!document.querySelector(`meta[http-equiv="${c.attr}" i]`)) {
+        addVuln(`Missing ${c.attr}`, 'Medium', `No ${c.attr} meta tag detected on this page.`, pageUrl, c.rec);
+      }
+    });
+  } catch (e) {}
+
+  // 26. Source Map Exposure
+  try {
+    const re = /\/[*/]#\s*sourceMappingURL\s*=\s*([^\s*]+)/;
+    const maps = new Set();
+    document.querySelectorAll('script:not([src])').forEach(s => {
+      const m = (s.textContent || '').match(re);
+      if (m) maps.add(m[1]);
+    });
+    const htmlMatch = document.documentElement.innerHTML.match(re);
+    if (htmlMatch) maps.add(htmlMatch[1]);
+    if (maps.size > 0) {
+      addVuln('Source Map Exposure', 'Medium', `Source map reference(s) detected: ${[...maps].slice(0, 3).join(', ')}.`, pageUrl, 'Do not ship .map files to production, or restrict access via web-server rules. Source maps reveal original code.');
+    }
+  } catch (e) {}
+
+  // 27. Sensitive Form Autocomplete
+  try {
+    const passwords = Array.from(document.querySelectorAll('input[type="password"]'));
+    const risky = passwords.filter(p => {
+      const ac = (p.getAttribute('autocomplete') || '').toLowerCase();
+      return ac === '' || ac === 'on' || ac === 'true';
+    });
+    if (risky.length > 0) {
+      addVuln('Sensitive Autocomplete', 'Medium', `${risky.length} password input(s) allow browser autocomplete.`, pageUrl, 'Set autocomplete="new-password" on signup/reset forms and autocomplete="current-password" on login forms.');
+    }
+    const ccNames = /(cc|card|credit)[-_]?(number|num|no|pan)/i;
+    const ccFields = Array.from(document.querySelectorAll('input[name], input[id], input[autocomplete]')).filter(i => {
+      const attrs = `${i.getAttribute('name') || ''} ${i.getAttribute('id') || ''} ${i.getAttribute('autocomplete') || ''}`;
+      return ccNames.test(attrs) || /cc-number/i.test(i.getAttribute('autocomplete') || '');
+    });
+    const ccRisky = ccFields.filter(f => (f.getAttribute('autocomplete') || '').toLowerCase() !== 'off');
+    if (ccRisky.length > 0) {
+      addVuln('Sensitive Autocomplete', 'Medium', `${ccRisky.length} credit-card input(s) do not set autocomplete="off".`, pageUrl, 'Set autocomplete="off" on credit-card inputs to avoid storing full PAN in browser profiles.');
+    }
+  } catch (e) {}
+
+  // 28. Server / Technology Version Disclosure
+  try {
+    const findings = [];
+    const gen = document.querySelector('meta[name="generator" i]');
+    if (gen) {
+      const v = gen.getAttribute('content') || '';
+      if (v.trim()) findings.push(`generator meta: "${v.slice(0, 80)}"`);
+    }
+    const html = document.documentElement.innerHTML;
+    const banners = [
+      /WordPress\s*\d+(\.\d+)+/i,
+      /Drupal\s*\d+(\.\d+)+/i,
+      /Joomla!?\s*\d+(\.\d+)+/i,
+      /powered by [^<\n]{0,60}/i,
+      /phpMyAdmin\s+\d+(\.\d+)+/i,
+      /Apache\/\d+(\.\d+)+/i,
+      /nginx\/\d+(\.\d+)+/i,
+    ];
+    banners.forEach(re => { const m = html.match(re); if (m) findings.push(m[0].slice(0, 80)); });
+    if (findings.length > 0) {
+      addVuln('Version Disclosure', 'Low', `Framework / server version leaked: ${findings.slice(0, 3).join('; ')}.`, pageUrl, 'Remove the generator meta tag and strip server/version headers at your reverse proxy.');
+    }
+  } catch (e) {}
+
+  // 30. External Form Action
+  try {
+    const pageOrigin = location.origin;
+    const forms = document.querySelectorAll('form[action]');
+    const external = [];
+    forms.forEach(f => {
+      const action = f.getAttribute('action') || '';
+      if (!action || action.startsWith('#') || action.startsWith('/') || action.startsWith('?')) return;
+      try {
+        const u = new URL(action, location.href);
+        if (u.origin && u.origin !== pageOrigin) external.push(`${u.origin}${u.pathname}`);
+      } catch (e) {}
+    });
+    if (external.length > 0) {
+      const hasPassword = Array.from(document.querySelectorAll('form input[type="password"]')).length > 0;
+      addVuln('External Form Action', hasPassword ? 'High' : 'Medium', `${external.length} form(s) submit to a different origin: ${external.slice(0, 3).join(', ')}.`, pageUrl, 'Only submit sensitive forms to your own backend. If an external action is intentional, verify it over HTTPS and document the dependency.');
     }
   } catch (e) {}
 

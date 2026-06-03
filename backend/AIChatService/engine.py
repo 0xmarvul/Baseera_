@@ -41,10 +41,14 @@ VULNERABILITIES = {
             "Validate and sanitize every input on the server side."
         ),
         "patterns": [
-            r"(cross[-\s]site\s*script|xss|\bscript\s+inject)",
+            # Match XSS variants but NOT "dom xss" / "dom-based xss" — those go to dom_xss.
+            # Two lookbehinds: reject "dom xss"/"dom-xss" AND "...based xss"/"...based-xss".
+            r"(cross[-\s]site\s*script|(?<!dom[-\s])(?<!dom)(?<!based[-\s])xss|"
+            r"\bscript\s+inject|reflected\s+xss|stored\s+xss|persistent\s+xss)",
         ],
         "keywords": ["xss", "cross site scripting", "cross-site scripting",
-                     "script injection"],
+                     "script injection", "reflected xss", "stored xss",
+                     "persistent xss", "html injection"],
     },
     "csrf": {
         "name": "Cross-Site Request Forgery (CSRF)",
@@ -77,7 +81,7 @@ VULNERABILITIES = {
             "Apply strict input validation and sandboxing."
         ),
         "patterns": [
-            r"(remote\s+code\s+exec|rce|\bcode\s+execut)",
+            r"(remote\s+code\s+exec|\brce\b|\bcode\s+execut|command\s+inject)",
         ],
         "keywords": ["rce", "remote code execution", "code execution",
                      "command injection", "command execution", "shell injection"],
@@ -204,13 +208,17 @@ VULNERABILITIES = {
             "Scan code with tools like truffleHog or git-secrets before committing."
         ),
         "patterns": [
-            r"(exposed\s+(api\s+key|secret|token|credential)|api\s+key\s+leak)",
+            r"(exposed\s+(api\s+key|secret|token|credential)|api\s+key\s+leak|"
+            r"api\s+keys?\s+exposure|leaked\s+(key|secret|token)|jwt\s+leak|"
+            r"stripe\s+key|aws\s+key|private\s+key\s+exposed)",
         ],
         "keywords": ["exposed api key", "api key leak", "exposed secret",
                      "hard-coded credentials", "api keys", "exposed api", "api key",
-                     "exposed keys", "leaked credentials", "hardcoded credentials",
-                     "hardcoded secrets", "secret leak", "token leak", "exposed token",
-                     "exposed credential", "exposed"],
+                     "api keys exposure", "exposed keys", "leaked credentials",
+                     "hardcoded credentials", "hardcoded secrets", "secret leak",
+                     "token leak", "exposed token", "exposed credential", "exposed",
+                     "jwt leak", "private key exposed", "stripe key leak",
+                     "aws key leak", "github token leak", "slack token leak"],
     },
     "insecure_cookies": {
         "name": "Insecure Cookies",
@@ -233,21 +241,48 @@ VULNERABILITIES = {
     "missing_security_headers": {
         "name": "Missing Security Headers",
         "explanation": (
-            "Missing HTTP security headers (CSP, HSTS, X-Frame-Options, etc.) "
-            "leave applications vulnerable to various client-side attacks."
+            "Modern browsers honor a family of HTTP response headers that defend the "
+            "page against common client-side attacks — CSP (XSS), HSTS (protocol "
+            "downgrade), X-Frame-Options / frame-ancestors (clickjacking), "
+            "X-Content-Type-Options (MIME sniffing), Referrer-Policy (URL leak via "
+            "Referer), Permissions-Policy (disable powerful APIs), and the "
+            "Cross-Origin-Opener / Embedder / Resource-Policy trio (cross-origin "
+            "isolation). When a site ships without them, every individual protection "
+            "they would have provided is simply missing."
         ),
         "severity": "Medium",
         "fix": (
-            "Add Content-Security-Policy, X-Frame-Options, "
-            "Strict-Transport-Security, X-Content-Type-Options, "
-            "and Referrer-Policy headers to all responses."
+            "Send these headers on every response from your app / reverse proxy: "
+            "Content-Security-Policy, Strict-Transport-Security (with includeSubDomains "
+            "and preload), X-Content-Type-Options: nosniff, Referrer-Policy: "
+            "strict-origin-when-cross-origin, Permissions-Policy (disable camera, "
+            "microphone, geolocation unless you actually use them), "
+            "Cross-Origin-Opener-Policy: same-origin, Cross-Origin-Resource-Policy: "
+            "same-site, and X-Frame-Options: DENY (or rely on CSP frame-ancestors)."
         ),
         "patterns": [
-            r"(missing\s+security\s+header|security\s+header|csp\s+header|hsts)",
+            r"(missing\s+security\s+header|security\s+header|csp\s+header|hsts|"
+            r"missing\s+(csp|hsts|x[-\s]?frame[-\s]?options|x[-\s]?content[-\s]?type[-\s]?options|"
+            r"referrer[-\s]?policy|permissions[-\s]?policy|"
+            r"cross[-\s]?origin[-\s]?(opener|embedder|resource)[-\s]?policy|coop|coep|corp)|"
+            r"x[-\s]?content[-\s]?type[-\s]?options|referrer[-\s]?policy|permissions[-\s]?policy|"
+            r"cross[-\s]?origin[-\s]?opener[-\s]?policy)",
         ],
-        "keywords": ["missing security headers", "csp", "hsts", "x-frame-options",
-                     "content security policy", "security headers", "missing headers",
-                     "http headers", "csp header", "headers"],
+        "keywords": ["missing security headers", "security headers", "missing headers",
+                     "http headers", "headers", "csp", "csp header", "hsts",
+                     "missing hsts", "strict transport security",
+                     "x frame options", "x-frame-options", "missing x frame options",
+                     "x content type options", "x-content-type-options",
+                     "missing x content type options", "mime sniffing", "nosniff",
+                     "referrer policy", "referrer-policy", "missing referrer policy",
+                     "permissions policy", "permissions-policy",
+                     "missing permissions policy", "feature policy",
+                     "cross origin opener policy", "cross-origin-opener-policy",
+                     "missing cross origin opener policy", "coop",
+                     "cross origin embedder policy", "cross-origin-embedder-policy",
+                     "coep", "cross origin resource policy",
+                     "cross-origin-resource-policy", "corp",
+                     "content security policy"],
     },
     "clickjacking": {
         "name": "Clickjacking",
@@ -303,13 +338,19 @@ VULNERABILITIES = {
         ),
         "patterns": [
             r"(sensitive\s+file|\.env\s+(file|exposed)|wp[-\s]config|database\s+dump|"
-            r"backup\s+file|config\s+file\s+exposed|\.git[/\\]config|file\s+exposure)",
+            r"backup\s+file|config\s+file\s+exposed|\.git[/\\]config|file\s+exposure|"
+            r"directory\s+listing|index\s+of\s+/|admin\s+panel|phpmyadmin|swagger\s+ui|"
+            r"graphql\s+exposure|actuator\s+exposed)",
         ],
         "keywords": ["sensitive files", "sensitive data files", "sensitive data",
                      "exposed files", "backup files", ".env file", ".env exposed",
                      "config file exposed", "git exposed", ".git/config",
                      "wp-config", "database dump", "file exposure",
-                     "sensitive file exposure", "sensitive"],
+                     "sensitive file exposure", "sensitive",
+                     "directory listing", "index of", "autoindex",
+                     "admin panel", "exposed admin", "phpmyadmin exposed",
+                     "swagger exposed", "api docs exposed", "graphql exposed",
+                     "actuator exposed"],
     },
     "debug_pages": {
         "name": "Debug Pages / Debug Mode Exposure",
@@ -351,11 +392,365 @@ VULNERABILITIES = {
         ),
         "patterns": [
             r"(csp\s+(issue|misconfiguration|bypass|violation|header|policy)|"
-            r"content\s+security\s+policy\s+issue|weak\s+csp)",
+            r"content\s+security\s+policy\s+issue|weak\s+csp|unsafe[-\s]?inline|unsafe[-\s]?eval)",
         ],
         "keywords": ["csp issue", "csp issues", "csp misconfiguration", "csp bypass",
                      "content security policy issue", "csp violation",
-                     "csp header missing", "weak csp", "csp policy"],
+                     "csp header missing", "weak csp", "missing csp", "csp policy",
+                     "unsafe-inline", "unsafe inline", "unsafe-eval", "unsafe eval",
+                     "csp wildcard"],
+    },
+    "outdated_components": {
+        "name": "Vulnerable and Outdated Components",
+        "explanation": (
+            "Using libraries or frameworks with known vulnerabilities (e.g., old jQuery, "
+            "AngularJS 1.x, lodash <4.17.21) lets attackers exploit published CVEs "
+            "directly in the browser. This is OWASP Top 10 A06: Vulnerable and Outdated Components."
+        ),
+        "severity": "High",
+        "fix": (
+            "Upgrade libraries to the latest patched version. "
+            "Run dependency scanners (Retire.js, npm audit, Snyk, Dependabot) in CI. "
+            "Remove libraries you no longer use and prefer actively maintained alternatives "
+            "(e.g., migrate off Moment.js to date-fns or dayjs)."
+        ),
+        "patterns": [
+            r"(outdated\s+(component|library|librar|dependenc)|vulnerable\s+(component|library|librar|dependenc)|old\s+jquery|retire\.?js)",
+        ],
+        "keywords": ["outdated components", "vulnerable components", "outdated library",
+                     "outdated libraries", "outdated dependency", "old jquery",
+                     "old library", "vulnerable dependency", "vulnerable library",
+                     "retire.js", "retirejs", "outdated frameworks"],
+    },
+    "dom_xss": {
+        "name": "DOM-based XSS",
+        "explanation": (
+            "DOM-based XSS happens entirely in the browser: untrusted data from sources "
+            "like location.hash, document.referrer, or window.name is written into a "
+            "dangerous sink (innerHTML, document.write, eval) without sanitization, "
+            "letting an attacker run arbitrary JavaScript."
+        ),
+        "severity": "High",
+        "fix": (
+            "Treat location.*, document.referrer, and window.name as untrusted input. "
+            "Use textContent instead of innerHTML. Avoid eval() and document.write(). "
+            "Enable a strict Content-Security-Policy as defense-in-depth."
+        ),
+        "patterns": [
+            r"(dom[-\s]based\s+xss|dom\s*xss|client[-\s]side\s+xss)",
+        ],
+        "keywords": ["dom xss", "dom-based xss", "dom based xss", "client-side xss",
+                     "client side xss", "browser xss"],
+    },
+    "postmessage_insecure": {
+        "name": "Insecure postMessage Communication",
+        "explanation": (
+            "window.postMessage handlers that don't verify event.origin will accept "
+            "messages from any website, allowing a malicious frame or opened window to "
+            "feed data (and often XSS payloads) directly into the victim page."
+        ),
+        "severity": "High",
+        "fix": (
+            "Always validate event.origin against an explicit allow-list at the top of "
+            "every message handler. Validate the shape and type of event.data before "
+            "acting on it. Never eval or innerHTML postMessage payloads."
+        ),
+        "patterns": [
+            r"(post[-\s]?message|postmessage\s+(insecure|without\s+origin)|window\.postmessage)",
+        ],
+        "keywords": ["postmessage", "post message", "insecure postmessage",
+                     "message event", "cross origin messaging", "origin check",
+                     "postmessage vulnerability", "post message vulnerability"],
+    },
+    "session_in_url": {
+        "name": "Session Token in URL",
+        "explanation": (
+            "Placing session IDs, access tokens, or auth tokens in the URL query string "
+            "exposes them via browser history, proxy logs, referrer headers, and "
+            "shoulder-surfing. Attackers who capture the URL can hijack the session."
+        ),
+        "severity": "High",
+        "fix": (
+            "Transport tokens in the Authorization header or in HttpOnly, Secure cookies. "
+            "Never put jsessionid, phpsessid, access_token, or similar values in query parameters. "
+            "For OAuth redirects, use the PKCE flow and short-lived authorization codes."
+        ),
+        "patterns": [
+            r"(session\s+(id\s+)?in\s+url|token\s+in\s+url|jsessionid|phpsessid|access_token\s+in\s+url)",
+        ],
+        "keywords": ["session token in url", "token in url", "jsessionid", "phpsessid",
+                     "session in url", "session id in url", "token in query",
+                     "access token in url"],
+    },
+    "insecure_storage": {
+        "name": "Insecure Client-Side Storage",
+        "explanation": (
+            "Storing secrets, JWTs, session tokens, or PII in localStorage or "
+            "sessionStorage makes them readable by any JavaScript running on the page, "
+            "including injected XSS payloads. Unlike HttpOnly cookies, web storage is "
+            "fully exposed to the DOM."
+        ),
+        "severity": "High",
+        "fix": (
+            "Keep session tokens in HttpOnly, Secure, SameSite cookies. "
+            "If you need client-side state, store only non-sensitive, non-identifying data. "
+            "Never write passwords, full card numbers, or SSNs to web storage."
+        ),
+        "patterns": [
+            r"(insecure\s+storage|localstorage\s+(secret|token|password)|sessionstorage\s+(secret|token|password)|client[-\s]side\s+storage)",
+        ],
+        "keywords": ["insecure storage", "localstorage", "sessionstorage",
+                     "local storage", "session storage", "client-side storage",
+                     "client side storage", "storage vulnerability",
+                     "token in localstorage", "jwt in localstorage"],
+    },
+    "source_map_exposure": {
+        "name": "Source Map Exposure",
+        "explanation": (
+            "Source map (.map) files reconstruct the original, unminified source code of "
+            "a JavaScript bundle. If deployed to production, they hand attackers a clean "
+            "view of internal logic, secrets accidentally bundled, and API contracts."
+        ),
+        "severity": "Medium",
+        "fix": (
+            "Do not deploy .map files to production, or block them at the web-server level. "
+            "If you need them for error reporting (Sentry etc.), upload to the error tracker "
+            "directly and keep them off the public origin."
+        ),
+        "patterns": [
+            r"(source\s*map\s+(exposure|exposed|leak)|sourcemap\s+(exposure|exposed|leak)|\.map\s+file\s+exposed)",
+        ],
+        "keywords": ["source map", "source maps", "source map exposure",
+                     "sourcemap", "sourcemap exposure", ".map file",
+                     "sourcemappingurl", "source map leak"],
+    },
+    "autocomplete_sensitive": {
+        "name": "Sensitive Form Autocomplete",
+        "explanation": (
+            "Password and credit-card fields that allow browser autocomplete can be auto-"
+            "populated on shared or compromised devices, and can leak PAN / credentials "
+            "into browser profile syncs."
+        ),
+        "severity": "Medium",
+        "fix": (
+            "Use autocomplete=\"new-password\" for signup/reset forms and "
+            "autocomplete=\"current-password\" for login forms. "
+            "Set autocomplete=\"off\" on credit-card inputs to avoid storing full PANs. "
+            "Always serve these forms over HTTPS."
+        ),
+        "patterns": [
+            r"(autocomplete\s+(attribute|issue|vulnerability|sensitive)|password\s+autocomplete|credit\s+card\s+autocomplete|autofill\s+(issue|vulnerability))",
+        ],
+        "keywords": ["autocomplete", "sensitive autocomplete", "autocomplete attribute",
+                     "autofill", "password autocomplete", "credit card autocomplete",
+                     "autocomplete off", "autocomplete on"],
+    },
+    "server_banner": {
+        "name": "Server / Technology Version Disclosure",
+        "explanation": (
+            "When HTML meta tags (e.g., <meta name=\"generator\">) or comments reveal the "
+            "exact framework and version (WordPress 5.4.1, Drupal 7.x, nginx/1.14), "
+            "attackers can map the target to known CVEs and pick pre-built exploits."
+        ),
+        "severity": "Low",
+        "fix": (
+            "Remove the generator meta tag. Strip Server and X-Powered-By headers at the "
+            "reverse proxy. Don't include build version comments in shipped HTML/JS. "
+            "Treat version information as internal-only."
+        ),
+        "patterns": [
+            r"(version\s+disclosure|server\s+banner|banner\s+disclosure|x[-\s]powered[-\s]by|framework\s+version\s+leak|server\s+version\s+leak)",
+        ],
+        "keywords": ["version disclosure", "server banner", "banner disclosure",
+                     "x-powered-by", "server version", "framework version",
+                     "version leak", "generator meta", "information leak"],
+    },
+    "insecure_forms": {
+        "name": "Insecure Forms (Password over HTTP)",
+        "explanation": (
+            "When a login, signup, or any form with a password field is served over "
+            "plain HTTP, credentials travel in cleartext. Anyone on the same network "
+            "(coffee-shop Wi-Fi, ISP, on-path attacker) can read the POST body and "
+            "harvest usernames and passwords. Modern browsers flag these forms as "
+            "'Not Secure' but still submit them."
+        ),
+        "severity": "Critical",
+        "fix": (
+            "Serve the entire site over HTTPS — no HTTP fallback. Redirect HTTP to "
+            "HTTPS at the web server, enable HSTS (with preload), and ensure the "
+            "form's action URL is also HTTPS. Never mix an HTTPS page with an HTTP "
+            "form action, since the POST itself leaks the password."
+        ),
+        "patterns": [
+            r"(insecure\s+form|password\s+over\s+http|form\s+over\s+http|"
+            r"http\s+password|cleartext\s+password|plain\s+text\s+password)",
+        ],
+        "keywords": ["insecure form", "insecure forms", "password over http",
+                     "form over http", "http password", "cleartext password",
+                     "plain text password", "unencrypted form", "unencrypted password",
+                     "non https form", "http login"],
+    },
+    "mixed_content": {
+        "name": "Mixed Content",
+        "explanation": (
+            "Mixed content occurs when an HTTPS page loads sub-resources (scripts, "
+            "stylesheets, images, XHR) over plain HTTP. Active mixed content (JS/CSS) "
+            "lets an on-path attacker inject arbitrary code into the page; passive "
+            "mixed content (images) leaks browsing activity and breaks the padlock. "
+            "Modern browsers auto-upgrade or block some cases, but not all."
+        ),
+        "severity": "Medium",
+        "fix": (
+            "Update every resource URL to use HTTPS (or a protocol-relative //host/path "
+            "that inherits the page scheme). Add a Content-Security-Policy with "
+            "'upgrade-insecure-requests' so the browser rewrites remaining HTTP URLs. "
+            "Use 'block-all-mixed-content' to refuse any HTTP sub-resource. Audit "
+            "third-party scripts, embedded iframes, and user-supplied content."
+        ),
+        "patterns": [
+            r"(mixed\s+content|http\s+resource\s+on\s+https|"
+            r"http\s+(script|image|stylesheet)\s+on\s+https|insecure\s+resource)",
+        ],
+        "keywords": ["mixed content", "http on https", "insecure resource",
+                     "http resource on https", "http script on https",
+                     "http image on https", "passive mixed content",
+                     "active mixed content", "upgrade insecure requests"],
+    },
+    "missing_sri": {
+        "name": "Missing Subresource Integrity (SRI)",
+        "explanation": (
+            "When a page pulls in a third-party script or stylesheet (CDN, analytics "
+            "library, font, etc.) without an integrity= hash, the browser executes "
+            "whatever bytes the CDN returns. If the CDN is breached, hijacked via DNS, "
+            "or tampered with by an insider, every visitor silently runs the attacker's "
+            "code. Real incidents: polyfill.io supply-chain attack (2024), British "
+            "Airways Magecart skimmer (2018)."
+        ),
+        "severity": "Medium",
+        "fix": (
+            "Add an integrity attribute with a SHA-384 (or SHA-256/512) hash and "
+            "crossorigin=\"anonymous\" to every <script src> and <link rel=\"stylesheet\"> "
+            "that points to a different origin. Generate hashes with 'openssl dgst "
+            "-sha384 -binary file.js | openssl base64 -A' or srihash.org. Pin library "
+            "versions — SRI only works if the file doesn't change underneath you."
+        ),
+        "patterns": [
+            r"(missing\s+sri|subresource\s+integrity|sri\s+(missing|hash)|"
+            r"integrity\s+attribute|cdn\s+supply\s+chain)",
+        ],
+        "keywords": ["missing sri", "sri", "subresource integrity", "sri hash",
+                     "sri missing", "integrity attribute", "integrity hash",
+                     "cdn supply chain", "external script integrity",
+                     "script integrity"],
+    },
+    "deprecated_html": {
+        "name": "Deprecated HTML Tags",
+        "explanation": (
+            "Tags like <center>, <font>, <marquee>, <blink>, <big>, <tt>, <strike>, "
+            "<frame>/<frameset>, <applet>, <isindex> were removed from HTML5. Browsers "
+            "still render most of them for backward compatibility, but their presence "
+            "signals an outdated codebase, often served by an unmaintained CMS or "
+            "framework whose security patches are likely also behind."
+        ),
+        "severity": "Low",
+        "fix": (
+            "Replace each deprecated tag with its modern equivalent: CSS for styling "
+            "(<font> → color/font-family), <strong>/<em> for emphasis, CSS animations "
+            "for <marquee>/<blink>, <iframe> for legacy <frame>. Audit with the W3C "
+            "validator (validator.w3.org) and a linter like htmlhint."
+        ),
+        "patterns": [
+            r"(deprecated\s+html|deprecated\s+tag|obsolete\s+(html|tag)|"
+            r"<(center|font|marquee|blink|applet|frameset)>)",
+        ],
+        "keywords": ["deprecated html", "deprecated tag", "deprecated tags",
+                     "obsolete html", "obsolete tags", "legacy html",
+                     "html5 migration", "marquee", "blink tag", "center tag",
+                     "font tag", "applet"],
+    },
+    "excessive_trackers": {
+        "name": "Excessive Third-Party Trackers",
+        "explanation": (
+            "When a site embeds many analytics / advertising / session-replay scripts "
+            "(Google Analytics, Facebook Pixel, Hotjar, Mixpanel, Segment, etc.), "
+            "every one of them runs with full page access: it can read form values, "
+            "URL parameters, and cookies. The more trackers, the larger the attack "
+            "surface and the more personal data leaks to unrelated third parties. "
+            "GDPR / CCPA require explicit consent for most of these, and a single "
+            "compromised tracker is a skimmer on every page."
+        ),
+        "severity": "Low",
+        "fix": (
+            "Audit every third-party script and keep only the ones with a clear "
+            "business owner. Load trackers through a consent manager (e.g., OneTrust, "
+            "Cookiebot) so they fire only after opt-in. Self-host where possible and "
+            "subset analytics to first-party collection. Add a strict CSP "
+            "script-src allow-list and SRI hashes on all remaining third-party scripts."
+        ),
+        "patterns": [
+            r"(excessive\s+tracker|third[-\s]?party\s+tracker|too\s+many\s+tracker|"
+            r"analytics\s+overload|tracking\s+script|privacy\s+leak)",
+        ],
+        "keywords": ["excessive trackers", "third party trackers", "tracking scripts",
+                     "analytics overload", "privacy leak", "too many trackers",
+                     "trackers", "advertising scripts", "session replay",
+                     "google analytics", "facebook pixel", "hotjar"],
+    },
+    "cors_issues": {
+        "name": "CORS Misconfiguration",
+        "explanation": (
+            "Cross-Origin Resource Sharing governs which sites the browser lets read "
+            "responses from your API. A wildcard 'Access-Control-Allow-Origin: *' "
+            "combined with Allow-Credentials, or a reflected origin that echoes any "
+            "sender, lets any attacker-controlled site make authenticated requests to "
+            "your API from a victim's browser and read the responses. This turns "
+            "same-origin-only data (private feeds, admin endpoints) into data the "
+            "attacker can exfiltrate."
+        ),
+        "severity": "Medium",
+        "fix": (
+            "Don't use '*' for ACAO when credentials are in play. Maintain a strict "
+            "allow-list of trusted origins and echo only matching ones. Set "
+            "'Vary: Origin' so caches don't leak across origins. Prefer separate "
+            "public / authenticated endpoints. Never reflect Origin blindly — validate "
+            "it against a list. Use SameSite cookies as defense in depth."
+        ),
+        "patterns": [
+            r"(cors\s+(issue|misconfig|bypass)|cors\s+wildcard|access[-\s]?control[-\s]?allow[-\s]?origin|"
+            r"reflected\s+origin|permissive\s+cors)",
+        ],
+        "keywords": ["cors", "cors issue", "cors issues", "cors misconfiguration",
+                     "cors wildcard", "cors bypass", "access control allow origin",
+                     "access-control-allow-origin", "reflected origin",
+                     "permissive cors", "cross origin resource sharing"],
+    },
+    "external_form_action": {
+        "name": "External Form Action (Credential Exfiltration Risk)",
+        "explanation": (
+            "When a <form> submits to a different origin than the page it lives on, "
+            "everything typed into the form — including passwords and payment details "
+            "— is sent to that external site. Attackers exploit this by compromising "
+            "third-party form endpoints, typosquatting domains, or hijacking legitimate "
+            "form handlers. Users see the trusted page in the URL bar and have no "
+            "indication their credentials are leaving."
+        ),
+        "severity": "High",
+        "fix": (
+            "Always submit sensitive forms (login, payment, profile) to your own "
+            "backend on the same origin. If cross-origin submission is intentional "
+            "(e.g., a payment processor), document it, verify the action URL is HTTPS "
+            "and pinned, and audit it whenever dependencies change. A strict CSP "
+            "form-action directive can block unexpected external targets."
+        ),
+        "patterns": [
+            r"(external\s+form\s+action|form\s+(to|submits?\s+to)\s+(external|different)\s+origin|"
+            r"cross[-\s]?origin\s+form|form\s+action\s+(external|phishing))",
+        ],
+        "keywords": ["external form action", "cross origin form",
+                     "form to external origin", "form submits to external",
+                     "form action external", "phishing form",
+                     "credential exfiltration", "form action phishing",
+                     "form hijack"],
     },
 }
 

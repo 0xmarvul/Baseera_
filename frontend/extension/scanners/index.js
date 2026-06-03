@@ -22,5 +22,14 @@ const SCANNER_LIST = [
   { id: 'deprecated-html', name: 'Deprecated HTML', severity: 'Low', file: 'deprecated-html.js' },
   { id: 'trackers', name: 'Excessive Trackers', severity: 'Low', file: 'trackers.js' },
   { id: 'insecure-storage', name: 'Insecure Storage', severity: 'High', file: 'insecure-storage.js' },
-  { id: 'weak-csp', name: 'Weak CSP', severity: 'High', file: 'weak-csp.js' }
+  { id: 'weak-csp', name: 'Weak CSP', severity: 'High', file: 'weak-csp.js' },
+  { id: 'outdated-libs', name: 'Outdated Components', severity: 'High', file: 'outdated-libs.js' },
+  { id: 'dom-xss-sinks', name: 'DOM-based XSS', severity: 'High', file: 'dom-xss-sinks.js' },
+  { id: 'postmessage-unsafe', name: 'Insecure postMessage', severity: 'High', file: 'postmessage-unsafe.js' },
+  { id: 'session-in-url', name: 'Session Token in URL', severity: 'High', file: 'session-in-url.js' },
+  { id: 'missing-headers', name: 'Missing Security Headers', severity: 'Medium', file: 'missing-headers.js' },
+  { id: 'source-maps', name: 'Source Map Exposure', severity: 'Medium', file: 'source-maps.js' },
+  { id: 'autocomplete-sensitive', name: 'Sensitive Autocomplete', severity: 'Medium', file: 'autocomplete-sensitive.js' },
+  { id: 'form-external-action', name: 'External Form Action', severity: 'Medium', file: 'form-external-action.js' },
+  { id: 'server-banner', name: 'Version Disclosure', severity: 'Low', file: 'server-banner.js' }
 ];
