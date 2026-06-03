@@ -1,7 +1,8 @@
 // Baseera Security Scanner - Popup Script
-// Configuration - update these URLs for your deployment environment
-const API_BASE_URL = 'http://localhost:5000/api';
-const APP_BASE_URL = 'http://localhost:5173';
+// API/App URLs are loaded from chrome.storage at startup (configurable via Options page).
+// Defaults defined in ../config.js point at localhost for local development.
+let API_BASE_URL = 'http://localhost:5000/api';
+let APP_BASE_URL = 'http://localhost:5173';
 
 let scanResults = null;
 let currentURL = '';
@@ -9,6 +10,11 @@ let scanCancelled = false;
 
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
+  if (typeof window.BaseeraConfig?.getBaseeraConfig === 'function') {
+    const cfg = await window.BaseeraConfig.getBaseeraConfig();
+    API_BASE_URL = cfg.apiBaseUrl;
+    APP_BASE_URL = cfg.appBaseUrl;
+  }
   await initPopup();
 });
 
@@ -46,7 +52,7 @@ async function syncAuthFromWebsite() {
       }
     }
   } catch (err) {
-    console.log('Auth sync skipped:', err.message);
+    // Auth sync from website tab is best-effort; silent fail is fine.
   }
 }
 

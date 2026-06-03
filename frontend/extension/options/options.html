@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Baseera — Settings</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="head">
+      <img src="../icons/icon48.png" alt="Baseera" />
+      <h1>Baseera Settings</h1>
+    </header>
+
+    <p class="intro">
+      Configure the Baseera backend URLs. Leave blank to use the defaults
+      (which point at <code>localhost</code> for local development).
+    </p>
+
+    <form id="config-form" class="form">
+      <label class="field">
+        <span class="label">API base URL</span>
+        <input type="url" id="api-url" placeholder="https://api.baseera.example.com/api" autocomplete="off" />
+        <span class="hint">Your .NET Web API root, including <code>/api</code>. Must use HTTPS in production.</span>
+      </label>
+
+      <label class="field">
+        <span class="label">Web app base URL</span>
+        <input type="url" id="app-url" placeholder="https://baseera.example.com" autocomplete="off" />
+        <span class="hint">Where users log in and view their dashboard. No trailing slash.</span>
+      </label>
+
+      <div class="actions">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn-ghost" id="reset-btn">Reset to defaults</button>
+      </div>
+
+      <p class="status" id="status"></p>
+    </form>
+
+    <footer class="foot">
+      Baseera Security Scanner ·
+      <a href="https://0xMarvul.github.io/Baseera/privacy-policy.html" target="_blank" rel="noopener">Privacy Policy</a>
+    </footer>
+  </main>
+
+  <script src="../config.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

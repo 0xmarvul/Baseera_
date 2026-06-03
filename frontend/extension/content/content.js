@@ -38,10 +38,21 @@
     }
   });
 
+  // Check if current page is a configured Baseera website origin
+  function isBaseeraOrigin(savedAppUrl) {
+    const candidates = [savedAppUrl, 'http://localhost:5173', 'https://localhost'].filter(Boolean);
+    return candidates.some(o => window.location.href.startsWith(o));
+  }
+
   // On page load, sync current auth state from localStorage to extension storage
   (function syncOnLoad() {
-    if (!window.location.href.startsWith('http://localhost:5173') &&
-        !window.location.href.startsWith('https://localhost')) return;
+    chrome.storage?.local?.get(['baseeraAppBaseUrl'], (r) => {
+      if (!isBaseeraOrigin(r.baseeraAppBaseUrl)) return;
+      doSync();
+    });
+  })();
+
+  function doSync() {
 
     const token = localStorage.getItem('authToken');
     const userName = localStorage.getItem('baseeraUserName');
@@ -64,7 +75,7 @@
     } else {
       safeSendMessage({ type: 'CLEAR_AUTH' });
     }
-  })();
+  }
 
   // Listen for localStorage changes (login/logout in other tabs)
   window.addEventListener('storage', (event) => {
