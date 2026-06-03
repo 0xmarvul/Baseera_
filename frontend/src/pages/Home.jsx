@@ -1,51 +1,53 @@
 import React from "react";
 import "../index.css";
+import "../landing-modern.css";
+import { useScrollReveal, useCountUp } from "../hooks/useScrollReveal";
 import { Link } from 'react-router-dom'
 
-import icon1 from "../assets/Icon(1).png";
-import icon2 from "../assets/Icon(2).png";
-import icon3 from "../assets/Icon(3).png";
-import icon4 from "../assets/Icon(4).png";
-import icon5 from "../assets/Icon(5).png";
-import icon6 from "../assets/Icon(6).png";
-import icon7 from "../assets/SystemMonitoring.png";
-import icon8 from "../assets/DataProtection.png";
-import icon9 from "../assets/AccessControl.png";
-import icon10 from "../assets/networksecurity.png";
+import {
+  ShieldCheck,
+  Sparkles,
+  Check,
+  Download,
+  Info,
+  Zap,
+  Activity,
+  Database,
+  KeyRound,
+  Network,
+  ArrowRight,
+} from "lucide-react";
+
 import icon11 from "../assets/ImageWithFallback.png";
-import icon12 from "../assets/Icon(9).png";
-import icon13 from "../assets/Icon(6).png";
 import icon14 from "../assets/img1.jpg";
 import icon15 from "../assets/img2.jpg";
-import icon16 from "../assets/logo.png"
-import icon17 from "../assets/telephone.png"
-import icon18 from "../assets/location.png"
-import icon19 from "../assets/Email.png"
 import Fotter from "../components/Fotter";
 import Navbar from "../components/Navbar";
 
 /* 🔹 Lightning Component */
-const CardLightning = ({ position, icon }) => {
+const CardLightning = ({ position }) => {
   return (
     <div className={`card-lightning ${position}`}>
-      <img src={icon} alt="lightning icon" />
+      <Zap size={18} strokeWidth={2.5} />
     </div>
   );
 };
 
 function Home() {
+  useScrollReveal();
+  useCountUp();
   return (
     <>
     <Navbar/>
       {/* ================= Home Section ================= */}
       <section className="home">
         <div className="home-inner">
-          <div className="home-badge">
-            <img src={icon1} alt="security icon" width={20} height={20} />
+          <div className="home-badge reveal reveal-zoom">
+            <ShieldCheck size={20} strokeWidth={2.2} className="lucide-accent" />
             <span>Trusted Security Solutions</span>
           </div>
 
-          <h2 className="home-title">
+          <h2 className="home-title reveal reveal-delay-1">
             We&apos;re The Experts In{" "}
             <span className="text">
               <br />
@@ -53,18 +55,18 @@ function Home() {
             </span>
           </h2>
 
-          <p className="home-subtitle">
+          <p className="home-subtitle reveal reveal-delay-2">
             Comprehensive security solutions designed to protect your
             organization from evolving cyber threats. Trust our expertise to
             safeguard your digital assets.
           </p>
 
-          <div className="home-actions">
+          <div className="home-actions reveal reveal-delay-3">
                 <Link className="get-btn" to="/Login">
-                                  Get Started <i className="arrow fa-solid fa-arrow-right"></i>
+                                  Get Started <ArrowRight size={18} strokeWidth={2.4} />
                                   </Link>
       <Link className="ghost-btn" to="/About">
-                                Learn More 
+                                Learn More
                                 </Link>
 
           </div>
@@ -80,9 +82,9 @@ function Home() {
         <div className="extension-download-section" id="download">
           <div className="extension-container">
             {/* -------- Left -------- */}
-            <div className="extension-left">
+            <div className="extension-left reveal reveal-left">
               <div className="home-badge">
-                <img src={icon2} alt="security icon" width={20} height={20} />
+                <Sparkles size={20} strokeWidth={2.2} className="lucide-accent" />
                 <span>New Release</span>
               </div>
 
@@ -97,36 +99,36 @@ function Home() {
 
               <div className="small-icon">
                 <div className="feature-item">
-                  <img src={icon3} alt="check icon" />
+                  <Check size={18} strokeWidth={3} className="lucide-check" />
                   <h6>Real-time vulnerability scanning</h6>
                 </div>
                 <div className="feature-item">
-                  <img src={icon3} alt="check icon" />
+                  <Check size={18} strokeWidth={3} className="lucide-check" />
                   <h6>Instant security alerts & notifications</h6>
                 </div>
                 <div className="feature-item">
-                  <img src={icon3} alt="check icon" />
+                  <Check size={18} strokeWidth={3} className="lucide-check" />
                   <h6>Comprehensive vulnerability reports</h6>
                 </div>
               </div>
 
               <div className="Download-Extension">
                 <button className="btn-download">
-                  <img src={icon4} alt="download" />
+                  <Download size={18} strokeWidth={2.2} />
                   <span>Download Extension</span>
                 </button>
               </div>
 
               <div className="footer-text">
                 <h6>
-                  <img src={icon5} alt="info icon" />
+                  <Info size={16} strokeWidth={2.2} className="lucide-muted" />
                   Compatible with Chrome, Edge, and Brave
                 </h6>
               </div>
             </div>
 
             {/* -------- Right / Card -------- */}
-            <div className="extension-right">
+            <div className="extension-right reveal reveal-right">
               <div className="extension-card">
                 <div className="card-browser-header">
                   <div className="browser-dots">
@@ -136,17 +138,17 @@ function Home() {
                   </div>
 
                   <div className="browser-url-bar">
-                    <img src={icon1} alt="shield icon" />
+                    <ShieldCheck size={14} strokeWidth={2.4} className="lucide-accent" />
                     <span>Baseera Security</span>
                   </div>
                 </div>
 
-                <CardLightning position="top-right" icon={icon4} />
+                <CardLightning position="top-right" />
 
                 <div className="card-content">
                   <div className="card-icon-wrapper">
                     <div className="card-icon">
-                      <img src={icon1} alt="security icon" />
+                      <ShieldCheck size={40} strokeWidth={2} className="lucide-accent" />
                     </div>
                   </div>
 
@@ -157,15 +159,15 @@ function Home() {
 
                   <div className="card-stats">
                     <div className="stat-item">
-                      <span className="stat-number">247</span>
+                      <span className="stat-number count-up" data-target="247">247</span>
                       <span className="stat-label">Scans</span>
                     </div>
                     <div className="stat-item">
-                      <span className="stat-number">12</span>
+                      <span className="stat-number count-up" data-target="12">12</span>
                       <span className="stat-label">Critical</span>
                     </div>
                     <div className="stat-item">
-                      <span className="stat-number">4.9</span>
+                      <span className="stat-number count-up" data-target="4.9">4.9</span>
                       <span className="stat-label">Rating</span>
                     </div>
                   </div>
@@ -176,14 +178,14 @@ function Home() {
           </div>
           {/* -------- Lightning Icon -------- */}
           <div className="extension-lightning bottom-left">
-            <img src={icon6} alt="lightning icon" />
+            <Zap size={28} strokeWidth={2.4} className="lucide-accent" />
           </div>
         </div>
       </section>
 
       {/* ================= Security Solutions Section ================= */}
       <section className="security-solutions-section">
-        <div className="security-solutions-container">
+        <div className="security-solutions-container reveal">
           <p className="security-badge">To Enhance Your Cyber Defences</p>
           <h2 className="security-title">Expert Will Support</h2>
           <p className="security-description">
@@ -194,9 +196,9 @@ function Home() {
         </div>
 
         <div className="security-solutions-cards">
-          <div className="security-solution-card">
+          <div className="security-solution-card reveal reveal-delay-1">
             <div className="security-icon network">
-              <img src={icon10} alt="Network Security" />
+              <Network size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
             <h3 className="text-sec3">Network Security</h3>
             <p className="par-sec3">
@@ -204,9 +206,9 @@ function Home() {
             </p>
           </div>
 
-          <div className="security-solution-card">
+          <div className="security-solution-card reveal reveal-delay-2">
             <div className="security-icon data">
-              <img src={icon8} alt="Data Protection" />
+              <Database size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
             <h3 className="text-sec3">Data Protection</h3>
             <p className="par-sec3">
@@ -214,17 +216,17 @@ function Home() {
             </p>
           </div>
 
-          <div className="security-solution-card">
+          <div className="security-solution-card reveal reveal-delay-3">
             <div className="security-icon monitoring">
-              <img src={icon7} alt="System Monitoring" />
+              <Activity size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
             <h3 className="text-sec3">System Monitoring</h3>
             <p className="par-sec3">24/7 monitoring and threat detection</p>
           </div>
 
-          <div className="security-solution-card">
+          <div className="security-solution-card reveal reveal-delay-4">
             <div className="security-icon access">
-              <img src={icon9} alt="Access Control" />
+              <KeyRound size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
             <h3 className="text-sec3">Access Control</h3>
             <p className="par-sec3">Multi-layer authentication systems</p>
@@ -236,9 +238,9 @@ function Home() {
       <section className="protection-services-section">
         <div className="protection-container">
           {/* Left - Content */}
-          <div className="protection-left">
+          <div className="protection-left reveal reveal-left">
             <div className="home-badge">
-              <img src={icon12} alt="security icon" width={20} height={20} />
+              <ShieldCheck size={20} strokeWidth={2.2} className="lucide-accent" />
               <span>Protection Services</span>
             </div>
 
@@ -256,19 +258,19 @@ function Home() {
 
             <div className="protection-features">
               <div className="protection-feature-item">
-                <img src={icon3} alt="check icon" />
+                <Check size={18} strokeWidth={3} className="lucide-check" />
                 <span>Real-time threat detection and response</span>
               </div>
               <div className="protection-feature-item">
-                <img src={icon3} alt="check icon" />
+                <Check size={18} strokeWidth={3} className="lucide-check" />
                 <span>Automated encryption protocols</span>
               </div>
               <div className="protection-feature-item">
-                <img src={icon3} alt="check icon" />
+                <Check size={18} strokeWidth={3} className="lucide-check" />
                 <span>Compliance with industry standards</span>
               </div>
               <div className="protection-feature-item">
-                <img src={icon3} alt="check icon" />
+                <Check size={18} strokeWidth={3} className="lucide-check" />
                 <span>Expert security consultation</span>
               </div>
             </div>
@@ -281,7 +283,7 @@ function Home() {
           </div>
 
           {/* Right - Image */}
-          <div className="protection-right">
+          <div className="protection-right reveal reveal-right">
             <img
               src={icon11}
               alt="Security Professional"
@@ -293,35 +295,35 @@ function Home() {
 
 {/* ================= Protection Services Section 01 ================= */}
 <section className="protection-our-services-section01 " id="protection">
-  <h1 className="headline">
+  <h1 className="headline reveal">
     You Can Protect Your Organizations <br />
     <span className="text">Cybersecurity By Our Services</span>
   </h1>
   <div className="our-services-container">
-        <div className="our-services-right">
+        <div className="our-services-right reveal reveal-left">
           <img
         src={icon14}
         alt="Security Assessment"
         className="our-services-image"
       />
         </div>
-        
-          <div className="our-services-left">
+
+          <div className="our-services-left reveal reveal-right">
     <div className="number-badge">
-        <h1 className="number">01</h1> 
+        <h1 className="number">01</h1>
       </div>
 <div className="security-icon-network">
-              <img src={icon10} alt="Network Security" />
+              <Network size={28} strokeWidth={1.8} className="lucide-accent" />
             </div>
       <h2 className="protection-title">Security Assessment</h2>
 
       <p className="protection-description">
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fuget in liam nascetur 
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fuget in liam nascetur
       lorem feli massa ultricies. Duis comlecten lorus id neque, commodo lseus et nembus.
       </p>
 
       <button className="read-more-btn">
-        Read More <i className="arrow fa-solid fa-arrow-right"></i>
+        Read More <ArrowRight size={16} strokeWidth={2.4} />
       </button>
     </div>
   </div>
@@ -331,12 +333,12 @@ function Home() {
 </section>
     <section className="protection-our-services-section02">
       <div className="our-services2-container">
-        <div className="our-services-right">
+        <div className="our-services-right reveal reveal-left">
     <div className="number-badge">
-        <h1 className="number">02</h1> 
+        <h1 className="number">02</h1>
       </div>
 <div className="security-icon-network">
-              <img src={icon6} alt="Network Security" />
+              <Zap size={28} strokeWidth={2} className="lucide-accent" />
             </div>
       <h2 className="protection-title">Threat Detection</h2>
 
@@ -345,10 +347,10 @@ function Home() {
       </p>
 
       <button className="read-more-btn">
-        Read More <i className="arrow fa-solid fa-arrow-right"></i>
+        Read More <ArrowRight size={16} strokeWidth={2.4} />
       </button>
     </div>
-        <div className="our-services-left">
+        <div className="our-services-left reveal reveal-right">
       <img
         src={icon15}
         alt="Security Assessment"
@@ -356,18 +358,18 @@ function Home() {
       />
   </div>
         </div>
-   
+
     </section>
     {/* secure the web section */}
     <section className="Secure-the-web">
-      <h1 className="secure-text">
+      <h1 className="secure-text reveal">
     <span className="text">Secure</span> The Web</h1>
-    <p className="Secure-description">Join thousands of organizations
+    <p className="Secure-description reveal reveal-delay-1">Join thousands of organizations
        trusting our security solutions to protect their digital presence.</p>
          <div className="security-solutions-cards">
-          <div className="security-solution-card">
+          <div className="security-solution-card reveal reveal-delay-1">
             <div className="security-icon network">
-              <img src={icon10} alt="Network Security" />
+              <Network size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
             <h3 className="text-sec3">500+</h3>
             <p className="par-sec3">
@@ -375,9 +377,9 @@ function Home() {
             </p>
           </div>
 
-          <div className="security-solution-card">
+          <div className="security-solution-card reveal reveal-delay-2">
             <div className="security-icon data">
-              <img src={icon9} alt="Data Protection" />
+              <KeyRound size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
             <h3 className="text-sec3">1M+</h3>
             <p className="par-sec3">
@@ -385,24 +387,24 @@ function Home() {
             </p>
           </div>
 
-          <div className="security-solution-card">
+          <div className="security-solution-card reveal reveal-delay-3">
             <div className="security-icon monitoring">
-              <img src={icon6} alt="System Monitoring" />
+              <Zap size={32} strokeWidth={2} className="lucide-accent" />
             </div>
             <h3 className="text-sec3"> &lt;1min </h3>
             <p className="par-sec3">Response Time</p>
           </div>
 
-          <div className="security-solution-card">
+          <div className="security-solution-card reveal reveal-delay-4">
             <div className="security-icon access">
-              <img src={icon5} alt="Access Control" />
+              <Activity size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
             <h3 className="text-sec3">24/7</h3>
             <p className="par-sec3">Global Coverage</p>
           </div>
         </div>
-          <div className="start-btn" > <a href="#download">Start Securing Your Web Today</a>
-           
+          <div className="start-btn reveal reveal-delay-5" > <a href="#download">Start Securing Your Web Today</a>
+
           </div>
     </section>
     <Fotter />
