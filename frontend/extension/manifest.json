@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Passive web security scanner — detects XSS, SQL injection, leaked API keys, missing headers, and 24 more vulnerabilities.",
   "author": "Marwan Khodair",
-  "homepage_url": "https://0xMarvul.github.io/Baseera/",
+  "homepage_url": "https://0xmarvul.github.io/Baseera/",
   "permissions": ["activeTab", "storage", "scripting", "tabs"],
   "host_permissions": ["<all_urls>"],
   "action": {
