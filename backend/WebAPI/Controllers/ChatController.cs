@@ -648,14 +648,14 @@ public class ChatController : ControllerBase
             ["database injection"] = ("SQL Injection", "Critical",
                 "SQL Injection occurs when an attacker inserts or manipulates SQL queries via user-supplied input, allowing them to read, modify, or delete database data.",
                 "Use parameterized queries / prepared statements. Apply input validation and least-privilege DB accounts."),
-            ["xss"] = ("Cross-Site Scripting (XSS)", "High",
-                "XSS allows attackers to inject malicious scripts into web pages viewed by other users, enabling session hijacking, credential theft, and defacement.",
+            ["xss"] = ("Cross-Site Scripting (XSS)", "Medium",
+                "XSS allows attackers to inject malicious scripts into web pages viewed by other users, enabling session hijacking, credential theft, and defacement. Severity varies by sink: javascript: URLs are Critical, iframe srcdoc and reflected URL parameters are High, eval/innerHTML/document.write patterns are Medium, and inline event handlers alone are Low.",
                 "Encode all output (HTML-encode user-supplied data). Use Content-Security-Policy headers. Validate and sanitize every input on the server side."),
-            ["cross-site scripting"] = ("Cross-Site Scripting (XSS)", "High",
-                "XSS allows attackers to inject malicious scripts into web pages viewed by other users, enabling session hijacking, credential theft, and defacement.",
+            ["cross-site scripting"] = ("Cross-Site Scripting (XSS)", "Medium",
+                "XSS lets attackers inject malicious scripts into pages viewed by other users. Severity varies by sink: javascript: URLs Critical, iframe srcdoc / reflected parameters High, eval/innerHTML patterns Medium, inline event handlers Low.",
                 "Encode all output. Use Content-Security-Policy headers. Validate and sanitize every input on the server side."),
-            ["cross site scripting"] = ("Cross-Site Scripting (XSS)", "High",
-                "XSS allows attackers to inject malicious scripts into web pages viewed by other users, enabling session hijacking, credential theft, and defacement.",
+            ["cross site scripting"] = ("Cross-Site Scripting (XSS)", "Medium",
+                "XSS lets attackers inject malicious scripts into pages viewed by other users. Severity varies by sink: javascript: URLs Critical, iframe srcdoc / reflected parameters High, eval/innerHTML patterns Medium, inline event handlers Low.",
                 "Encode all output. Use Content-Security-Policy headers. Validate and sanitize every input on the server side."),
             ["csrf"] = ("Cross-Site Request Forgery (CSRF)", "Medium",
                 "CSRF tricks authenticated users into submitting unwanted requests, allowing attackers to perform actions on their behalf.",
@@ -786,20 +786,20 @@ public class ChatController : ControllerBase
             ["cookie vulnerability"] = ("Insecure Cookies", "Medium",
                 "Cookie vulnerabilities can allow session theft via XSS or network sniffing.",
                 "Set Secure, HttpOnly, and SameSite=Strict flags on all sensitive cookies."),
-            ["missing security header"] = ("Missing Security Headers", "Medium",
-                "Missing HTTP security headers (CSP, HSTS, X-Frame-Options, etc.) leave applications vulnerable to various client-side attacks.",
+            ["missing security header"] = ("Missing Security Headers", "Low",
+                "Missing HTTP security headers covers a range of defence-in-depth controls. Severity varies by header: Missing CSP is High (primary anti-XSS control), Missing HSTS / X-Frame-Options / Referrer-Policy are Medium, and Missing Permissions-Policy / X-Content-Type-Options / COOP / COEP / CORP are Low (hardening only).",
                 "Add Content-Security-Policy, X-Frame-Options, Strict-Transport-Security, X-Content-Type-Options, and Referrer-Policy headers to all responses."),
-            ["security headers"] = ("Missing Security Headers", "Medium",
-                "Missing HTTP security headers leave applications vulnerable to various client-side attacks.",
+            ["security headers"] = ("Missing Security Headers", "Low",
+                "Missing security headers cover several defence-in-depth controls. The headline ones (CSP, HSTS, X-Frame-Options) are Medium-to-High; the hardening-only ones (Permissions-Policy, COOP, COEP) are Low.",
                 "Add Content-Security-Policy, X-Frame-Options, Strict-Transport-Security, X-Content-Type-Options, and Referrer-Policy headers to all responses."),
-            ["missing headers"] = ("Missing Security Headers", "Medium",
-                "Missing HTTP security headers leave applications vulnerable to various client-side attacks.",
+            ["missing headers"] = ("Missing Security Headers", "Low",
+                "Missing HTTP security headers cover a range of controls. Severity varies: Missing CSP is High, Missing HSTS / X-Frame-Options / Referrer-Policy are Medium, and hardening-only ones (Permissions-Policy, COOP, COEP, CORP) are Low.",
                 "Add Content-Security-Policy, X-Frame-Options, Strict-Transport-Security, X-Content-Type-Options, and Referrer-Policy headers to all responses."),
-            ["http headers"] = ("Missing Security Headers", "Medium",
-                "Missing HTTP security headers leave applications vulnerable to various client-side attacks.",
+            ["http headers"] = ("Missing Security Headers", "Low",
+                "Missing HTTP security headers cover several defence-in-depth controls. Severity varies by header: CSP High, HSTS / X-Frame-Options / Referrer-Policy Medium, hardening-only Low.",
                 "Add Content-Security-Policy, X-Frame-Options, Strict-Transport-Security, X-Content-Type-Options, and Referrer-Policy headers to all responses."),
-            ["csp header"] = ("Missing Security Headers", "Medium",
-                "A missing or weak Content-Security-Policy header leaves applications vulnerable to XSS and data injection.",
+            ["csp header"] = ("Content Security Policy (CSP) Issues", "High",
+                "A missing or weak Content-Security-Policy header is the primary anti-XSS defence-in-depth control. CSP issues are treated as High severity.",
                 "Add a strong Content-Security-Policy header to all responses."),
             ["clickjacking"] = ("Clickjacking", "Medium",
                 "Clickjacking tricks users into clicking hidden UI elements embedded within iframes, potentially performing unintended actions.",
@@ -861,25 +861,25 @@ public class ChatController : ControllerBase
             ["development mode"] = ("Debug Pages / Debug Mode Exposure", "Medium",
                 "Development mode enabled in production can expose debug information and sensitive configuration.",
                 "Disable development/debug mode in all production environments."),
-            ["csp issue"] = ("Content Security Policy (CSP) Issues", "Medium",
-                "Missing or misconfigured CSP headers allow XSS attacks, data injection, and unauthorized resource loading.",
+            ["csp issue"] = ("Content Security Policy (CSP) Issues", "High",
+                "Missing or misconfigured CSP headers allow XSS attacks, data injection, and unauthorized resource loading. CSP is the primary defence-in-depth control against XSS, so issues are High severity.",
                 "Implement a strict Content-Security-Policy header. Use nonces or hashes for inline scripts. Avoid 'unsafe-inline' and 'unsafe-eval'."),
-            ["csp issues"] = ("Content Security Policy (CSP) Issues", "Medium",
-                "Missing or misconfigured CSP headers allow XSS attacks, data injection, and unauthorized resource loading.",
+            ["csp issues"] = ("Content Security Policy (CSP) Issues", "High",
+                "Missing or misconfigured CSP headers allow XSS attacks, data injection, and unauthorized resource loading. CSP is the primary defence-in-depth control against XSS, so issues are High severity.",
                 "Implement a strict Content-Security-Policy header. Use nonces or hashes for inline scripts. Avoid 'unsafe-inline' and 'unsafe-eval'."),
-            ["csp misconfiguration"] = ("Content Security Policy (CSP) Issues", "Medium",
+            ["csp misconfiguration"] = ("Content Security Policy (CSP) Issues", "High",
                 "A misconfigured CSP header can be bypassed, allowing XSS attacks and unauthorized resource loading.",
                 "Review and tighten your CSP policy. Use nonces or hashes for inline scripts. Enable CSP reporting."),
-            ["csp bypass"] = ("Content Security Policy (CSP) Issues", "Medium",
+            ["csp bypass"] = ("Content Security Policy (CSP) Issues", "High",
                 "CSP bypass vulnerabilities allow attackers to circumvent Content Security Policy protections.",
                 "Review and tighten your CSP policy. Use nonces or hashes for inline scripts. Avoid 'unsafe-inline' and 'unsafe-eval'."),
-            ["content security policy issue"] = ("Content Security Policy (CSP) Issues", "Medium",
-                "Missing or misconfigured CSP headers allow XSS attacks, data injection, and unauthorized resource loading.",
+            ["content security policy issue"] = ("Content Security Policy (CSP) Issues", "High",
+                "Missing or misconfigured CSP headers allow XSS attacks, data injection, and unauthorized resource loading. CSP is the primary defence-in-depth control against XSS.",
                 "Implement a strict Content-Security-Policy header. Use nonces or hashes for inline scripts. Avoid 'unsafe-inline' and 'unsafe-eval'."),
-            ["weak csp"] = ("Content Security Policy (CSP) Issues", "Medium",
-                "A weak Content Security Policy can be bypassed, allowing XSS attacks and unauthorized resource loading.",
+            ["weak csp"] = ("Content Security Policy (CSP) Issues", "High",
+                "A weak Content Security Policy can be bypassed, allowing XSS attacks and unauthorized resource loading. CSP weakness is High severity because it directly enables XSS.",
                 "Review and tighten your CSP policy. Use nonces or hashes for inline scripts. Enable CSP reporting."),
-            ["csp policy"] = ("Content Security Policy (CSP) Issues", "Medium",
+            ["csp policy"] = ("Content Security Policy (CSP) Issues", "High",
                 "Missing or weak CSP policies allow XSS attacks and unauthorized resource loading.",
                 "Implement a strict Content-Security-Policy header. Use nonces or hashes for inline scripts."),
             ["injection"] = ("SQL Injection", "Critical",
@@ -903,16 +903,16 @@ public class ChatController : ControllerBase
             ["traversal"] = ("Directory Traversal", "High",
                 "Directory traversal lets attackers access files and directories outside the intended web root by manipulating file paths.",
                 "Sanitize all user-supplied file paths. Use canonical path checks. Restrict the application to a defined base directory."),
-            ["headers"] = ("Missing Security Headers", "Medium",
-                "Missing HTTP security headers leave applications vulnerable to various client-side attacks.",
+            ["headers"] = ("Missing Security Headers", "Low",
+                "Missing HTTP security headers cover several controls. Severity varies: CSP High, HSTS / X-Frame-Options / Referrer-Policy Medium, hardening-only headers (Permissions-Policy, COOP, COEP) Low.",
                 "Add Content-Security-Policy, X-Frame-Options, Strict-Transport-Security, X-Content-Type-Options, and Referrer-Policy headers to all responses."),
             ["debug"] = ("Debug Pages / Debug Mode Exposure", "Medium",
                 "Debug mode or debug pages left enabled in production can reveal stack traces, environment variables, and sensitive internal information.",
                 "Disable debug mode in all production environments. Configure custom error pages. Remove debug endpoints."),
 
             // ── Specific security header queries (all map to Missing Security Headers) ──
-            ["missing csp"] = ("Missing Security Headers", "Medium",
-                "A missing Content-Security-Policy header leaves the page unprotected against XSS, data injection, and unauthorized resource loading. CSP tells the browser which script/style/resource sources are allowed to execute.",
+            ["missing csp"] = ("Missing CSP", "High",
+                "A missing Content-Security-Policy header leaves the page unprotected against XSS, data injection, and unauthorized resource loading. CSP tells the browser which script/style/resource sources are allowed to execute. Missing CSP is High severity because it directly enables XSS.",
                 "Add a strict Content-Security-Policy header to every response. Use nonces or hashes for inline scripts instead of 'unsafe-inline'. Enable CSP reporting to catch violations."),
             ["missing hsts"] = ("Missing Security Headers", "Medium",
                 "Missing Strict-Transport-Security (HSTS) lets attackers downgrade HTTPS to HTTP and intercept traffic on first visit or via stripping attacks.",
@@ -923,11 +923,11 @@ public class ChatController : ControllerBase
             ["missing x frame options"] = ("Missing Security Headers", "Medium",
                 "Missing X-Frame-Options allows the page to be embedded in attacker-controlled iframes, enabling clickjacking.",
                 "Send 'X-Frame-Options: DENY' on all responses. Prefer CSP 'frame-ancestors' as the modern equivalent."),
-            ["missing x-content-type-options"] = ("Missing Security Headers", "Medium",
-                "Missing X-Content-Type-Options lets browsers MIME-sniff responses, turning uploads or mis-typed responses into executable scripts.",
+            ["missing x-content-type-options"] = ("Missing X-Content-Type-Options", "Low",
+                "Missing X-Content-Type-Options lets browsers MIME-sniff responses, turning uploads or mis-typed responses into executable scripts. Treated as Low because it's a defence-in-depth hardening header.",
                 "Send 'X-Content-Type-Options: nosniff' on every response. Always set a correct Content-Type."),
-            ["missing x content type options"] = ("Missing Security Headers", "Medium",
-                "Missing X-Content-Type-Options lets browsers MIME-sniff responses, turning uploads or mis-typed responses into executable scripts.",
+            ["missing x content type options"] = ("Missing X-Content-Type-Options", "Low",
+                "Missing X-Content-Type-Options lets browsers MIME-sniff responses, turning uploads or mis-typed responses into executable scripts. Treated as Low (hardening header).",
                 "Send 'X-Content-Type-Options: nosniff' on every response. Always set a correct Content-Type."),
             ["missing referrer-policy"] = ("Missing Security Headers", "Medium",
                 "Missing Referrer-Policy means the browser leaks the full URL (including query strings with tokens / IDs) to every outbound link, image, and script.",
@@ -1177,13 +1177,35 @@ public class ChatController : ControllerBase
             }
         }
 
-        // Show vulnerabilities by severity – supports multiple severities
+        // Show vulnerabilities by severity – mirrors the extension scanner output exactly.
+        // Items appearing in multiple tiers (e.g. XSS) are listed where they are most
+        // commonly flagged; the AI explains the per-sink variation in the dedicated entry.
         var severityMap = new Dictionary<string, string[]>
         {
-            ["critical"] = new[] { "SQL Injection", "RCE", "RFI", "Authentication Bypass", "Exposed API Keys" },
-            ["high"] = new[] { "XSS", "LFI", "SSRF", "Directory Traversal", "Sensitive Files Exposure" },
-            ["medium"] = new[] { "CSRF", "Open Redirect", "Insecure Cookies", "Missing Security Headers", "Clickjacking", "Debug Pages / Debug Mode Exposure", "Content Security Policy (CSP) Issues" },
-            ["low"] = new[] { "Exposed Comments" },
+            ["critical"] = new[] {
+                "SQL Injection", "Command Injection", "Exposed API Keys",
+                "Insecure Forms (Password over HTTP)", "XSS (javascript: URLs)"
+            },
+            ["high"] = new[] {
+                "Missing CSP", "Weak CSP", "Sensitive Files Exposure",
+                "Insecure Client-Side Storage", "Vulnerable and Outdated Components",
+                "DOM-based XSS", "Insecure postMessage", "Session Token in URL",
+                "Reflected XSS", "iframe srcdoc XSS",
+                "External Form Action (with password)"
+            },
+            ["medium"] = new[] {
+                "XSS (eval/innerHTML code-smell)", "Mixed Content", "Clickjacking",
+                "Insecure Cookies", "Missing SRI", "CORS Misconfiguration",
+                "Debug Pages", "Open Redirect", "CSRF", "Missing HSTS",
+                "Source Map Exposure", "Directory Listing",
+                "External Form Action (no password)"
+            },
+            ["low"] = new[] {
+                "XSS (inline event handlers)", "Deprecated HTML", "Excessive Trackers",
+                "Sensitive Autocomplete", "Version Disclosure",
+                "Missing X-Content-Type-Options", "Missing Permissions-Policy",
+                "Missing Cross-Origin-Opener-Policy", "Missing Referrer-Policy"
+            },
         };
 
         bool asksAboutVulns = System.Text.RegularExpressions.Regex.IsMatch(lower,
@@ -1253,16 +1275,25 @@ public class ChatController : ControllerBase
             lower.StartsWith("vulnerabilit"))
         {
             return ConversationalResponse(
-                "Supported vulnerability types:\n" +
-                "- SQL Injection (Critical)\n- Cross-Site Scripting/XSS (High)\n" +
-                "- CSRF (Medium)\n- Remote Code Execution/RCE (Critical)\n" +
-                "- Local File Inclusion/LFI (High)\n- Remote File Inclusion/RFI (Critical)\n" +
-                "- SSRF (High)\n- Directory Traversal (High)\n- Open Redirect (Medium)\n" +
-                "- Authentication Bypass (Critical)\n- Exposed API Keys (Critical)\n" +
-                "- Insecure Cookies (Medium)\n- Missing Security Headers (Medium)\n" +
-                "- Clickjacking (Medium)\n- Exposed Comments (Low)\n" +
-                "- Sensitive Files Exposure (High)\n- Debug Pages / Debug Mode Exposure (Medium)\n" +
-                "- Content Security Policy (CSP) Issues (Medium)",
+                "Supported vulnerability types (matching the extension scanner output):\n\n" +
+                "**Critical**\n" +
+                "- SQL Injection\n- Command Injection\n- Exposed API Keys / Secrets\n" +
+                "- Insecure Forms (Password over HTTP)\n- XSS via javascript: URLs\n\n" +
+                "**High**\n" +
+                "- Missing CSP\n- Weak CSP\n- Sensitive Files Exposure\n" +
+                "- Insecure Client-Side Storage\n- Vulnerable and Outdated Components\n" +
+                "- DOM-based XSS\n- Insecure postMessage\n- Session Token in URL\n" +
+                "- Reflected XSS\n- iframe srcdoc XSS\n- External Form Action (with password)\n\n" +
+                "**Medium**\n" +
+                "- XSS code-smell (eval/innerHTML/document.write)\n- Mixed Content\n" +
+                "- Clickjacking\n- Insecure Cookies\n- Missing SRI\n- CORS Misconfiguration\n" +
+                "- Debug Pages\n- Open Redirect\n- CSRF\n- Missing HSTS\n" +
+                "- Source Map Exposure\n- Directory Listing\n- External Form Action (no password)\n\n" +
+                "**Low**\n" +
+                "- XSS via inline event handlers\n- Deprecated HTML\n- Excessive Trackers\n" +
+                "- Sensitive Autocomplete\n- Version Disclosure\n" +
+                "- Missing X-Content-Type-Options\n- Missing Permissions-Policy\n" +
+                "- Missing Cross-Origin-Opener-Policy\n- Missing Referrer-Policy",
                 "meta:list");
         }
 
