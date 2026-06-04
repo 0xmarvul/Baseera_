@@ -160,7 +160,7 @@ function Login(){
                             onChange={(e) => setEmail(e.target.value)}
                             disabled={loading}
                             required
-                            autoComplete="off"
+                            autoComplete="email"
                         />
                     </div>
 

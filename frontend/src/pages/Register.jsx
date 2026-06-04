@@ -144,28 +144,28 @@ function Register(){
                     </h5>
                     <div className="register-input-wrapper">
                         <i className="fa-solid fa-user register-input-icon"></i>
-                        <input className="register-form-input" name="fullName" type="text" placeholder="Mark " disabled={loading} required />
+                        <input className="register-form-input" name="fullName" type="text" placeholder="Mark " disabled={loading} required autoComplete="given-name" />
                     </div>
                     <h5 className="register-form-title">
                         Last Name
                     </h5>
                     <div className="register-input-wrapper">
                         <i className="fa-solid fa-user register-input-icon"></i>
-                        <input className="register-form-input" name="lastName" type="text" placeholder="Johnson" disabled={loading} required />
+                        <input className="register-form-input" name="lastName" type="text" placeholder="Johnson" disabled={loading} required autoComplete="family-name" />
                     </div>
                     <h5 className="register-form-title">
                         Username
                     </h5>
                     <div className="register-input-wrapper">
                         <i className="fa-solid fa-at register-input-icon"></i>
-                        <input className="register-form-input" name="username" type="text" placeholder=" Markjohnson" disabled={loading} required />
+                        <input className="register-form-input" name="username" type="text" placeholder=" Markjohnson" disabled={loading} required autoComplete="off" />
                     </div>
                     <h5 className="register-form-title">
                         Email Address
                     </h5>
                     <div className="register-input-wrapper">
                         <i className="fa-solid fa-envelope register-input-icon"></i>
-                        <input className="register-form-input" name="email" type="email" placeholder=" Mark.johnson@baseera.security" disabled={loading} required />
+                        <input className="register-form-input" name="email" type="email" placeholder=" Mark.johnson@baseera.security" disabled={loading} required autoComplete="email" />
                     </div>
                     <h5 className="register-form-title">
                         Password
@@ -181,6 +181,7 @@ function Register(){
                             value={passwordValue}
                             onChange={(e) => setPasswordValue(e.target.value)}
                             required
+                            autoComplete="new-password"
                         />
                         <i
                             className={showPassword ? "fa-solid fa-eye-slash register-input-icon-right" : "fa-solid fa-eye register-input-icon-right"}
