@@ -35,6 +35,10 @@ public class AuthService : IAuthService
         if (await _userRepository.EmailExistsAsync(email))
             throw new InvalidOperationException("Email already exists");
 
+        var existingByUsername = await _userRepository.GetByUsernameAsync(username);
+        if (existingByUsername != null)
+            throw new InvalidOperationException("Username is already taken");
+
         if (dateOfBirth.HasValue)
         {
             var today = DateTime.UtcNow.Date;
