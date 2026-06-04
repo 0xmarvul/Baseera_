@@ -98,6 +98,13 @@ function Login(){
 
         } catch (error) {
             console.error("Login error:", error);
+            // Rate-limited (429): show a friendlier countdown-style message
+            if (error.response?.status === 429) {
+                const retryAfter = parseInt(error.response.headers?.["retry-after"] || "60", 10);
+                setError(`Too many login attempts. Try again in ${retryAfter}s.`);
+                setLoading(false);
+                return;
+            }
             const errMsg = error.response?.data?.message || "Invalid email or password";
             if (errMsg.toLowerCase().includes("verify your email")) {
                 setError(
