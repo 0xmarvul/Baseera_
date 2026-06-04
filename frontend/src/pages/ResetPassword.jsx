@@ -4,7 +4,9 @@ import "../login.css";
 import "../forget.css";
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from "../components/Navbar";
+import PasswordChecklist from "../components/PasswordChecklist";
 import { authApi } from "../api/authApi";
+import { isPasswordValid, PASSWORD_ERROR_MESSAGE } from "../utils/passwordPolicy";
 
 import icon7 from "../assets/lock.png";
 
@@ -30,8 +32,8 @@ function ResetPassword() {
             return;
         }
 
-        if (newPassword.length < 6) {
-            setError("Password must be at least 6 characters long.");
+        if (!isPasswordValid(newPassword)) {
+            setError(PASSWORD_ERROR_MESSAGE);
             return;
         }
 
@@ -88,6 +90,7 @@ function ResetPassword() {
                                     required
                                 />
                             </div>
+                            <PasswordChecklist password={newPassword} />
                             <h5 className="login-form-title">Confirm New Password</h5>
                             <div className="forget-input-wrapper">
                                 <i className="fa-solid fa-lock forget-input-icon"></i>

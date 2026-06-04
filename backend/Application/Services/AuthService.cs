@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Application.Validators;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Core.Entities;
@@ -144,8 +145,8 @@ public class AuthService : IAuthService
 
     public async Task ChangePasswordAsync(int userId, string newPassword)
     {
-        if (string.IsNullOrEmpty(newPassword) || newPassword.Length < 6)
-            throw new ArgumentException("Password must be at least 6 characters long");
+        if (!PasswordPolicy.IsValid(newPassword))
+            throw new ArgumentException(PasswordPolicy.ErrorMessage);
 
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
@@ -202,8 +203,8 @@ public class AuthService : IAuthService
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(newPassword))
             throw new UnauthorizedAccessException("Invalid request");
 
-        if (newPassword.Length < 6)
-            throw new ArgumentException("Password must be at least 6 characters long");
+        if (!PasswordPolicy.IsValid(newPassword))
+            throw new ArgumentException(PasswordPolicy.ErrorMessage);
 
         var user = await _userRepository.GetByEmailAsync(email);
         if (user == null)
