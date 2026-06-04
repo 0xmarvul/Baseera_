@@ -140,7 +140,7 @@ background: rgba(15, 23, 42, 0.6);
   line-height: 24px; /* 150% */
   border: none;
   cursor: pointer;
-  margin-top: 20px;
+  margin-top: 6px;
   box-sizing: border-box;
   transition: opacity 0.2s;
 }
