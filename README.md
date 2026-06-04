@@ -5,7 +5,7 @@
 <h1 align="center">Baseera</h1>
 
 <p align="center">
-  <em>A passive web vulnerability scanner with an AI assistant — built as a graduation project.</em>
+  <em>A passive web vulnerability scanner with an AI assistant.</em>
 </p>
 
 <p align="center">

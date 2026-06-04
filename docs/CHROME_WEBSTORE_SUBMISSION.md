@@ -122,9 +122,8 @@ remediation steps.
 4. Review findings by severity. Click the AI button to ask follow-up
    questions.
 
-Baseera is a graduation / academic project built to make web security
-education and review accessible. Feedback welcome at
-marwankhodair0@gmail.com.
+Baseera is built to make web security review accessible to every
+developer, free and open. Feedback welcome at 0xbaseera@gmail.com.
 ```
 
 ### Category
