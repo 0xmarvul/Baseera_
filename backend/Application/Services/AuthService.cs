@@ -93,16 +93,16 @@ public class AuthService : IAuthService
         var frontendBase = _configuration["Frontend:BaseUrl"] ?? "http://localhost:5173";
         var verifyLink = $"{frontendBase}/verify-email?email={Uri.EscapeDataString(email)}&token={Uri.EscapeDataString(rawToken)}";
 
-        var htmlBody = $@"
-<h2>Welcome to Bassera!</h2>
-<p>Hello,</p>
-<p>Please click the link below to verify your email address and activate your Bassera account:</p>
-<p><a href=""{verifyLink}"">Verify Email Address</a></p>
-<p>This link will expire in 24 hours.</p>
-<p>If you did not create this account, you can safely ignore this email.</p>
-<p>Best regards,<br>The Bassera Team</p>";
+        var htmlBody = EmailTemplate.Build(
+            heading: "Welcome to Baseera",
+            greetingName: firstName,
+            body: "Confirm your email address to activate your Baseera account and start scanning websites for security issues.",
+            buttonLabel: "Verify Email Address",
+            buttonUrl: verifyLink,
+            footnote: "This link expires in 24 hours. If you did not create this account, you can safely ignore this email."
+        );
 
-        await _emailSender.SendAsync(email, "Verify Your Email – Bassera", htmlBody);
+        await _emailSender.SendAsync(email, "Verify your email – Baseera", htmlBody);
 
         return "Registration successful. Please check your email to verify your account.";
     }
@@ -192,14 +192,16 @@ public class AuthService : IAuthService
         var frontendBase = _configuration["Frontend:BaseUrl"] ?? "http://localhost:5173";
         var resetLink = $"{frontendBase}/reset-password?email={Uri.EscapeDataString(email)}&token={Uri.EscapeDataString(rawToken)}";
 
-        var htmlBody = $@"
-<p>Hello {user.FirstName},</p>
-<p>You requested a password reset for your Baseera account.</p>
-<p><a href=""{resetLink}"">Click here to reset your password</a></p>
-<p>This link expires in {ttlMinutes} minutes.</p>
-<p>If you did not request this, please ignore this email.</p>";
+        var htmlBody = EmailTemplate.Build(
+            heading: "Reset your password",
+            greetingName: user.FirstName,
+            body: "We received a request to reset the password for your Baseera account. Click the button below to choose a new password.",
+            buttonLabel: "Reset Password",
+            buttonUrl: resetLink,
+            footnote: $"This link expires in {ttlMinutes} minutes. If you did not request a password reset, you can safely ignore this email — your password will not change."
+        );
 
-        await _emailSender.SendAsync(email, "Reset Your Baseera Password", htmlBody, ct);
+        await _emailSender.SendAsync(email, "Reset your password – Baseera", htmlBody, ct);
     }
 
     public async Task ResetPasswordAsync(string email, string token, string newPassword, CancellationToken ct = default)
@@ -285,16 +287,16 @@ public class AuthService : IAuthService
         var frontendBase = _configuration["Frontend:BaseUrl"] ?? "http://localhost:5173";
         var verifyLink = $"{frontendBase}/verify-email?email={Uri.EscapeDataString(email)}&token={Uri.EscapeDataString(rawToken)}";
 
-        var htmlBody = $@"
-<h2>Welcome to Bassera!</h2>
-<p>Hello,</p>
-<p>Please click the link below to verify your email address and activate your Bassera account:</p>
-<p><a href=""{verifyLink}"">Verify Email Address</a></p>
-<p>This link will expire in 24 hours.</p>
-<p>If you did not create this account, you can safely ignore this email.</p>
-<p>Best regards,<br>The Bassera Team</p>";
+        var htmlBody = EmailTemplate.Build(
+            heading: "Verify your email",
+            greetingName: user.FirstName,
+            body: "Here is a fresh verification link for your Baseera account. Click the button below to confirm your email address.",
+            buttonLabel: "Verify Email Address",
+            buttonUrl: verifyLink,
+            footnote: "This link expires in 24 hours. If you did not request this, you can safely ignore the email."
+        );
 
-        await _emailSender.SendAsync(email, "Verify Your Email – Bassera", htmlBody, ct);
+        await _emailSender.SendAsync(email, "Verify your email – Baseera", htmlBody, ct);
     }
 
     private static string GenerateSecureToken()
