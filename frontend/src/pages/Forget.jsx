@@ -46,7 +46,7 @@ function Forget() {
     return (
         <>
             <Navbar />
-            <section className="login-section">
+            <section className="login-section forget-section">
                 <div className="login-box">
                     <div className="login-icon">
                         <img src={icon7} alt="login icon" width={30} height={30} />
