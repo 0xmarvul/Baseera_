@@ -59,6 +59,7 @@ font-style: normal;
 font-weight: 400 !important;
 line-height: 20px;
 margin: 12px 0 6px;
+padding-left: 8px;
 }
 .login-form-input{
     display: flex;
@@ -189,7 +190,7 @@ line-height: 24px; /* 150% */
 .login-forgot-row {
     display: flex;
     justify-content: flex-end;
-    margin: 8px 0 14px;
+    margin: 6px 0 4px;
 }
 
 .login-forgot-link {
