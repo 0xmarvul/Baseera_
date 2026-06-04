@@ -164,9 +164,12 @@ function Login(){
                         />
                     </div>
 
-                    <h5 className="login-form-title">
-                        Password
-                    </h5>
+                    <div className="login-password-label-row">
+                        <h5 className="login-form-title">Password</h5>
+                        <Link className="login-forgot-link" to="/forget">
+                            Forgot password?
+                        </Link>
+                    </div>
 
                     <div className="login-input-wrapper">
                         <i className="fa-solid fa-lock login-input-icon-left"></i>
@@ -198,12 +201,6 @@ function Login(){
                         {loading ? "Logging in..." : "Login"}
                     </button>
                 </form>
-
-                <div className="forget">
-                    <Link className="link" to="/forget">
-                        Forget Password ?
-                    </Link>
-                </div>
 
                 <div className="register">
                     <p className="register-p">Don't have an account? </p>

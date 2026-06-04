@@ -184,3 +184,30 @@ line-height: 24px; /* 150% */
         padding: 32px 20px;
     }
 }
+
+/* "Forgot password?" link sits inline next to the password label (industry standard) */
+.login-password-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.login-password-label-row .login-form-title {
+    margin: 0;
+}
+
+.login-forgot-link {
+    font-size: 13px;
+    color: #00d9a5;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+    white-space: nowrap;
+}
+
+.login-forgot-link:hover {
+    color: #00b8db;
+    text-decoration: underline;
+}
