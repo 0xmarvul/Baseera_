@@ -11,7 +11,7 @@ function scanAutocompleteSensitive(pageUrl) {
     if (risky.length > 0) {
       results.push({
         type: 'Sensitive Autocomplete',
-        severity: 'Medium',
+        severity: 'Low',
         description: `${risky.length} password input(s) allow browser autocomplete.`,
         location: pageUrl,
         recommendation: 'Set autocomplete="new-password" on signup/reset forms and autocomplete="current-password" on login forms.'
@@ -28,7 +28,7 @@ function scanAutocompleteSensitive(pageUrl) {
     if (ccRisky.length > 0) {
       results.push({
         type: 'Sensitive Autocomplete',
-        severity: 'Medium',
+        severity: 'Low',
         description: `${ccRisky.length} credit-card input(s) do not set autocomplete="off".`,
         location: pageUrl,
         recommendation: 'Set autocomplete="off" on credit-card inputs to avoid storing full PAN in browser profiles.'

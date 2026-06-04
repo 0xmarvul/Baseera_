@@ -32,9 +32,13 @@ VULNERABILITIES = {
         "name": "Cross-Site Scripting (XSS)",
         "explanation": (
             "XSS allows attackers to inject malicious scripts into web pages viewed by "
-            "other users, enabling session hijacking, credential theft, and defacement."
+            "other users, enabling session hijacking, credential theft, and defacement. "
+            "Severity depends on the sink: javascript: URLs in href/action are Critical "
+            "(direct script execution), iframe srcdoc and reflected parameters are High, "
+            "code-smell patterns (eval/innerHTML/document.write detected) are Medium, "
+            "and inline event handlers alone are Low (code-quality issue)."
         ),
-        "severity": "High",
+        "severity": "Medium",
         "fix": (
             "Encode all output (HTML-encode user-supplied data). "
             "Use Content-Security-Policy headers. "
@@ -242,15 +246,14 @@ VULNERABILITIES = {
         "name": "Missing Security Headers",
         "explanation": (
             "Modern browsers honor a family of HTTP response headers that defend the "
-            "page against common client-side attacks — CSP (XSS), HSTS (protocol "
-            "downgrade), X-Frame-Options / frame-ancestors (clickjacking), "
-            "X-Content-Type-Options (MIME sniffing), Referrer-Policy (URL leak via "
-            "Referer), Permissions-Policy (disable powerful APIs), and the "
-            "Cross-Origin-Opener / Embedder / Resource-Policy trio (cross-origin "
-            "isolation). When a site ships without them, every individual protection "
-            "they would have provided is simply missing."
+            "page against common client-side attacks. Severity depends on which header "
+            "is missing: CSP (High) is the primary anti-XSS control; HSTS, X-Frame-Options, "
+            "Referrer-Policy, and Clickjacking defences are Medium. Hardening-only headers "
+            "(X-Content-Type-Options, Permissions-Policy, and the Cross-Origin-Opener / "
+            "Embedder / Resource-Policy trio) are Low because they are defence-in-depth "
+            "rather than direct vulnerabilities."
         ),
-        "severity": "Medium",
+        "severity": "Low",
         "fix": (
             "Send these headers on every response from your app / reverse proxy: "
             "Content-Security-Policy, Strict-Transport-Security (with includeSubDomains "
@@ -380,9 +383,10 @@ VULNERABILITIES = {
             "Missing or misconfigured Content Security Policy (CSP) headers allow XSS attacks, "
             "data injection attacks, and unauthorized resource loading. "
             "A properly configured CSP restricts which sources are allowed to serve content to the page, "
-            "significantly reducing the attack surface."
+            "significantly reducing the attack surface. CSP is the primary defence-in-depth control "
+            "against XSS, so a missing or weak CSP is treated as High severity."
         ),
-        "severity": "Medium",
+        "severity": "High",
         "fix": (
             "Implement a strict Content-Security-Policy header on all responses. "
             "Use nonces or hashes for inline scripts instead of 'unsafe-inline'. "
@@ -529,9 +533,11 @@ VULNERABILITIES = {
         "explanation": (
             "Password and credit-card fields that allow browser autocomplete can be auto-"
             "populated on shared or compromised devices, and can leak PAN / credentials "
-            "into browser profile syncs."
+            "into browser profile syncs. Note: modern guidance (NIST 800-63B) actually "
+            "favors password-manager autofill, so this is treated as a low-tier hygiene "
+            "finding rather than a true vulnerability."
         ),
-        "severity": "Medium",
+        "severity": "Low",
         "fix": (
             "Use autocomplete=\"new-password\" for signup/reset forms and "
             "autocomplete=\"current-password\" for login forms. "

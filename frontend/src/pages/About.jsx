@@ -22,7 +22,7 @@ import {
 
 import Navbar from "../components/Navbar";
 import LandingNavbar from "../components/LandingNavbar";
-import Fotter from "../components/Fotter";
+import Footer from "../components/Footer";
 
 
 
@@ -52,7 +52,7 @@ function About() {
             <div className="about-title">
                 <h1>About <span className="about-text">Baseera</span></h1>
                     <div className="about-description">
-Baseera (meaning "insight" or "vision" in Arabic) is a modern cybersecurity platform designed to help organizations discover, understand, and fix security vulnerabilities with clarity and precision.            </div>
+Baseera (meaning &quot;insight&quot; or &quot;vision&quot; in Arabic) is a focused web security toolkit that helps developers and students discover, understand, and fix the most common classes of web vulnerabilities, all from a single Chrome extension and dashboard.            </div>
             </div>
             </div>
             <section className="our-Mission">
@@ -65,7 +65,7 @@ Baseera (meaning "insight" or "vision" in Arabic) is a modern cybersecurity plat
                     Our Mission
                 </h4>
                 <p className="mission-description">
-                    To empower organizations worldwide with cutting-edge cybersecurity intelligence, making vulnerability management accessible, efficient, and actionable. We believe every team deserves clear insight into their security posture, enabling them to protect what matters most and focus on growth rather than just defense.
+                    To make web security review accessible to anyone with a browser. Most vulnerability scanners are paid, complex, or invasive. Baseera proves that a passive, transparent, in-browser scanner can still cover 28 real vulnerability classes, and explain each one in language a developer can act on.
                 </p>
             </div>
             </div>
@@ -83,10 +83,10 @@ Baseera (meaning "insight" or "vision" in Arabic) is a modern cybersecurity plat
         </div>
           <div className="content">
                 <h4 className="do-title">
-                    Vulnerability Discovery
+                    Passive Detection
                 </h4>
                 <p className="do-description">
-            Advanced scanning to identify security weaknesses across your infrastructure
+            28 scanners read the DOM of the page you choose and report findings. No requests sent, nothing modified.
                 </p>
                 </div>
             </div>
@@ -96,10 +96,10 @@ Baseera (meaning "insight" or "vision" in Arabic) is a modern cybersecurity plat
         </div>
          <div className="content">
                 <h4 className="do-title">
-                Smart Prioritization
+                Severity Triage
                 </h4>
                 <p className="do-description">
-  AI-powered risk assessment to focus on what matters most
+  Every finding is mapped to Critical, High, Medium, or Low so you know what to fix first.
                 </p>
                 </div>
             </div>
@@ -110,10 +110,10 @@ Baseera (meaning "insight" or "vision" in Arabic) is a modern cybersecurity plat
         </div>
         <div className="content">
                 <h4 className="do-title">
-                  Fast Remediation
+                  AI Explanations
                 </h4>
                 <p className="do-description">
-           Clear, actionable steps to fix issues quickly and effectively
+           Ask the in-app assistant what any vulnerability means and how to fix it. Answers in plain language.
                 </p>
             </div>
             </div>
@@ -123,10 +123,10 @@ Baseera (meaning "insight" or "vision" in Arabic) is a modern cybersecurity plat
         </div>
         <div className="content">
                 <h4 className="do-title">
-                 Comprehensive Reporting
+                 Persistent Dashboard
                 </h4>
                 <p className="do-description">
-Beautiful reports that communicate security posture clearly                </p>
+Sign in to sync scan results to your Bugs Dashboard and track findings over time.                </p>
             </div>
             </div>
 </div>      
@@ -143,9 +143,9 @@ Beautiful reports that communicate security posture clearly                </p>
                 <Eye size={24} strokeWidth={2} className="lucide-accent" />
             </div>
             <div className="why-content">
-                <h4 className="why-title">Clarity and Insight</h4>
+                <h4 className="why-title">Clarity And Insight</h4>
                 <p className="why-description">
-                    Baseera means "insight" in Arabic - we provide clear visibility into your security posture
+                    Baseera means &quot;insight&quot; in Arabic, and that&apos;s the goal: clear visibility into what is actually wrong with the page you&apos;re looking at.
                 </p>
             </div>
         </div>
@@ -156,9 +156,9 @@ Beautiful reports that communicate security posture clearly                </p>
                 <Headphones size={24} strokeWidth={2} className="lucide-accent" />
             </div>
             <div className="why-content">
-                <h4 className="why-title">Expert Support</h4>
+                <h4 className="why-title">Open &amp; Free</h4>
                 <p className="why-description">
-                    World-class security experts dedicated to protecting your digital assets
+                    No paywalls, no signup required to use the extension, no third-party analytics. Sign in only if you want to sync findings to a dashboard.
                 </p>
             </div>
         </div>
@@ -169,9 +169,9 @@ Beautiful reports that communicate security posture clearly                </p>
                 <Lock size={24} strokeWidth={2} className="lucide-accent" />
             </div>
             <div className="why-content">
-                <h4 className="why-title">Enterprise-Grade Security</h4>
+                <h4 className="why-title">Privacy By Design</h4>
                 <p className="why-description">
-                    Trusted by organizations worldwide with industry-leading compliance and standards
+                    All scanning runs in your browser. The extension cannot read pages in the background. Only the one you choose to scan, only when you click Start Scan.
                 </p>
             </div>
         </div>
@@ -180,9 +180,9 @@ Beautiful reports that communicate security posture clearly                </p>
 <section className="join-section">
 <div className="join-container">
     <div className="join-content">
-  <h2 className="join-title">Ready to Secure Your Digital Assets?</h2>
+  <h2 className="join-title">Ready To Scan Your First Site?</h2>
   <p className="join-description">
-    Join thousands of organizations that trust Baseera to protect their infrastructure and maintain a strong security posture.
+    Install the extension, open any page, and run Baseera against it. No account needed to get started. Sign in only if you want your findings saved.
   </p>
   
   <div className="home-actions">
@@ -196,7 +196,7 @@ Beautiful reports that communicate security posture clearly                </p>
 </section>
 
 
-    <Fotter />
+    <Footer />
     </>
     );
 }

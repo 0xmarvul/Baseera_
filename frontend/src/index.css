@@ -1312,7 +1312,7 @@ font-style: normal;
 font-weight: 400;
 line-height: 24px; /* 150% */
 width: 239px;
-margin-top: 81px;
+margin-top: 0;
 }
 .links{
   display: flex;

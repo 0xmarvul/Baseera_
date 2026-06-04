@@ -23,8 +23,8 @@ function ChangePassword() {
             return;
         }
 
-        if (newPassword.length < 8) {
-            setError("Password must be at least 8 characters long");
+        if (newPassword.length < 6) {
+            setError("Password must be at least 6 characters");
             return;
         }
 
@@ -76,7 +76,6 @@ function ChangePassword() {
                                 <i className={showNew ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"}></i>
                             </button>
                         </div>
-                        <p className="change-password-helper-text">Must be at least 8 characters long</p>
                         <h5 className="change-password-form-title">Confirm New Password</h5>
                         <div className="change-password-input-wrapper">
                             <i className="fa-solid fa-lock change-password-input-icon"></i>

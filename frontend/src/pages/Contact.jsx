@@ -3,7 +3,7 @@ import "../index.css";
 import "../contact.css";
 import Navbar from "../components/Navbar";
 import LandingNavbar from "../components/LandingNavbar";
-import Fotter from "../components/Fotter";
+import Footer from "../components/Footer";
 import apiClient from "../api/axios.config";
 
 function Contact() {
@@ -167,17 +167,6 @@ function Contact() {
               </div>
             </div>
 
-            {/* Phone */}
-            <div className="info-card">
-              <div className="info-icon phone-icon">
-                <i class="fa-solid fa-phone"></i>
-              </div>
-              <div className="info-content">
-                <h3 className="info-title">Phone Number</h3>
-                <p className="info-text">+1 (555) 123-4567</p>
-              </div>
-            </div>
-
             {/* Location */}
             <div className="info-card">
               <div className="info-icon location-icon">
@@ -262,7 +251,7 @@ function Contact() {
       </section>
 
       {/* Footer Component */}
-      <Fotter />
+      <Footer />
 
       {showPopup && (
         <div className="contact-popup" role="dialog" aria-modal="true">

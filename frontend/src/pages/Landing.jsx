@@ -24,7 +24,7 @@ import {
 import icon11 from "../assets/ImageWithFallback.png";
 import icon14 from "../assets/img1.jpg";
 import icon15 from "../assets/img2.jpg";
-import Fotter from "../components/Fotter";
+import Footer from "../components/Footer";
 
 /* 🔹 Lightning Component */
 const CardLightning = ({ position }) => {
@@ -53,21 +53,22 @@ function Landing() {
         <div className="home-inner">
           <div className="home-badge reveal reveal-zoom">
             <ShieldCheck size={20} strokeWidth={2.2} className="lucide-accent" />
-            <span>Trusted Security Solutions</span>
+            <span>Open Source · Privacy-First</span>
           </div>
 
           <h2 className="home-title reveal reveal-delay-1">
-            We&apos;re The Experts In{" "}
+            Find Web Vulnerabilities In{" "}
             <span className="text">
               <br />
-              Security Vetting
+              One Click
             </span>
           </h2>
 
           <p className="home-subtitle reveal reveal-delay-2">
-            Comprehensive security solutions designed to protect your
-            organization from evolving cyber threats. Trust our expertise to
-            safeguard your digital assets.
+            Baseera is a passive web security scanner that detects 28 classes
+            of vulnerabilities, from XSS and SQL injection to leaked API keys
+            and missing security headers, without ever modifying the page or
+            sending data to third parties.
           </p>
 
           <div className="home-actions reveal reveal-delay-3" style={{ justifyContent: 'center' }}>
@@ -91,30 +92,31 @@ function Landing() {
             <div className="extension-left reveal reveal-left">
               <div className="home-badge">
                 <Sparkles size={20} strokeWidth={2.2} className="lucide-accent" />
-                <span>New Release</span>
+                <span>Chrome Extension</span>
               </div>
 
               <div className="text-sec2">
-                <h2>Download Our Browser Extension</h2>
+                <h2>Install The Baseera Extension</h2>
                 <p>
-                  Install the Baseera extension to scan websites instantly and
-                  detect vulnerabilities in real time. Stay protected while
-                  browsing with automatic security analysis.
+                  Add Baseera to Chrome and scan any website with a single
+                  click. The extension runs 28 passive scanners directly in
+                  your browser. No requests sent, no page modifications, no
+                  tracking.
                 </p>
               </div>
 
               <div className="small-icon">
                 <div className="feature-item">
                   <Check size={18} strokeWidth={3} className="lucide-check" />
-                  <h6>Real-time vulnerability scanning</h6>
+                  <h6>28 scanners across Critical, High, Medium, Low</h6>
                 </div>
                 <div className="feature-item">
                   <Check size={18} strokeWidth={3} className="lucide-check" />
-                  <h6>Instant security alerts &amp; notifications</h6>
+                  <h6>Built-in AI assistant explains every finding</h6>
                 </div>
                 <div className="feature-item">
                   <Check size={18} strokeWidth={3} className="lucide-check" />
-                  <h6>Comprehensive vulnerability reports</h6>
+                  <h6>100% client-side, your data never leaves your browser</h6>
                 </div>
               </div>
 
@@ -128,7 +130,7 @@ function Landing() {
               <div className="footer-text">
                 <h6>
                   <Info size={16} strokeWidth={2.2} className="lucide-muted" />
-                  Compatible with Chrome, Edge, and Brave
+                  Works on Chrome, Edge, and other Chromium browsers
                 </h6>
               </div>
             </div>
@@ -192,12 +194,12 @@ function Landing() {
         {/* ================= Security Solutions Section ================= */}
       <section className="security-solutions-section">
         <div className="security-solutions-container reveal">
-          <p className="security-badge">To Enhance Your Cyber Defences</p>
-          <h2 className="security-title">Expert Will Support</h2>
+          <p className="security-badge">What Baseera Detects</p>
+          <h2 className="security-title">Vulnerability Coverage</h2>
           <p className="security-description">
-            Our comprehensive security services are designed to protect your
-            organization from the latest cyber threats with cutting-edge
-            technology.
+            Baseera ships with 28 scanners covering the OWASP Top 10 and
+            beyond. Each finding is mapped to a severity tier and explained
+            in plain language by the built-in AI assistant.
           </p>
         </div>
 
@@ -206,9 +208,10 @@ function Landing() {
             <div className="security-icon network">
               <Network size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
-            <h3 className="text-sec3">Network Security</h3>
+            <h3 className="text-sec3">Injection &amp; XSS</h3>
             <p className="par-sec3">
-              Advanced protection for your network infrastructure
+              SQL injection, command injection, reflected and DOM-based XSS
+              sinks.
             </p>
           </div>
 
@@ -216,9 +219,10 @@ function Landing() {
             <div className="security-icon data">
               <Database size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
-            <h3 className="text-sec3">Data Protection</h3>
+            <h3 className="text-sec3">Exposed Secrets</h3>
             <p className="par-sec3">
-              Secure your sensitive data with encryption
+              Leaked API keys (OpenAI, Stripe, AWS), JWTs, and private keys
+              in scripts and comments.
             </p>
           </div>
 
@@ -226,16 +230,22 @@ function Landing() {
             <div className="security-icon monitoring">
               <Activity size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
-            <h3 className="text-sec3">System Monitoring</h3>
-            <p className="par-sec3">24/7 monitoring and threat detection</p>
+            <h3 className="text-sec3">Headers &amp; CSP</h3>
+            <p className="par-sec3">
+              Missing or weak CSP, HSTS, Permissions-Policy, COOP, and
+              clickjacking defences.
+            </p>
           </div>
 
           <div className="security-solution-card reveal reveal-delay-4">
             <div className="security-icon access">
               <KeyRound size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
-            <h3 className="text-sec3">Access Control</h3>
-            <p className="par-sec3">Multi-layer authentication systems</p>
+            <h3 className="text-sec3">Auth &amp; Sessions</h3>
+            <p className="par-sec3">
+              Insecure cookies, session tokens in URLs, sensitive
+              autocomplete, and weak storage.
+            </p>
           </div>
         </div>
       </section>
@@ -247,43 +257,43 @@ function Landing() {
           <div className="protection-left reveal reveal-left">
             <div className="home-badge">
               <ShieldCheck size={20} strokeWidth={2.2} className="lucide-accent" />
-              <span>Protection Services</span>
+              <span>How It Works</span>
             </div>
 
             <h2 className="protection-title">
-              We Can Protect Your
+              Designed To Be{" "}
               <br />
-              <span className="text">Organizations Cybersecurity</span>
+              <span className="text">Safe And Transparent</span>
             </h2>
 
             <p className="protection-description">
-              With our comprehensive protection services, we ensure your
-              organization remains secure from all cyber threats and
-              vulnerabilities.
+              Baseera is intentionally passive: every scanner reads the DOM
+              only and never sends requests, modifies the page, or runs
+              third-party code. You see exactly what is checked and why.
             </p>
 
             <div className="protection-features">
               <div className="protection-feature-item">
                 <Check size={18} strokeWidth={3} className="lucide-check" />
-                <span>Real-time threat detection and response</span>
+                <span>Read-only, no traffic generated, no pages modified</span>
               </div>
               <div className="protection-feature-item">
                 <Check size={18} strokeWidth={3} className="lucide-check" />
-                <span>Automated encryption protocols</span>
+                <span>User-initiated. Scans run only when you click</span>
               </div>
               <div className="protection-feature-item">
                 <Check size={18} strokeWidth={3} className="lucide-check" />
-                <span>Compliance with industry standards</span>
+                <span>No analytics, no ads, no third-party trackers</span>
               </div>
               <div className="protection-feature-item">
                 <Check size={18} strokeWidth={3} className="lucide-check" />
-                <span>Expert security consultation</span>
+                <span>Findings explained by an in-app AI assistant</span>
               </div>
             </div>
 
     
               <a className="get-btn" href="#protection">
-                                Learn More About Protection{" "}
+                                See How Baseera Works
                                 </a>
             
           </div>
@@ -302,8 +312,8 @@ function Landing() {
 {/* ================= Protection Services Section 01 ================= */}
 <section className="protection-our-services-section01 " id="protection">
   <h1 className="headline reveal">
-    You Can Protect Your Organizations <br />
-    <span className="text">Cybersecurity By Our Services</span>
+    Two Steps From Browsing <br />
+    <span className="text">To A Full Security Report</span>
   </h1>
   <div className="our-services-container">
         <div className="our-services-right reveal reveal-left">
@@ -321,16 +331,18 @@ function Landing() {
 <div className="security-icon-network">
               <Network size={28} strokeWidth={1.8} className="lucide-accent" />
             </div>
-      <h2 className="protection-title">Security Assessment</h2>
+      <h2 className="protection-title">Scan Any Page</h2>
 
       <p className="protection-description">
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fuget in liam nascetur
-      lorem feli massa ultricies. Duis comlecten lorus id neque, commodo lseus et nembus.
+      Open the website you want to inspect, click the Baseera icon, and hit
+      Start Scan. All 28 scanners run locally against the page&apos;s DOM and
+      surface findings within seconds. No installation per site, no
+      configuration.
       </p>
 
-      <button className="read-more-btn">
-        Read More <ArrowRight size={16} strokeWidth={2.4} />
-      </button>
+      <Link to="/About" className="read-more-btn">
+        Learn More <ArrowRight size={16} strokeWidth={2.4} />
+      </Link>
     </div>
   </div>
 
@@ -346,15 +358,18 @@ function Landing() {
 <div className="security-icon-network">
               <Zap size={28} strokeWidth={2} className="lucide-accent" />
             </div>
-      <h2 className="protection-title">Threat Detection</h2>
+      <h2 className="protection-title">Review &amp; Fix</h2>
 
       <p className="protection-description">
-      Advanced monitoring systems that identify and neutralize potential threats before they can cause damage to your organization's infrastructure.
+      Findings are grouped by severity and synced to your Bugs Dashboard if
+      you&apos;re signed in. Ask the built-in AI assistant what each issue
+      means and how to fix it, with concrete examples for every
+      vulnerability type.
       </p>
 
-      <button className="read-more-btn">
-        Read More <ArrowRight size={16} strokeWidth={2.4} />
-      </button>
+      <Link to="/bugs" className="read-more-btn">
+        Open Dashboard <ArrowRight size={16} strokeWidth={2.4} />
+      </Link>
     </div>
         <div className="our-services-left reveal reveal-right">
       <img
@@ -369,17 +384,18 @@ function Landing() {
     {/* secure the web section */}
     <section className="Secure-the-web">
       <h1 className="secure-text reveal">
-    <span className="text">Secure</span> The Web</h1>
-    <p className="Secure-description reveal reveal-delay-1">Join thousands of organizations
-       trusting our security solutions to protect their digital presence.</p>
+    <span className="text">Built</span> For The Modern Web</h1>
+    <p className="Secure-description reveal reveal-delay-1">A focused, honest toolkit
+       for finding common web vulnerabilities. Designed and built as a graduation
+       project, free for anyone to use.</p>
          <div className="security-solutions-cards">
           <div className="security-solution-card reveal reveal-delay-1">
             <div className="security-icon network">
               <Network size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
-            <h3 className="text-sec3 count-up" data-target="500+">500+</h3>
+            <h3 className="text-sec3 count-up" data-target="28">28</h3>
             <p className="par-sec3">
-            Protected Networks
+            Vulnerability Scanners
             </p>
           </div>
 
@@ -387,9 +403,9 @@ function Landing() {
             <div className="security-icon data">
               <KeyRound size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
-            <h3 className="text-sec3">1M+</h3>
+            <h3 className="text-sec3 count-up" data-target="4">4</h3>
             <p className="par-sec3">
-              Threats Blocked
+              Severity Tiers
             </p>
           </div>
 
@@ -397,23 +413,23 @@ function Landing() {
             <div className="security-icon monitoring">
               <Zap size={32} strokeWidth={2} className="lucide-accent" />
             </div>
-            <h3 className="text-sec3"> &lt;1min </h3>
-            <p className="par-sec3">Response Time</p>
+            <h3 className="text-sec3"> 100% </h3>
+            <p className="par-sec3">Client-Side &amp; Passive</p>
           </div>
 
           <div className="security-solution-card reveal reveal-delay-4">
             <div className="security-icon access">
               <Activity size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
-            <h3 className="text-sec3">24/7</h3>
-            <p className="par-sec3">Global Coverage</p>
+            <h3 className="text-sec3">Free</h3>
+            <p className="par-sec3">Forever, No Sign-up Required</p>
           </div>
         </div>
-          <div className="start-btn reveal reveal-delay-5" > <a href="#Extension">Start Securing Your Web Today</a>
+          <div className="start-btn reveal reveal-delay-5" > <a href="#Extension">Install The Extension</a>
 
           </div>
     </section>
-    <Fotter />
+    <Footer />
     </>
   );
 }
