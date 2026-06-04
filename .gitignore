@@ -6,6 +6,13 @@ backend/**/*.suo
 backend/.vs/
 
 # .NET secrets and logs
+# Environment-specific appsettings carry real secrets (DB passwords,
+# JWT keys, SMTP credentials). They must never be committed. The base
+# appsettings.json stays in git with empty placeholders only.
+backend/**/appsettings.Development.json
+backend/**/appsettings.Production.json
+backend/**/appsettings.Staging.json
+backend/**/appsettings.Local.json
 backend/**/appsettings.*.json.bak
 backend/**/Logs/
 
