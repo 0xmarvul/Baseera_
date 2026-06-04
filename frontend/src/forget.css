@@ -15,9 +15,9 @@
 }
 
 .login-form .login-form-title {
-    text-align: center;
+    text-align: left;
     width: 100%;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
 }
 
 .btn-forget-primary:hover {
@@ -27,8 +27,6 @@
 .forget-input-wrapper {
     position: relative;
     width: 100%;
-    max-width: 376px;
-    margin: 0 auto;
 }
 
 /* Higher specificity to override login.css .login-form .fa-envelope rule */

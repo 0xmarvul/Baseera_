@@ -185,17 +185,11 @@ line-height: 24px; /* 150% */
     }
 }
 
-/* "Forgot password?" link sits inline next to the password label (industry standard) */
-.login-password-label-row {
+/* "Forgot password?" link sits right-aligned below the password input. */
+.login-forgot-row {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-top: 12px;
-}
-
-.login-password-label-row .login-form-title {
-    margin: 0;
+    justify-content: flex-end;
+    margin: 8px 0 14px;
 }
 
 .login-forgot-link {

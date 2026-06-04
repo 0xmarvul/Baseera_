@@ -164,12 +164,9 @@ function Login(){
                         />
                     </div>
 
-                    <div className="login-password-label-row">
-                        <h5 className="login-form-title">Password</h5>
-                        <Link className="login-forgot-link" to="/forget">
-                            Forgot password?
-                        </Link>
-                    </div>
+                    <h5 className="login-form-title">
+                        Password
+                    </h5>
 
                     <div className="login-input-wrapper">
                         <i className="fa-solid fa-lock login-input-icon-left"></i>
@@ -195,6 +192,12 @@ function Login(){
                                 }
                             }}
                         ></i>
+                    </div>
+
+                    <div className="login-forgot-row">
+                        <Link className="login-forgot-link" to="/forget">
+                            Forgot password?
+                        </Link>
                     </div>
 
                     <button type="submit" disabled={loading}>
