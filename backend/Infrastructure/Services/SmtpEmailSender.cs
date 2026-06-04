@@ -12,6 +12,7 @@ public class SmtpEmailSender : IEmailSender
     private readonly string _user;
     private readonly string _appPassword;
     private readonly string _from;
+    private readonly string _fromName;
 
     public SmtpEmailSender(IConfiguration configuration)
     {
@@ -20,6 +21,7 @@ public class SmtpEmailSender : IEmailSender
         _user = configuration["Smtp:User"] ?? string.Empty;
         _appPassword = configuration["Smtp:AppPassword"] ?? string.Empty;
         _from = configuration["Smtp:From"] ?? _user;
+        _fromName = configuration["Smtp:FromName"] ?? "Baseera";
     }
 
     public async Task SendAsync(string toEmail, string subject, string htmlBody, CancellationToken ct = default)
@@ -30,10 +32,19 @@ public class SmtpEmailSender : IEmailSender
             Credentials = new NetworkCredential(_user, _appPassword)
         };
 
-        using var message = new MailMessage(_from, toEmail, subject, htmlBody)
+        // Use MailAddress with display name so inboxes show "Baseera <0xbaseera@gmail.com>"
+        // instead of the bare email address.
+        var fromAddress = new MailAddress(_from, _fromName);
+        using var message = new MailMessage
         {
-            IsBodyHtml = true
+            From = fromAddress,
+            Subject = subject,
+            Body = htmlBody,
+            IsBodyHtml = true,
+            SubjectEncoding = System.Text.Encoding.UTF8,
+            BodyEncoding = System.Text.Encoding.UTF8
         };
+        message.To.Add(toEmail);
 
         await client.SendMailAsync(message, ct);
     }

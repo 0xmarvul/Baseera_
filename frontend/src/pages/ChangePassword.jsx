@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import LandingNavbar from "../components/LandingNavbar";
+import PasswordChecklist from "../components/PasswordChecklist";
 import { authApi } from "../api/authApi";
+import { isPasswordValid, PASSWORD_ERROR_MESSAGE } from "../utils/passwordPolicy";
 import "../change-password.css";
 
 function ChangePassword() {
@@ -23,8 +25,8 @@ function ChangePassword() {
             return;
         }
 
-        if (newPassword.length < 6) {
-            setError("Password must be at least 6 characters");
+        if (!isPasswordValid(newPassword)) {
+            setError(PASSWORD_ERROR_MESSAGE);
             return;
         }
 
@@ -76,6 +78,7 @@ function ChangePassword() {
                                 <i className={showNew ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"}></i>
                             </button>
                         </div>
+                        <PasswordChecklist password={newPassword} />
                         <h5 className="change-password-form-title">Confirm New Password</h5>
                         <div className="change-password-input-wrapper">
                             <i className="fa-solid fa-lock change-password-input-icon"></i>

@@ -75,60 +75,108 @@ function EditProfile() {
     e.preventDefault();
     setSaveError("");
     setSaveSuccess("");
-    
-    const nameParts = formData.fullName.trim().split(' ');
+
+    // ── Required fields: explicit JS validation with clear error messages ──
+    const fullNameTrimmed = formData.fullName.trim();
+    const usernameTrimmed = formData.username.trim();
+    const emailTrimmed = formData.email.trim();
+
+    if (!fullNameTrimmed) {
+      setSaveError("Full name is required.");
+      return;
+    }
+    const nameParts = fullNameTrimmed.split(/\s+/);
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
+    if (!firstName || !lastName) {
+      setSaveError("Please enter both your first and last name.");
+      return;
+    }
+    if (!usernameTrimmed) {
+      setSaveError("Username is required.");
+      return;
+    }
+    if (!emailTrimmed) {
+      setSaveError("Email address is required.");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailTrimmed)) {
+      setSaveError("Please enter a valid email address.");
+      return;
+    }
+
+    // Optional fields: send the empty string (not null) so the backend can tell
+    // "user wants to clear this" from "field not present in payload".
+    // DateOfBirth needs an explicit ClearDateOfBirth flag because null is the
+    // wire shape for both "no change" and "wipe it".
+    const payload = {
+      username: usernameTrimmed,
+      email: emailTrimmed,
+      firstName,
+      lastName,
+      phoneNumber: formData.phone || "",
+      gender: formData.gender || "",
+      country: formData.country || "",
+      bio: formData.bio || "",
+      dateOfBirth: formData.dateOfBirth || null,
+      clearDateOfBirth: !formData.dateOfBirth,
+    };
 
     try {
-      const response = await authApi.updateProfile({
-        username: formData.username,
-        email: formData.email,
-        firstName,
-        lastName,
-        phoneNumber: formData.phone || null,
-        gender: formData.gender || null,
-        dateOfBirth: formData.dateOfBirth || null,
-        country: formData.country || null,
-        bio: formData.bio || null,
-      });
+      const response = await authApi.updateProfile(payload);
 
       if (response.success) {
         setSaveSuccess("Profile updated successfully!");
         // Update localStorage with new username and email
-        localStorage.setItem("baseeraUserName", formData.username);
+        localStorage.setItem("baseeraUserName", usernameTrimmed);
         try {
           const userData = JSON.parse(localStorage.getItem("baseeraUserData") || '{}');
           localStorage.setItem("baseeraUserData", JSON.stringify({
             ...userData,
-            username: formData.username,
-            email: formData.email,
+            username: usernameTrimmed,
+            email: emailTrimmed,
+            fullName: `${firstName} ${lastName}`.trim(),
           }));
         } catch (_) {
-          localStorage.setItem("baseeraUserData", JSON.stringify({ username: formData.username, email: formData.email }));
+          localStorage.setItem("baseeraUserData", JSON.stringify({
+            username: usernameTrimmed,
+            email: emailTrimmed,
+            fullName: `${firstName} ${lastName}`.trim(),
+          }));
         }
         setTimeout(() => navigate('/profile'), 1200);
       } else {
-        setSaveError(response.message || "Failed to update profile");
+        setSaveError(response.message || "Failed to update profile.");
       }
     } catch (err) {
-      // Fallback: save to localStorage
-      const userData = JSON.parse(localStorage.getItem("baseeraUserData") || '{}');
-      const updatedData = {
-        ...userData,
-        fullName: firstName,
-        lastName,
-        username: formData.username,
-        email: formData.email,
-        phone: formData.phone,
-        country: formData.country,
-        bio: formData.bio,
-        gender: formData.gender,
-        dateOfBirth: formData.dateOfBirth
-      };
-      localStorage.setItem("baseeraUserData", JSON.stringify(updatedData));
-      localStorage.setItem("baseeraUserName", formData.username);
-      navigate('/profile');
+      // Surface the backend error message (e.g. "Username is already taken")
+      const backendMessage = err.response?.data?.message;
+      if (backendMessage) {
+        setSaveError(backendMessage);
+        return;
+      }
+
+      // Network failure / backend down: write through to localStorage so the
+      // UI is at least responsive. Optional fields use empty string to mirror
+      // the "cleared" intent.
+      try {
+        const userData = JSON.parse(localStorage.getItem("baseeraUserData") || '{}');
+        const updatedData = {
+          ...userData,
+          fullName: `${firstName} ${lastName}`.trim(),
+          username: usernameTrimmed,
+          email: emailTrimmed,
+          phone: formData.phone || "",
+          country: formData.country || "",
+          bio: formData.bio || "",
+          gender: formData.gender || "",
+          dateOfBirth: formData.dateOfBirth || "",
+        };
+        localStorage.setItem("baseeraUserData", JSON.stringify(updatedData));
+        localStorage.setItem("baseeraUserName", usernameTrimmed);
+      } catch (_) {}
+      setSaveError("Could not reach the server. Your changes were saved locally.");
     }
   };
 

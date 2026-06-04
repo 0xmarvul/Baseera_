@@ -98,6 +98,13 @@ function Login(){
 
         } catch (error) {
             console.error("Login error:", error);
+            // Rate-limited (429): show a friendlier countdown-style message
+            if (error.response?.status === 429) {
+                const retryAfter = parseInt(error.response.headers?.["retry-after"] || "60", 10);
+                setError(`Too many login attempts. Try again in ${retryAfter}s.`);
+                setLoading(false);
+                return;
+            }
             const errMsg = error.response?.data?.message || "Invalid email or password";
             if (errMsg.toLowerCase().includes("verify your email")) {
                 setError(
@@ -153,7 +160,7 @@ function Login(){
                             onChange={(e) => setEmail(e.target.value)}
                             disabled={loading}
                             required
-                            autoComplete="off"
+                            autoComplete="email"
                         />
                     </div>
 
@@ -187,16 +194,16 @@ function Login(){
                         ></i>
                     </div>
 
+                    <div className="login-forgot-row">
+                        <Link className="login-forgot-link" to="/forget">
+                            Forgot password?
+                        </Link>
+                    </div>
+
                     <button type="submit" disabled={loading}>
                         {loading ? "Logging in..." : "Login"}
                     </button>
                 </form>
-
-                <div className="forget">
-                    <Link className="link" to="/forget">
-                        Forget Password ?
-                    </Link>
-                </div>
 
                 <div className="register">
                     <p className="register-p">Don't have an account? </p>

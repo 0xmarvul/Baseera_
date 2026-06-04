@@ -386,8 +386,7 @@ function Landing() {
       <h1 className="secure-text reveal">
     <span className="text">Built</span> For The Modern Web</h1>
     <p className="Secure-description reveal reveal-delay-1">A focused, honest toolkit
-       for finding common web vulnerabilities. Designed and built as a graduation
-       project, free for anyone to use.</p>
+       for finding common web vulnerabilities. Free for anyone to use.</p>
          <div className="security-solutions-cards">
           <div className="security-solution-card reveal reveal-delay-1">
             <div className="security-icon network">

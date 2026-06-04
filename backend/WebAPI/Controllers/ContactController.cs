@@ -47,7 +47,7 @@ public class ContactController : ControllerBase
         try
         {
             var htmlBody = $@"
-<h2>New Contact Message – Bassera</h2>
+<h2>New Contact Message – Baseera</h2>
 <table>
   <tr><td><strong>Name:</strong></td><td>{System.Net.WebUtility.HtmlEncode(dto.FullName)}</td></tr>
   <tr><td><strong>Email:</strong></td><td>{System.Net.WebUtility.HtmlEncode(dto.Email)}</td></tr>

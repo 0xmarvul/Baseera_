@@ -7,6 +7,8 @@ import "../register.css";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from '../api/authApi';
 import Navbar from "../components/Navbar";
+import PasswordChecklist from "../components/PasswordChecklist";
+import { isPasswordValid, PASSWORD_ERROR_MESSAGE } from "../utils/passwordPolicy";
 
 
 
@@ -20,6 +22,7 @@ function Register(){
     const [success, setSuccess] = useState("");
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [passwordValue, setPasswordValue] = useState("");
 
     // Date of birth constraints
     const today = new Date();
@@ -56,8 +59,8 @@ function Register(){
             return;
         }
 
-        if (password.length < 6) {
-            setError("Password must be at least 6 characters");
+        if (!isPasswordValid(password)) {
+            setError(PASSWORD_ERROR_MESSAGE);
             setLoading(false);
             return;
         }
@@ -141,35 +144,45 @@ function Register(){
                     </h5>
                     <div className="register-input-wrapper">
                         <i className="fa-solid fa-user register-input-icon"></i>
-                        <input className="register-form-input" name="fullName" type="text" placeholder="Mark " disabled={loading} required />
+                        <input className="register-form-input" name="fullName" type="text" placeholder="Mark " disabled={loading} required autoComplete="given-name" />
                     </div>
                     <h5 className="register-form-title">
                         Last Name
                     </h5>
                     <div className="register-input-wrapper">
                         <i className="fa-solid fa-user register-input-icon"></i>
-                        <input className="register-form-input" name="lastName" type="text" placeholder="Johnson" disabled={loading} required />
+                        <input className="register-form-input" name="lastName" type="text" placeholder="Johnson" disabled={loading} required autoComplete="family-name" />
                     </div>
                     <h5 className="register-form-title">
                         Username
                     </h5>
                     <div className="register-input-wrapper">
                         <i className="fa-solid fa-at register-input-icon"></i>
-                        <input className="register-form-input" name="username" type="text" placeholder=" Markjohnson" disabled={loading} required />
+                        <input className="register-form-input" name="username" type="text" placeholder=" Markjohnson" disabled={loading} required autoComplete="off" />
                     </div>
                     <h5 className="register-form-title">
                         Email Address
                     </h5>
                     <div className="register-input-wrapper">
                         <i className="fa-solid fa-envelope register-input-icon"></i>
-                        <input className="register-form-input" name="email" type="email" placeholder=" Mark.johnson@baseera.security" disabled={loading} required />
+                        <input className="register-form-input" name="email" type="email" placeholder=" Mark.johnson@baseera.security" disabled={loading} required autoComplete="email" />
                     </div>
                     <h5 className="register-form-title">
                         Password
                     </h5>
                     <div className="register-input-wrapper">
                         <i className="fa-solid fa-lock register-input-icon"></i>
-                        <input className="register-form-input has-right-icon" name="password" type={showPassword ? "text" : "password"} placeholder=" ********" disabled={loading} required />
+                        <input
+                            className="register-form-input has-right-icon"
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            placeholder=" ********"
+                            disabled={loading}
+                            value={passwordValue}
+                            onChange={(e) => setPasswordValue(e.target.value)}
+                            required
+                            autoComplete="new-password"
+                        />
                         <i
                             className={showPassword ? "fa-solid fa-eye-slash register-input-icon-right" : "fa-solid fa-eye register-input-icon-right"}
                             onClick={() => setShowPassword((prev) => !prev)}
@@ -184,7 +197,8 @@ function Register(){
                             }}
                         ></i>
                     </div>
-                    
+                    <PasswordChecklist password={passwordValue} />
+
                     <h5 className="register-form-title">
                         Phone Number <span style={{fontWeight: 'normal', fontSize: '12px'}}>(Optional)</span>
                     </h5>

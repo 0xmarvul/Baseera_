@@ -1,4 +1,4 @@
-.btn-forget-primary {
+.login-form .btn-forget-primary {
     width: 100%;
     height: 48px;
     background: linear-gradient(90deg, #096 0%, #0092B8 100%);
@@ -11,13 +11,17 @@
     line-height: 24px;
     cursor: pointer;
     transition: opacity 0.2s;
-    margin-top: 4px;
+    margin-top: 32px;
 }
 
 .login-form .login-form-title {
-    text-align: center;
+    text-align: left;
     width: 100%;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
+}
+
+.login-form .login-form-title:first-of-type {
+    margin-top: 0;
 }
 
 .btn-forget-primary:hover {
@@ -27,8 +31,6 @@
 .forget-input-wrapper {
     position: relative;
     width: 100%;
-    max-width: 376px;
-    margin: 0 auto;
 }
 
 /* Higher specificity to override login.css .login-form .fa-envelope rule */
@@ -53,6 +55,7 @@
 .forget-pass {
     display: flex;
     justify-content: center;
+    margin-top: 12px;
 }
 
 .forget-pass a {
@@ -88,4 +91,9 @@
         font-size: 13px;
         line-height: 20px;
     }
+}
+
+/* Forget page only — pull the whole card up so it doesn't sit dead-center */
+.forget-section .login-box {
+    margin-top: -60px;
 }

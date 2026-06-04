@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Core.Interfaces;
 using Application.DTOs.Auth;
 using Application.DTOs.Common;
@@ -57,6 +58,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("login")]
     public async Task<ActionResult<ResponseDto<string>>> Login([FromBody] LoginDto loginDto)
     {
         try
