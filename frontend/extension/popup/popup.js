@@ -167,8 +167,12 @@ async function runScan() {
 
   if (scanCancelled) return;
 
+  // Animation feel-floor. Real scan is usually <500ms but the checklist
+  // animation takes time to look thorough. 1.5s is the sweet spot — long
+  // enough that the user sees the steps tick through, short enough that
+  // repeat scans on the same site don't feel sluggish.
   const elapsed = Date.now() - scanStartTime;
-  const minDuration = 3000;
+  const minDuration = 1500;
   if (elapsed < minDuration) {
     await new Promise(resolve => setTimeout(resolve, minDuration - elapsed));
   }
@@ -188,7 +192,11 @@ function resetChecklist() {
 
 function animateChecklist() {
   const steps = ['check-ssl', 'check-scripts', 'check-vulns', 'check-headers', 'check-exploits'];
-  const delays = [400, 900, 1400, 1900, 2400];
+  // Compressed to fit inside the 1.5s minDuration floor (was 400-2400ms,
+  // tuned for the old 3s floor). All five steps tick before the results
+  // appear; last one settles ~300ms before completion so the transition
+  // feels intentional.
+  const delays = [200, 450, 700, 950, 1200];
 
   steps.forEach((id, i) => {
     setTimeout(() => {
