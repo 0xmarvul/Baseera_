@@ -22,6 +22,7 @@ import ExtensionSettings from './pages/ExtensionSettings';
 import AccountVerification from './pages/AccountVerification';
 import VerifyEmail from './pages/VerifyEmail';
 import AIChatbot from './pages/AIChatbot';
+import NotFound from './pages/NotFound';
 import BaseeraFloatingChat from './components/BaseeraFloatingChat';
 
 
@@ -93,6 +94,9 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+        {/* Catch-all: any unknown route renders the branded 404 page. */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <BaseeraFloatingChat />
     </>

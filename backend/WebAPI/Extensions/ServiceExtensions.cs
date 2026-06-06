@@ -130,11 +130,24 @@ public static class ServiceExtensions
 
     public static IServiceCollection AddCorsPolicy(this IServiceCollection services, IConfiguration configuration)
     {
+        // Origins come from configuration so the same code works for localhost
+        // dev and for production behind a real domain. The list lives in
+        // appsettings.Development.json locally and in Cors__AllowedOrigins__N
+        // environment variables on the hosting service.
         var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+
+        if (allowedOrigins.Length == 0)
+        {
+            // Fail loudly at startup instead of silently breaking every browser request.
+            Console.WriteLine(
+                "[CORS] WARNING: Cors:AllowedOrigins is empty. Browser requests from " +
+                "your frontend will be blocked. Set the values in appsettings.Development.json " +
+                "(local) or as environment variables (production).");
+        }
 
         services.AddCors(options =>
         {
-            options.AddPolicy("AllowAll", builder =>
+            options.AddPolicy("BaseeraCors", builder =>
             {
                 builder.WithOrigins(allowedOrigins)
                        .AllowAnyMethod()

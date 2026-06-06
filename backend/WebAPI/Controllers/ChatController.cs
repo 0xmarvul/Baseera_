@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Application.DTOs.Common;
 using System.Text;
 using System.Text.Json;
@@ -35,6 +36,7 @@ public class ChatController : ControllerBase
     /// Send a chat message to the Baseera AI assistant.
     /// </summary>
     [HttpPost]
+    [EnableRateLimiting("chat")]
     public async Task<ActionResult<ResponseDto<object>>> Chat([FromBody] ChatRequestDto request)
     {
         if (string.IsNullOrWhiteSpace(request.Message))
