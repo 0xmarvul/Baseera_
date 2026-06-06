@@ -113,7 +113,7 @@ if (app.Environment.IsDevelopment())
 app.UseStaticFiles();
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+app.UseCors("BaseeraCors");
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
