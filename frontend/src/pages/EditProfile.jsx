@@ -57,8 +57,8 @@ function EditProfile() {
               gender: parsed.gender || prev.gender,
               dateOfBirth: parsed.dateOfBirth || prev.dateOfBirth
             }));
-          } catch (error) {
-            console.log("Error loading user data:", error);
+          } catch {
+            // localStorage fallback parse failed — fields keep their defaults.
           }
         }
       });

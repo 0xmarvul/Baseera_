@@ -78,8 +78,8 @@ function Login(){
                             token: response.data,
                             email: email
                         }, '*');
-                    } catch (e) {
-                        console.log("Extension notification via postMessage failed:", e);
+                    } catch {
+                        // postMessage to extension is best-effort — backup path runs below regardless.
                     }
                 }
 
