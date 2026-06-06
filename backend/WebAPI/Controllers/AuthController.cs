@@ -21,6 +21,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
+    [EnableRateLimiting("register")]
     public async Task<ActionResult<ResponseDto<string>>> Register([FromBody] RegisterDto registerDto)
     {
         try
@@ -98,6 +99,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("forgot-password")]
+    [EnableRateLimiting("forgot-password")]
     public async Task<ActionResult<ResponseDto<string>>> ForgotPassword([FromBody] ForgotPasswordDto dto, CancellationToken ct)
     {
         try
