@@ -1,5 +1,8 @@
+from datetime import datetime, timezone
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+
 from engine import analyze
 
 app = Flask(__name__)
@@ -8,7 +11,14 @@ CORS(app)
 
 @app.route("/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok"})
+    # Cheap probe used by hosting platforms and UptimeRobot to keep the
+    # Hugging Face Space awake (and to alert if it dies). No auth, no rate
+    # limit, no DB hit — just confirms the Python process is responding.
+    return jsonify({
+        "status": "ok",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "service": "Baseera AI",
+    })
 
 
 @app.route("/analyze", methods=["POST"])
