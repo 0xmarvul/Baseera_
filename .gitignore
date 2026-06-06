@@ -5,7 +5,18 @@ backend/**/*.user
 backend/**/*.suo
 backend/.vs/
 
+# Per-developer launch profile (sets ASPNETCORE_ENVIRONMENT=Development).
+# Each contributor maintains their own copy via Properties/launchSettings.example.json.
+backend/**/Properties/launchSettings.json
+
 # .NET secrets and logs
+# Environment-specific appsettings carry real secrets (DB passwords,
+# JWT keys, SMTP credentials). They must never be committed. The base
+# appsettings.json stays in git with empty placeholders only.
+backend/**/appsettings.Development.json
+backend/**/appsettings.Production.json
+backend/**/appsettings.Staging.json
+backend/**/appsettings.Local.json
 backend/**/appsettings.*.json.bak
 backend/**/Logs/
 

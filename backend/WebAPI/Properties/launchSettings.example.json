@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "//comment": "Copy this file to launchSettings.json (which is gitignored). The ASPNETCORE_ENVIRONMENT=Development setting is what makes 'dotnet run' read appsettings.Development.json (where your local secrets live).",
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5000",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "https": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "https://localhost:5001;http://localhost:5000",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
