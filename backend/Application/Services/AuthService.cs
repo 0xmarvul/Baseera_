@@ -191,6 +191,13 @@ public class AuthService : IAuthService
         if (user == null)
             throw new UnauthorizedAccessException("User not found");
 
+        // Reject if the new password matches the current one. Otherwise the
+        // operation looks successful but nothing actually changed, which is
+        // confusing and arguably weakens security (user thinks they rotated
+        // but didn't).
+        if (BCrypt.Net.BCrypt.Verify(newPassword, user.PasswordHash))
+            throw new ArgumentException("New password must be different from your current password.");
+
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
         user.UpdatedAt = DateTime.UtcNow;
         await _userRepository.UpdateAsync(user);
@@ -258,6 +265,13 @@ public class AuthService : IAuthService
 
         if (resetToken == null)
             throw new UnauthorizedAccessException("Invalid or expired reset token");
+
+        // Same protection as ChangePasswordAsync: reject reuse so the operation
+        // is meaningful. If the user forgot their password but typed the
+        // current one (rare but possible after a memory jog), we want to tell
+        // them rather than silently no-op.
+        if (BCrypt.Net.BCrypt.Verify(newPassword, user.PasswordHash))
+            throw new ArgumentException("New password must be different from your current password.");
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
         user.UpdatedAt = DateTime.UtcNow;
