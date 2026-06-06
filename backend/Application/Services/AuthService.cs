@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Application.Validators;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Core.Entities;
 using Core.Interfaces;
@@ -17,16 +18,49 @@ public class AuthService : IAuthService
     private readonly IEmailSender _emailSender;
     private readonly IPasswordResetTokenRepository _tokenRepository;
     private readonly IEmailVerificationTokenRepository _verificationTokenRepository;
+    private readonly ILogger<AuthService>? _logger;
 
     public AuthService(IUserRepository userRepository, IConfiguration configuration,
         IEmailSender emailSender, IPasswordResetTokenRepository tokenRepository,
-        IEmailVerificationTokenRepository verificationTokenRepository)
+        IEmailVerificationTokenRepository verificationTokenRepository,
+        ILogger<AuthService>? logger = null)
     {
         _userRepository = userRepository;
         _configuration = configuration;
         _emailSender = emailSender;
         _tokenRepository = tokenRepository;
         _verificationTokenRepository = verificationTokenRepository;
+        _logger = logger;
+    }
+
+    // Sends an email without making the caller wait. Used for verification +
+    // password-reset notifications so the HTTP response returns immediately
+    // (~1s instead of 2-4s including SMTP round-trip). The DB write that
+    // matters has already happened; the email is just a notification.
+    //
+    // Why fire-and-forget is safe here:
+    //   - The user record / token row is ALREADY committed when we get here.
+    //   - If Gmail rejects the email, we log it (Serilog -> Logs/log-*.txt)
+    //     so the operator can see failures. The user still has the in-app
+    //     'Resend verification email' button as a recovery path.
+    //   - The Task is intentionally not awaited; we swallow exceptions so a
+    //     crashed Task doesn't take the whole process down (would crash if
+    //     ASPNETCORE_NO_THROW_FOR_UNOBSERVED_TASK_EXCEPTIONS isn't set).
+    private void SendEmailInBackground(string toEmail, string subject, string htmlBody, string context)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _emailSender.SendAsync(toEmail, subject, htmlBody);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex,
+                    "Background email failed. Context={Context}, To={ToEmail}, Subject={Subject}",
+                    context, toEmail, subject);
+            }
+        });
     }
 
     public async Task<string> RegisterAsync(string email, string username, string firstName, string lastName, string password,
@@ -102,7 +136,8 @@ public class AuthService : IAuthService
             footnote: "This link expires in 24 hours. If you did not create this account, you can safely ignore this email."
         );
 
-        await _emailSender.SendAsync(email, "Verify your email – Baseera", htmlBody);
+        // Fire-and-forget — user shouldn't wait 1-3s for SMTP. See SendEmailInBackground.
+        SendEmailInBackground(email, "Verify your email – Baseera", htmlBody, "register-verification");
 
         return "Registration successful. Please check your email to verify your account.";
     }
@@ -156,6 +191,13 @@ public class AuthService : IAuthService
         if (user == null)
             throw new UnauthorizedAccessException("User not found");
 
+        // Reject if the new password matches the current one. Otherwise the
+        // operation looks successful but nothing actually changed, which is
+        // confusing and arguably weakens security (user thinks they rotated
+        // but didn't).
+        if (BCrypt.Net.BCrypt.Verify(newPassword, user.PasswordHash))
+            throw new ArgumentException("New password must be different from your current password.");
+
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
         user.UpdatedAt = DateTime.UtcNow;
         await _userRepository.UpdateAsync(user);
@@ -201,7 +243,8 @@ public class AuthService : IAuthService
             footnote: $"This link expires in {ttlMinutes} minutes. If you did not request a password reset, you can safely ignore this email — your password will not change."
         );
 
-        await _emailSender.SendAsync(email, "Reset your password – Baseera", htmlBody, ct);
+        // Fire-and-forget — user shouldn't wait 1-3s for SMTP. See SendEmailInBackground.
+        SendEmailInBackground(email, "Reset your password – Baseera", htmlBody, "forgot-password");
     }
 
     public async Task ResetPasswordAsync(string email, string token, string newPassword, CancellationToken ct = default)
@@ -222,6 +265,13 @@ public class AuthService : IAuthService
 
         if (resetToken == null)
             throw new UnauthorizedAccessException("Invalid or expired reset token");
+
+        // Same protection as ChangePasswordAsync: reject reuse so the operation
+        // is meaningful. If the user forgot their password but typed the
+        // current one (rare but possible after a memory jog), we want to tell
+        // them rather than silently no-op.
+        if (BCrypt.Net.BCrypt.Verify(newPassword, user.PasswordHash))
+            throw new ArgumentException("New password must be different from your current password.");
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
         user.UpdatedAt = DateTime.UtcNow;
@@ -296,7 +346,8 @@ public class AuthService : IAuthService
             footnote: "This link expires in 24 hours. If you did not request this, you can safely ignore the email."
         );
 
-        await _emailSender.SendAsync(email, "Verify your email – Baseera", htmlBody, ct);
+        // Fire-and-forget — user shouldn't wait 1-3s for SMTP. See SendEmailInBackground.
+        SendEmailInBackground(email, "Verify your email – Baseera", htmlBody, "resend-verification");
     }
 
     private static string GenerateSecureToken()
