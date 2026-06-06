@@ -52,7 +52,12 @@ public class ChatController : ControllerBase
         try
         {
             var client = _httpClientFactory.CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(30);
+            // 5s, not 30s. On Hugging Face cold-start the Python service can take
+            // 30-90s to wake — waiting 30s before falling back means the user
+            // stares at a spinner. 5s catches normal warm responses (<500ms) with
+            // plenty of margin, and on cold-start the C# keyword fallback fires
+            // quickly so the user gets a useful answer in ~1s instead of waiting.
+            client.Timeout = TimeSpan.FromSeconds(5);
 
             var payload = JsonSerializer.Serialize(new { message = request.Message });
             var content = new StringContent(payload, Encoding.UTF8, "application/json");
