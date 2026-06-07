@@ -125,34 +125,281 @@ function Bugs() {
     }
   };
 
+  // Brand-matching report template. Mirrors the website palette
+  // (navy bg, teal->cyan gradient, semantic severity colors from index.css).
+  // One template shared by both PDF and HTML exports — print() variant adds a
+  // small @media print rule so paged output stays readable.
+  const buildReportHtml = async ({ forPrint }) => {
+    const allVulns = { ...scanVulnerabilities };
+    for (const scan of scans) {
+      if (!allVulns[scan.id]) {
+        try {
+          const res = await apiClient.get(`/scans/${scan.id}/vulnerabilities`);
+          if (res.success && res.data) allVulns[scan.id] = res.data;
+        } catch (err) { console.error('Failed to fetch vulnerabilities for scan', scan.id, err); }
+      }
+    }
+
+    const esc = (s) => String(s ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+    const dateStr = new Date().toLocaleDateString(undefined, {
+      year: 'numeric', month: 'short', day: 'numeric'
+    });
+    const timeStr = new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+
+    // Semantic severity colors (matching index.css :root vars).
+    const sevColor = (sev) => {
+      const k = (sev || '').toLowerCase();
+      if (k === 'critical') return { bg: 'rgba(255,71,87,0.18)', text: '#ff4757', border: 'rgba(255,71,87,0.4)' };
+      if (k === 'high')     return { bg: 'rgba(255,165,2,0.18)', text: '#ffa502', border: 'rgba(255,165,2,0.4)' };
+      if (k === 'medium')   return { bg: 'rgba(55,66,250,0.20)', text: '#7d8af8', border: 'rgba(55,66,250,0.4)' };
+      return { bg: 'rgba(46,213,115,0.18)', text: '#2ed573', border: 'rgba(46,213,115,0.4)' };
+    };
+
+    const scanSections = scans.map(scan => {
+      const vulns = allVulns[scan.id] || [];
+      if (vulns.length === 0) return '';
+      let hostname = scan.targetURL || '';
+      try { hostname = new URL(scan.targetURL).hostname; } catch {}
+      const scanDate = scan.createdAt ? new Date(scan.createdAt).toLocaleDateString() : '';
+      const findingRows = vulns.map(v => {
+        const c = sevColor(v.severity);
+        return `
+        <div class="finding">
+          <div class="finding-head">
+            <span class="sev-badge" style="background:${c.bg};color:${c.text};border:1px solid ${c.border}">${esc(v.severity || 'Unknown')}</span>
+            <span class="finding-type">${esc(v.type || 'Unknown')}</span>
+          </div>
+          ${v.description ? `<p class="finding-desc">${esc(v.description)}</p>` : ''}
+          ${v.location ? `<div class="finding-row"><span class="finding-label">Location</span><span class="finding-value mono">${esc(v.location)}</span></div>` : ''}
+          ${v.recommendation ? `<div class="finding-row"><span class="finding-label">Fix</span><span class="finding-value">${esc(v.recommendation)}</span></div>` : ''}
+        </div>`;
+      }).join('');
+      return `
+      <section class="scan-block">
+        <div class="scan-head">
+          <h2 class="scan-host">${esc(hostname)}</h2>
+          <span class="scan-date">${esc(scanDate)} · ${vulns.length} finding${vulns.length === 1 ? '' : 's'}</span>
+        </div>
+        <div class="findings">${findingRows}</div>
+      </section>`;
+    }).join('');
+
+    const emptyState = scans.length === 0 || scanSections.trim() === ''
+      ? `<div class="empty-state">
+           <p class="empty-title">No vulnerabilities recorded.</p>
+           <p class="empty-sub">Install the Baseera extension and scan your first website.</p>
+         </div>`
+      : '';
+
+    const printStyles = forPrint ? `
+      @page { margin: 18mm 14mm; }
+      @media print {
+        body { background: #ffffff !important; color: #0a1929 !important; }
+        .report-shell { background: #ffffff !important; }
+        .hero, .summary-card, .finding, .scan-head { background: #ffffff !important; border-color: #d6dde6 !important; box-shadow: none !important; }
+        .hero-title, .summary-number, .scan-host, .finding-type { color: #0a1929 !important; }
+        .hero-sub, .summary-label, .scan-date, .finding-desc, .finding-label, .finding-value { color: #475569 !important; }
+        .sev-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .scan-block { page-break-inside: avoid; }
+        .finding { page-break-inside: avoid; }
+      }` : '';
+
+    return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Baseera Security Report — ${esc(dateStr)}</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a1929;
+    color: #e2e8f0;
+    line-height: 1.55;
+  }
+  .report-shell {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 48px 28px 80px;
+  }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #0d2137 0%, #132f4c 60%, #0d2137 100%);
+    border: 1px solid #1e3a5f;
+    border-radius: 18px;
+    padding: 36px 36px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: ""; position: absolute; top: -80px; right: -80px;
+    width: 280px; height: 280px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,217,165,0.18), transparent 65%);
+    pointer-events: none;
+  }
+  .hero-brand {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 18px;
+  }
+  .hero-logo {
+    width: 40px; height: 40px; border-radius: 11px;
+    background: linear-gradient(135deg, #00d9a5 0%, #00b4d8 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: #ffffff; font-weight: 800; font-size: 18px;
+  }
+  .hero-brand-name {
+    color: #ffffff; font-weight: 700; font-size: 17px; letter-spacing: 0.2px;
+  }
+  .hero-title {
+    color: #f1f5f9;
+    font-size: 28px;
+    font-weight: 700;
+    margin: 6px 0 8px;
+    line-height: 1.2;
+  }
+  .hero-sub { color: #94a3b8; font-size: 14px; margin: 0; }
+
+  /* Summary */
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin: 28px 0;
+  }
+  .summary-card {
+    background: #0d2137;
+    border: 1px solid #1e3a5f;
+    border-radius: 12px;
+    padding: 16px 12px;
+    text-align: center;
+  }
+  .summary-card.total {
+    background: linear-gradient(135deg, rgba(0,217,165,0.10) 0%, rgba(0,180,216,0.10) 100%);
+    border-color: rgba(0,217,165,0.35);
+  }
+  .summary-number {
+    font-size: 24px; font-weight: 700; color: #f1f5f9; margin: 0;
+    background: linear-gradient(135deg, #00d9a5, #00b4d8);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .summary-card:not(.total) .summary-number { background: none; -webkit-text-fill-color: initial; }
+  .summary-card.critical .summary-number { color: #ff4757; }
+  .summary-card.high     .summary-number { color: #ffa502; }
+  .summary-card.medium   .summary-number { color: #7d8af8; }
+  .summary-card.low      .summary-number { color: #2ed573; }
+  .summary-label { color: #94a3b8; font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; margin-top: 4px; display: block; }
+
+  /* Scan block */
+  .scan-block { margin-top: 28px; }
+  .scan-head {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, rgba(0,217,165,0.06), rgba(0,180,216,0.06));
+    border: 1px solid #1e3a5f;
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+  .scan-host { color: #f1f5f9; font-weight: 600; font-size: 15px; margin: 0; word-break: break-all; }
+  .scan-date { color: #94a3b8; font-size: 12px; white-space: nowrap; }
+
+  /* Finding */
+  .findings { display: flex; flex-direction: column; gap: 10px; }
+  .finding {
+    background: #0d2137;
+    border: 1px solid #1e3a5f;
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .finding-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .sev-badge {
+    padding: 4px 12px; border-radius: 999px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .finding-type { color: #f1f5f9; font-weight: 600; font-size: 14px; }
+  .finding-desc { color: #cbd5e1; font-size: 13.5px; margin: 6px 0 10px; }
+  .finding-row { display: flex; gap: 12px; padding: 4px 0; font-size: 12.5px; }
+  .finding-label {
+    color: #64748b; min-width: 84px; flex-shrink: 0;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; font-size: 11px; padding-top: 1px;
+  }
+  .finding-value { color: #cbd5e1; word-break: break-word; }
+  .finding-value.mono { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 11.5px; color: #94a3b8; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    background: #0d2137; border: 1px dashed #1e3a5f; border-radius: 14px;
+    margin-top: 32px;
+  }
+  .empty-title { color: #cbd5e1; font-weight: 600; font-size: 16px; margin: 0 0 6px; }
+  .empty-sub { color: #64748b; font-size: 13px; margin: 0; }
+
+  /* Footer */
+  .report-footer {
+    text-align: center; margin-top: 48px; padding-top: 24px;
+    border-top: 1px solid #1e3a5f;
+    color: #64748b; font-size: 11.5px;
+  }
+  .report-footer .accent { color: #00d9a5; }
+
+  @media (max-width: 720px) {
+    .summary { grid-template-columns: repeat(3, 1fr); }
+    .scan-head { flex-direction: column; align-items: flex-start; gap: 4px; }
+  }
+  ${printStyles}
+</style>
+</head>
+<body>
+  <div class="report-shell">
+    <div class="hero">
+      <div class="hero-brand">
+        <div class="hero-logo">B</div>
+        <span class="hero-brand-name">Baseera Security Scanner</span>
+      </div>
+      <h1 class="hero-title">Vulnerability Report</h1>
+      <p class="hero-sub">Generated ${esc(dateStr)} · ${esc(timeStr)}</p>
+    </div>
+
+    <div class="summary">
+      <div class="summary-card total"><p class="summary-number">${totalVulns}</p><span class="summary-label">Total</span></div>
+      <div class="summary-card critical"><p class="summary-number">${totalCritical}</p><span class="summary-label">Critical</span></div>
+      <div class="summary-card high"><p class="summary-number">${totalHigh}</p><span class="summary-label">High</span></div>
+      <div class="summary-card medium"><p class="summary-number">${totalMedium}</p><span class="summary-label">Medium</span></div>
+      <div class="summary-card low"><p class="summary-number">${totalLow}</p><span class="summary-label">Low</span></div>
+      <div class="summary-card total"><p class="summary-number">${securityScore}</p><span class="summary-label">Score</span></div>
+    </div>
+
+    ${scanSections}
+    ${emptyState}
+
+    <div class="report-footer">
+      Baseera Security Scanner · <span class="accent">${esc(dateStr)}</span> · Passive web vulnerability scanner
+    </div>
+  </div>
+</body>
+</html>`;
+  };
+
   const handleExportPDF = async () => {
     setExportLoading(true);
     setShowExportDropdown(false);
     try {
-      const allVulns = { ...scanVulnerabilities };
-      for (const scan of scans) {
-        if (!allVulns[scan.id]) {
-          try {
-            const res = await apiClient.get(`/scans/${scan.id}/vulnerabilities`);
-            if (res.success && res.data) allVulns[scan.id] = res.data;
-          } catch (err) { console.error('Failed to fetch vulnerabilities for scan', scan.id, err); }
-        }
-      }
-      const dateStr = new Date().toLocaleDateString();
-      let vulnRows = '';
-      scans.forEach(scan => {
-        const vulns = allVulns[scan.id] || [];
-        let hostname = scan.targetURL || '';
-        try { hostname = new URL(scan.targetURL).hostname; } catch {}
-        vulns.forEach(v => {
-          const sev = (v.severity || '').toLowerCase();
-          const color = sev === 'critical' ? '#dc2626' : sev === 'high' ? '#ea580c' : sev === 'medium' ? '#d97706' : '#16a34a';
-          vulnRows += `<tr><td>${hostname}</td><td>${scan.createdAt ? new Date(scan.createdAt).toLocaleDateString() : ''}</td><td><span style="background:${color};color:#fff;padding:2px 8px;border-radius:4px;font-size:12px">${v.severity || ''}</span></td><td>${v.type || ''}</td><td>${v.description || ''}</td><td style="font-size:11px">${v.location || ''}</td><td style="font-size:11px">${v.recommendation || ''}</td></tr>`;
-        });
-      });
-      const html = `<!DOCTYPE html><html><head><title>Baseera Security Scan Report</title><style>body{font-family:Arial,sans-serif;margin:40px;color:#1a202c}h1{color:#1e3a5f;border-bottom:3px solid #1e3a5f;padding-bottom:10px}.summary{display:flex;gap:20px;margin:20px 0}.summary-item{background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;text-align:center;flex:1}.summary-item h2{margin:0;font-size:28px;color:#1e3a5f}.summary-item p{margin:4px 0;color:#718096;font-size:13px}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#1e3a5f;color:#fff;padding:10px;text-align:left;font-size:13px}td{padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px}tr:nth-child(even){background:#f7fafc}.footer{margin-top:40px;color:#718096;font-size:12px;text-align:center}@media print{body{margin:20px}}</style></head><body><h1>Baseera Security Scan Report</h1><p style="color:#718096">Generated: ${dateStr}</p><div class="summary"><div class="summary-item"><h2>${totalVulns}</h2><p>Total Vulnerabilities</p></div><div class="summary-item"><h2 style="color:#dc2626">${totalCritical}</h2><p>Critical</p></div><div class="summary-item"><h2 style="color:#ea580c">${totalHigh}</h2><p>High</p></div><div class="summary-item"><h2 style="color:#d97706">${totalMedium}</h2><p>Medium</p></div><div class="summary-item"><h2 style="color:#16a34a">${totalLow}</h2><p>Low</p></div><div class="summary-item"><h2>${securityScore}</h2><p>Security Score</p></div></div><table><thead><tr><th>Host</th><th>Scan Date</th><th>Severity</th><th>Type</th><th>Description</th><th>Location</th><th>Recommendation</th></tr></thead><tbody>${vulnRows || '<tr><td colspan="7" style="text-align:center;color:#718096">No vulnerabilities found</td></tr>'}</tbody></table><div class="footer">Baseera Security Scanner &bull; ${dateStr}</div></body></html>`;
+      const html = await buildReportHtml({ forPrint: true });
       const win = window.open('', '_blank');
-      if (win) { win.document.write(html); win.document.close(); win.print(); }
+      if (win) {
+        win.document.write(html);
+        win.document.close();
+        // Give fonts a beat to load before the print dialog opens.
+        setTimeout(() => { try { win.focus(); win.print(); } catch (_) {} }, 350);
+      }
     } finally {
       setExportLoading(false);
     }
@@ -162,29 +409,7 @@ function Bugs() {
     setExportLoading(true);
     setShowExportDropdown(false);
     try {
-      const allVulns = { ...scanVulnerabilities };
-      for (const scan of scans) {
-        if (!allVulns[scan.id]) {
-          try {
-            const res = await apiClient.get(`/scans/${scan.id}/vulnerabilities`);
-            if (res.success && res.data) allVulns[scan.id] = res.data;
-          } catch (err) { console.error('Failed to fetch vulnerabilities for scan', scan.id, err); }
-        }
-      }
-      const dateStr = new Date().toLocaleDateString();
-      let vulnSections = '';
-      scans.forEach(scan => {
-        const vulns = allVulns[scan.id] || [];
-        if (vulns.length === 0) return;
-        let hostname = scan.targetURL || '';
-        try { hostname = new URL(scan.targetURL).hostname; } catch {}
-        vulns.forEach((v, i) => {
-          const sev = (v.severity || '').toLowerCase();
-          const color = sev === 'critical' ? '#dc2626' : sev === 'high' ? '#ea580c' : sev === 'medium' ? '#d97706' : '#16a34a';
-          vulnSections += `<div class="vuln-item"><div class="vuln-header"><span class="badge" style="background:${color}">${v.severity || ''}</span><span class="vuln-type">${v.type || ''}</span></div><table class="detail-table"><tr><th>Host</th><td>${hostname}</td></tr><tr><th>Scan Date</th><td>${scan.createdAt ? new Date(scan.createdAt).toLocaleDateString() : ''}</td></tr>${v.description ? `<tr><th>Description</th><td>${v.description}</td></tr>` : ''}${v.location ? `<tr><th>Location</th><td>${v.location}</td></tr>` : ''}${v.recommendation ? `<tr><th>Recommendation</th><td>${v.recommendation}</td></tr>` : ''}</table></div>`;
-        });
-      });
-      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Baseera Security Scanner Report</title><style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:#f0f4f8;margin:0;padding:0;color:#1a202c}.report-header{background:#1e3a5f;color:#fff;padding:32px 40px}.report-header h1{margin:0;font-size:28px}.report-header p{margin:8px 0 0;opacity:.8;font-size:14px}.container{max-width:1100px;margin:0 auto;padding:32px 40px}.summary-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-bottom:32px}.summary-card{background:#fff;border-radius:8px;padding:16px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.1)}.summary-card h2{margin:0 0 4px;font-size:26px;color:#1e3a5f}.summary-card p{margin:0;font-size:12px;color:#718096}.vuln-item{background:#fff;border-radius:8px;margin-bottom:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)}.vuln-header{display:flex;align-items:center;gap:12px;padding:14px 20px;background:#f7fafc;border-bottom:1px solid #e2e8f0}.badge{color:#fff;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:700}.vuln-type{font-weight:600;font-size:15px}.detail-table{width:100%;border-collapse:collapse}.detail-table th{background:#f7fafc;padding:10px 16px;text-align:left;font-size:13px;width:140px;border-bottom:1px solid #e2e8f0;color:#4a5568}.detail-table td{padding:10px 16px;font-size:13px;border-bottom:1px solid #e2e8f0}.footer{text-align:center;color:#718096;font-size:12px;margin-top:32px;padding-bottom:32px}</style></head><body><div class="report-header"><h1>Baseera Security Scanner Report</h1><p>Generated: ${dateStr}</p></div><div class="container"><div class="summary-grid"><div class="summary-card"><h2>${totalVulns}</h2><p>Total</p></div><div class="summary-card"><h2 style="color:#dc2626">${totalCritical}</h2><p>Critical</p></div><div class="summary-card"><h2 style="color:#ea580c">${totalHigh}</h2><p>High</p></div><div class="summary-card"><h2 style="color:#d97706">${totalMedium}</h2><p>Medium</p></div><div class="summary-card"><h2 style="color:#16a34a">${totalLow}</h2><p>Low</p></div><div class="summary-card"><h2>${securityScore}</h2><p>Security Score</p></div></div>${vulnSections || '<p style="text-align:center;color:#718096">No vulnerabilities found.</p>'}<div class="footer">Baseera Security Scanner &bull; ${dateStr}</div></div></body></html>`;
+      const html = await buildReportHtml({ forPrint: false });
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
