@@ -259,6 +259,7 @@
 .chat-header-right {
   display: flex;
   gap: 14px;
+  align-items: center;
 }
 
 .chat-icon-btn {
@@ -269,7 +270,56 @@
 }
 
 .chat-icon-btn:hover {
-  color: #e2e8f0;
+  color: #00d9a5;
+}
+
+/* Danger icon (trash) — hovers red, not teal */
+.chat-icon-danger:hover {
+  color: #ef4444;
+}
+
+/* Export-format dropdown anchored under the download icon */
+.chat-export-wrapper {
+  position: relative;
+}
+.chat-export-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  min-width: 180px;
+  background: #0d2137;
+  border: 1px solid #1e3a5f;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px -10px rgba(0, 0, 0, 0.6);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.chat-export-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.chat-export-item:hover {
+  background: rgba(0, 217, 165, 0.10);
+  color: #00d9a5;
+}
+.chat-export-item i {
+  width: 14px;
+  text-align: center;
+  font-size: 13px;
 }
 
 /* Search bar */
