@@ -398,6 +398,21 @@
   object-fit: contain;
 }
 
+/* Vector chat-bubble icon in place of the raster logo. Stays crisp at
+   any size and matches the Lucide icons used across the rest of the site. */
+.baseera-widget-empty-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(0, 217, 165, 0.10);
+  border: 1px solid rgba(0, 217, 165, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00d9a5;
+  margin-bottom: 4px;
+}
+
 /* ── Message rows ── */
 .baseera-widget-msg {
   display: flex;

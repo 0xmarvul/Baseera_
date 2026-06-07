@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { MessageSquare } from 'lucide-react';
 import LandingNavbar from '../components/LandingNavbar';
 import apiClient from '../api/axios.config';
 import baseeraLogo from '../assets/logo.png';
@@ -650,7 +651,7 @@ ${faviconHtml}
             {messages.length === 0 && !isTyping && (
               <div className="chat-empty">
                 <div className="chat-empty-icon">
-                  <img src={baseeraLogo} alt="Baseera" />
+                  <MessageSquare size={44} strokeWidth={1.5} />
                 </div>
                 <p>Ask Baseera about web vulnerabilities, fixes, and security best practices.</p>
               </div>
