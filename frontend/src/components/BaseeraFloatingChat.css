@@ -286,9 +286,64 @@
   flex-shrink: 0;
 }
 
-.baseera-widget-clear-btn:hover {
+.baseera-widget-clear-btn[disabled] {
+  cursor: not-allowed;
+}
+
+/* Trash hovers red. Export (download icon) hovers teal — set by the
+   wrapper class below so the same .baseera-widget-clear-btn rule serves
+   both buttons without a class rename. */
+.baseera-widget-clear-btn:hover:not([disabled]) {
   color: #ef4444;
   background: #7f1d1d30;
+}
+
+.baseera-widget-export-wrapper {
+  position: relative;
+}
+.baseera-widget-export-wrapper .baseera-widget-clear-btn:hover:not([disabled]) {
+  color: #00d9a5;
+  background: rgba(0, 217, 165, 0.12);
+}
+
+.baseera-widget-export-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  min-width: 170px;
+  background: #0d2137;
+  border: 1px solid #1e3a5f;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px -10px rgba(0, 0, 0, 0.6);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.baseera-widget-export-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.baseera-widget-export-item:hover {
+  background: rgba(0, 217, 165, 0.12);
+  color: #00d9a5;
+}
+.baseera-widget-export-item i {
+  width: 14px;
+  text-align: center;
+  font-size: 13px;
 }
 
 /* ── Messages ── */
