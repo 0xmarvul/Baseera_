@@ -1,4 +1,6 @@
-// XSS Scanner - inline-handler, javascript: URL, iframe srcdoc, and reflected-parameter checks.
+// XSS Scanner — dangerous-pattern, javascript: URL, iframe srcdoc, and
+// reflected-parameter checks. Inline event handlers moved out to their own
+// scanner (inline-event-handlers.js) because they're code-quality, not XSS.
 function scanXSS(pageUrl) {
   const results = [];
 
@@ -17,19 +19,7 @@ function scanXSS(pageUrl) {
     }
   });
 
-  // 2. Inline event handlers
-  const handlers = document.querySelectorAll('[onclick],[onmouseover],[onerror],[onload],[onfocus],[onblur]');
-  if (handlers.length > 0) {
-    results.push({
-      type: 'XSS',
-      severity: 'Low',
-      description: `${handlers.length} inline event handler(s) found (code-quality issue, not a vulnerability on its own).`,
-      location: pageUrl,
-      recommendation: 'Use addEventListener instead of inline event handlers.'
-    });
-  }
-
-  // 3. javascript: URLs in <a> or <form>
+  // 2. javascript: URLs in <a> or <form>
   if (document.querySelectorAll('a[href^="javascript:" i], form[action^="javascript:" i]').length > 0) {
     results.push({
       type: 'XSS',
@@ -40,7 +30,7 @@ function scanXSS(pageUrl) {
     });
   }
 
-  // 4. iframe srcdoc injection
+  // 3. iframe srcdoc injection
   if (document.querySelectorAll('iframe[srcdoc]').length > 0) {
     results.push({
       type: 'XSS',
@@ -51,20 +41,36 @@ function scanXSS(pageUrl) {
     });
   }
 
-  // 5. Reflected URL parameter in DOM body
+  // 4. Reflected URL parameter — only fire when the value lands in a
+  // dangerous context (script body, inline event handler attr, javascript:
+  // URL, or src attr). Plain body-text reflection is normal (search pages,
+  // breadcrumbs) and is no longer reported.
   try {
-    const body = document.body ? document.body.innerHTML : '';
     const params = new URLSearchParams(location.search);
     const hash = location.hash.slice(1);
     const values = [...Array.from(params.values()), hash].filter(v => v && v.length >= 6);
+    if (values.length === 0) return results;
+
+    const inlineScripts = Array.from(document.querySelectorAll('script:not([src])'))
+      .map(s => s.textContent || '').join('\n');
+    const handlerAttrs = ['onclick','onerror','onload','onmouseover','onfocus','onblur','onsubmit','onchange'];
+    const handlerText = Array.from(document.querySelectorAll('[onclick],[onerror],[onload],[onmouseover],[onfocus],[onblur],[onsubmit],[onchange]'))
+      .flatMap(el => handlerAttrs.map(a => el.getAttribute(a) || '').filter(Boolean))
+      .join('\n');
+    const jsHrefs = Array.from(document.querySelectorAll('a[href^="javascript:" i], form[action^="javascript:" i]'))
+      .map(el => (el.getAttribute('href') || el.getAttribute('action') || '')).join('\n');
+    const srcAttrs = Array.from(document.querySelectorAll('img[src], iframe[src], script[src]'))
+      .map(el => el.getAttribute('src') || '').join('\n');
+    const dangerousContext = inlineScripts + '\n' + handlerText + '\n' + jsHrefs + '\n' + srcAttrs;
+
     for (const v of values) {
-      if (body.indexOf(v) !== -1) {
+      if (dangerousContext.indexOf(v) !== -1) {
         results.push({
           type: 'Reflected XSS',
           severity: 'High',
-          description: `URL parameter value "${v.slice(0, 40)}..." appears verbatim in the page body (possible reflected XSS sink).`,
+          description: 'URL parameter value lands inside a dangerous context (inline script / event handler / javascript: URL / src attribute) without encoding.',
           location: pageUrl,
-          recommendation: 'HTML-encode all user input before inserting it into the DOM. Prefer textContent over innerHTML.'
+          recommendation: 'HTML-encode user input before inserting into the DOM. Never echo URL parameters into <script> blocks, event-handler attributes, or src attributes without strict sanitisation.'
         });
         break;
       }

@@ -306,7 +306,7 @@ function runPageScanners(pageUrl) {
     vulnerabilities.push({ type, severity, description, location: location || pageUrl, recommendation });
   }
 
-  // 1. XSS - inline-handler, javascript: URL, iframe srcdoc, reflected-parameter
+  // 1. XSS - dangerous patterns, javascript: URL, iframe srcdoc, reflected-parameter
   try {
     const scripts = document.querySelectorAll('script:not([src])');
     const dangerousPatterns = /eval\s*\(|innerHTML\s*=|document\.write\s*\(|javascript:/i;
@@ -315,10 +315,6 @@ function runPageScanners(pageUrl) {
         addVuln('XSS', 'Medium', 'Potentially unsafe inline JavaScript patterns detected (eval/innerHTML/document.write). This is a code-smell, not a confirmed XSS — review manually.', pageUrl, 'Avoid eval(), use textContent instead of innerHTML, and remove document.write().');
       }
     });
-    const allElements = document.querySelectorAll('[onclick],[onmouseover],[onerror],[onload],[onfocus],[onblur]');
-    if (allElements.length > 0) {
-      addVuln('XSS', 'Low', `Found ${allElements.length} element(s) with inline event handlers (code-quality issue, not a vulnerability on its own).`, pageUrl, 'Use addEventListener instead of inline event handlers.');
-    }
     const jsUrls = document.querySelectorAll('a[href^="javascript:" i], form[action^="javascript:" i]');
     if (jsUrls.length > 0) {
       addVuln('XSS', 'Critical', `Found ${jsUrls.length} element(s) using javascript: URLs (href/action).`, pageUrl, 'Avoid javascript: URLs. Bind click/submit handlers via addEventListener.');
@@ -326,16 +322,41 @@ function runPageScanners(pageUrl) {
     if (document.querySelectorAll('iframe[srcdoc]').length > 0) {
       addVuln('XSS', 'High', 'iframe with srcdoc attribute detected (inline HTML injection surface).', pageUrl, 'Avoid srcdoc with untrusted content; sandbox iframes with restrictive attributes.');
     }
-    // Reflected URL parameter in body
-    const body = document.body ? document.body.innerHTML : '';
+    // Reflected URL parameter — only fire when the value lands in a *dangerous*
+    // context (script body, an inline event-handler attribute, a javascript:
+    // URL, an unencoded src). Plain echo into body text (search results,
+    // breadcrumbs) is not a vulnerability, so we no longer flag it.
     const params = new URLSearchParams(location.search);
     const hash = location.hash.slice(1);
     const values = [...Array.from(params.values()), hash].filter(v => v && v.length >= 6);
-    for (const v of values) {
-      if (body.indexOf(v) !== -1) {
-        addVuln('Reflected XSS', 'High', `URL parameter value appears verbatim in page body (possible reflected XSS).`, pageUrl, 'HTML-encode user input before inserting into the DOM. Prefer textContent over innerHTML.');
-        break;
+    if (values.length > 0) {
+      const inlineScripts = Array.from(document.querySelectorAll('script:not([src])')).map(s => s.textContent || '').join('\n');
+      const handlerAttrs = ['onclick','onerror','onload','onmouseover','onfocus','onblur','onsubmit','onchange'];
+      const handlerText = Array.from(document.querySelectorAll('[onclick],[onerror],[onload],[onmouseover],[onfocus],[onblur],[onsubmit],[onchange]'))
+        .flatMap(el => handlerAttrs.map(a => el.getAttribute(a) || '').filter(Boolean))
+        .join('\n');
+      const jsHrefs = Array.from(document.querySelectorAll('a[href^="javascript:" i], form[action^="javascript:" i]'))
+        .map(el => (el.getAttribute('href') || el.getAttribute('action') || ''))
+        .join('\n');
+      const srcAttrs = Array.from(document.querySelectorAll('img[src], iframe[src], script[src]'))
+        .map(el => el.getAttribute('src') || '')
+        .join('\n');
+      const dangerousContext = inlineScripts + '\n' + handlerText + '\n' + jsHrefs + '\n' + srcAttrs;
+      for (const v of values) {
+        if (dangerousContext.indexOf(v) !== -1) {
+          addVuln('Reflected XSS', 'High', 'URL parameter value lands inside a dangerous context (inline script / event handler / javascript: URL / src attribute) without encoding.', pageUrl, 'HTML-encode user input before inserting into the DOM. Never echo URL parameters into <script> blocks, event-handler attributes, or src attributes without strict sanitisation.');
+          break;
+        }
       }
+    }
+  } catch (e) {}
+
+  // 1b. Inline Event Handlers — renamed from 'XSS' Low so it stops looking
+  // like a confirmed XSS finding. These are CSP-bypass surface + code-quality.
+  try {
+    const handlers = document.querySelectorAll('[onclick],[onmouseover],[onerror],[onload],[onfocus],[onblur],[onsubmit],[onchange]');
+    if (handlers.length > 0) {
+      addVuln('Inline Event Handlers', 'Low', `Found ${handlers.length} element(s) using inline event handler attributes (onclick, onerror, etc.). Not a vulnerability on its own — but they defeat strict CSP and make code review harder.`, pageUrl, "Move handlers to addEventListener in a separate script file. Enables Content-Security-Policy 'script-src' to drop 'unsafe-inline'.");
     }
   } catch (e) {}
 
@@ -402,7 +423,7 @@ function runPageScanners(pageUrl) {
   try {
     const metaCSP = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
     if (!metaCSP) {
-      addVuln('Missing CSP', 'High', 'No Content-Security-Policy meta tag found.', pageUrl, 'Add a Content-Security-Policy header or meta tag to prevent XSS attacks.');
+      addVuln('Missing CSP', 'Medium', 'No Content-Security-Policy meta tag found. CSP is the primary anti-XSS defence-in-depth control; absent CSP leaves the page reliant on output encoding alone.', pageUrl, 'Add a Content-Security-Policy header (or meta tag) restricting script-src, style-src, and frame-ancestors. Start with report-only mode to discover violations.');
     }
   } catch (e) {}
 
@@ -450,17 +471,7 @@ function runPageScanners(pageUrl) {
     }
   } catch (e) {}
 
-  // 11. Deprecated HTML
-  try {
-    const deprecated = ['font', 'center', 'marquee', 'blink', 'strike', 'big', 'tt'];
-    let found = [];
-    deprecated.forEach(tag => {
-      if (document.querySelector(tag)) found.push(`<${tag}>`);
-    });
-    if (found.length > 0) {
-      addVuln('Deprecated HTML', 'Low', `Deprecated HTML tags found: ${found.join(', ')}.`, pageUrl, 'Replace deprecated HTML tags with modern CSS equivalents.');
-    }
-  } catch (e) {}
+  // 11. (Removed — Deprecated HTML was a style/legacy concern, not security.)
 
   // 12. Open Redirect
   try {
@@ -483,13 +494,13 @@ function runPageScanners(pageUrl) {
       if (!hasToken) unsafeForms++;
     });
     if (unsafeForms > 0) {
-      addVuln('CSRF', 'Medium', `${unsafeForms} POST form(s) found without visible CSRF tokens.`, pageUrl, 'Include CSRF tokens in all state-changing forms.');
+      addVuln('CSRF', 'Medium', `${unsafeForms} POST form(s) found without a visible CSRF token hidden field. This is a DOM-only heuristic and may be a false positive on modern frameworks that use cookie-based CSRF (SameSite=Strict cookies) or header tokens (X-CSRF-Token, X-XSRF-TOKEN) instead of hidden form fields.`, pageUrl, 'Verify your framework uses one of: SameSite=Strict cookies, a synchroniser-token pattern, or an anti-forgery header. If none, add a CSRF token hidden field to every state-changing form.');
     }
   } catch (e) {}
 
   // 14. Sensitive File Paths + admin/debug surfaces (links, scripts, iframes, comments, and the page URL itself)
   try {
-    const patterns = /\/(\.git(\/|$)|\.svn\/|\.hg\/|\.env(\.|$|\/)|\.htaccess|\.htpasswd|\.DS_Store|\.idea\/|\.vscode\/|\.aws\/|\.npmrc|\.bak|\.old|\.orig|\.swp|id_rsa|id_dsa|Thumbs\.db|wp-admin|wp-config|phpmyadmin|phpinfo\.php|server-status|server-info|web\.config|composer\.lock|package-lock\.json|database\.sql|config\.(php|json|yml|yaml|inc\.php)|admin(istrator)?(\/|$|\?|\.php)|admin[-_]?(panel|cp|console)(\/|$|\?)|swagger(-ui)?(\/|$|\?)|api-docs(\/|$|\?)|openapi(\.json|\.yaml|\/|$)|graphql(\/|$|\?)|graphiql(\/|$|\?)|actuator(\/|$|\?)|jolokia(\/|$|\?)|console(\/|$|\?)|(private|internal|intranet)(\/|$|\?)|(backup|backups|bak|old|archive)(\/|$|\?|\.))/i;
+    const patterns = /\/(\.git(\/|$)|\.svn\/|\.hg\/|\.env(\.|$|\/)|\.htaccess|\.htpasswd|\.DS_Store|\.idea\/|\.vscode\/|\.aws\/|\.npmrc|\.bak|\.old|\.orig|\.swp|id_rsa|id_dsa|Thumbs\.db|wp-admin|wp-config|phpmyadmin|phpinfo\.php|server-status|server-info|web\.config|composer\.lock|package-lock\.json|database\.sql|config\.(php|json|yml|yaml|inc\.php)|admin(istrator)?(\/|$|\?|\.php)|admin[-_]?(panel|cp|console)(\/|$|\?)|swagger(-ui)?(\/|$|\?)|api-docs(\/|$|\?)|openapi(\.json|\.yaml|\/|$)|graphql(\/|$|\?)|graphiql(\/|$|\?)|actuator(\/|$|\?)|jolokia(\/|$|\?)|console(\/|$|\?)|(private|internal|intranet)(\/|$|\?)|(backup|backups|bak|old|archive)(\/|$|\?|\.)|cgi-bin\/|\/bin(\/|$)|\/ws(\/|$)|\/sbin(\/|$)|\/etc(\/|$)|\/proc(\/|$)|\/tmp(\/|$)|\.svn\/wc\.db|\.git\/HEAD|\.git\/config|\.git\/index|core\.dump|crash\.log|dump\.sql|dump\.tar|robots\.txt\?|sitemap\.xml\?|wp-content\/(uploads|debug\.log)|node_modules\/|vendor\/|tests?\/|spec\/|fixtures?\/)/i;
     const urls = new Set();
     if (pageUrl) urls.add(pageUrl);
     document.querySelectorAll('a[href], link[href], script[src], img[src], iframe[src], source[src]').forEach(el => {
@@ -512,8 +523,8 @@ function runPageScanners(pageUrl) {
     const trackerDomains = ['google-analytics.com', 'googletagmanager.com', 'facebook.net', 'hotjar.com', 'mixpanel.com', 'segment.com'];
     const scripts = Array.from(document.querySelectorAll('script[src]')).map(s => s.src);
     const foundTrackers = trackerDomains.filter(t => scripts.some(s => s.includes(t)));
-    if (foundTrackers.length >= 3) {
-      addVuln('Excessive Trackers', 'Low', `${foundTrackers.length} analytics/tracking scripts detected: ${foundTrackers.join(', ')}.`, pageUrl, 'Review third-party tracking scripts for privacy compliance (GDPR/CCPA).');
+    if (foundTrackers.length >= 5) {
+      addVuln('Excessive Trackers', 'Low', `5+ third-party tracking scripts detected (${foundTrackers.length} total): ${foundTrackers.join(', ')}. Each tracker is a third-party supply-chain dependency that can be hijacked, and a GDPR/CCPA consent surface.`, pageUrl, 'Audit each tracker for business need. Remove duplicates and obsolete pixels. Ensure your cookie banner asks consent for each tracking purpose under GDPR/CCPA.');
     }
   } catch (e) {}
 
@@ -665,26 +676,9 @@ function runPageScanners(pageUrl) {
     }
   } catch (e) {}
 
-  // 27. Sensitive Form Autocomplete
-  try {
-    const passwords = Array.from(document.querySelectorAll('input[type="password"]'));
-    const risky = passwords.filter(p => {
-      const ac = (p.getAttribute('autocomplete') || '').toLowerCase();
-      return ac === '' || ac === 'on' || ac === 'true';
-    });
-    if (risky.length > 0) {
-      addVuln('Sensitive Autocomplete', 'Low', `${risky.length} password input(s) allow browser autocomplete.`, pageUrl, 'Set autocomplete="new-password" on signup/reset forms and autocomplete="current-password" on login forms.');
-    }
-    const ccNames = /(cc|card|credit)[-_]?(number|num|no|pan)/i;
-    const ccFields = Array.from(document.querySelectorAll('input[name], input[id], input[autocomplete]')).filter(i => {
-      const attrs = `${i.getAttribute('name') || ''} ${i.getAttribute('id') || ''} ${i.getAttribute('autocomplete') || ''}`;
-      return ccNames.test(attrs) || /cc-number/i.test(i.getAttribute('autocomplete') || '');
-    });
-    const ccRisky = ccFields.filter(f => (f.getAttribute('autocomplete') || '').toLowerCase() !== 'off');
-    if (ccRisky.length > 0) {
-      addVuln('Sensitive Autocomplete', 'Low', `${ccRisky.length} credit-card input(s) do not set autocomplete="off".`, pageUrl, 'Set autocomplete="off" on credit-card inputs to avoid storing full PAN in browser profiles.');
-    }
-  } catch (e) {}
+  // 27. (Removed — Sensitive Autocomplete contradicted NIST 800-63B guidance,
+  // which now favours password-manager autofill rather than discouraging it.)
+
 
   // 28. Server / Technology Version Disclosure
   try {
@@ -726,6 +720,55 @@ function runPageScanners(pageUrl) {
     if (external.length > 0) {
       const hasPassword = Array.from(document.querySelectorAll('form input[type="password"]')).length > 0;
       addVuln('External Form Action', hasPassword ? 'High' : 'Medium', `${external.length} form(s) submit to a different origin: ${external.slice(0, 3).join(', ')}.`, pageUrl, 'Only submit sensitive forms to your own backend. If an external action is intentional, verify it over HTTPS and document the dependency.');
+    }
+  } catch (e) {}
+
+  // 31. Mixed-content WebSocket (passive DOM-only scan; we do NOT open any socket)
+  try {
+    if (location.protocol === 'https:') {
+      const wsHits = new Set();
+      const scriptText = Array.from(document.querySelectorAll('script:not([src])'))
+        .map(s => s.textContent || '').join('\n');
+      const wsRegex = /\bws:\/\/[^"'\s)<>]+/gi;
+      let m;
+      while ((m = wsRegex.exec(scriptText)) !== null) wsHits.add(m[0].slice(0, 120));
+      document.querySelectorAll('a[href^="ws://" i]').forEach(a => wsHits.add(a.getAttribute('href')));
+      if (wsHits.size > 0) {
+        addVuln('Insecure WebSocket', 'High', `${wsHits.size} insecure WebSocket URL(s) (ws://) found on an HTTPS page: ${[...wsHits].slice(0, 3).join(', ')}. Traffic over ws:// is unencrypted, allowing on-path attackers to read or inject messages — and modern browsers will refuse the connection from a secure page.`, pageUrl, 'Switch every WebSocket URL to wss:// and ensure the server presents a valid TLS certificate. Keep ws:// only for local development on http://localhost.');
+      }
+    }
+  } catch (e) {}
+
+  // 32. Admin Endpoint Exposure (internal API references leaked in client code)
+  try {
+    const sources = [
+      ...Array.from(document.querySelectorAll('script:not([src])')).map(s => s.textContent || ''),
+      Array.from(document.querySelectorAll('a[href], form[action]'))
+        .map(el => (el.getAttribute('href') || el.getAttribute('action') || '')).join('\n')
+    ].join('\n');
+    const adminEndpointRe = /\b\/?api\/(admin|internal|debug|private|sudo|root|management|maintenance|sys|system)\/[a-z0-9_\-\/.]+/gi;
+    const hits = new Set();
+    let m;
+    while ((m = adminEndpointRe.exec(sources)) !== null) hits.add(m[0].slice(0, 120));
+    if (hits.size > 0) {
+      addVuln('Admin Endpoint Exposure', 'High', `${hits.size} internal/admin API endpoint reference(s) found in client code: ${[...hits].slice(0, 3).join(', ')}. These paths should not be reachable by the public — leaking them in browser-visible JS makes them an obvious target.`, pageUrl, 'Remove admin/internal endpoint references from client-side JavaScript. Enforce authentication AND authorization on every such route server-side, and consider blocking the entire path at your edge / WAF for anything outside the office IP.');
+    }
+  } catch (e) {}
+
+  // 33. Cloud Storage Reference (S3 / GCS / Azure Blob URLs in client code)
+  try {
+    const html = document.documentElement.innerHTML || '';
+    const cloudRe = /\b((?:[a-z0-9-]+\.)?s3[.-][a-z0-9-]+\.amazonaws\.com\/[a-z0-9._\-\/]*|storage\.googleapis\.com\/[a-z0-9._\-\/]+|[a-z0-9-]+\.blob\.core\.windows\.net\/[a-z0-9._\-\/]*|[a-z0-9-]+\.r2\.cloudflarestorage\.com\/[a-z0-9._\-\/]*)/gi;
+    const cloudHits = new Set();
+    let m;
+    while ((m = cloudRe.exec(html)) !== null) cloudHits.add(m[0].slice(0, 140));
+    if (cloudHits.size > 0) {
+      const suspicious = [...cloudHits].filter(u => /(backup|private|internal|staging|dev|test|secret|dump|export)/i.test(u));
+      if (suspicious.length > 0) {
+        addVuln('Cloud Storage Reference', 'Low', `${cloudHits.size} cloud storage URL(s) referenced; ${suspicious.length} contain suspicious words (backup/private/internal/staging): ${suspicious.slice(0, 3).join(', ')}. Verify the bucket is not publicly listable and contains only intended-public assets.`, pageUrl, "Confirm bucket policy is not public-readable for listing. On AWS S3, set 'Block Public Access' at the account level and use signed URLs for private content. On GCS / Azure / R2, the equivalent controls are 'Uniform bucket-level access' (GCS) and disabling anonymous reads.");
+      } else {
+        addVuln('Cloud Storage Reference', 'Low', `${cloudHits.size} cloud storage URL(s) referenced: ${[...cloudHits].slice(0, 3).join(', ')}. Verify the bucket is not publicly listable and contains only intended-public assets.`, pageUrl, "Confirm bucket policy is not public-readable for listing. On AWS S3, set 'Block Public Access' and prefer signed URLs for private content. On GCS / Azure / R2, the equivalent controls are 'Uniform bucket-level access' (GCS) and disabling anonymous reads.");
+      }
     }
   } catch (e) {}
 

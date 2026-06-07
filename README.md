@@ -18,13 +18,13 @@
 
 ---
 
-Baseera (meaning "insight" or "vision" in Arabic) helps developers and students discover, understand, and fix the most common classes of web vulnerabilities. It combines a Chrome extension that runs 28 passive scanners directly in the browser, an AI assistant that explains every finding in plain language, and a full-stack web dashboard for tracking scan history. The backend is built with C# .NET 8, the AI service with Python, and the frontend with React + Vite.
+Baseera (meaning "insight" or "vision" in Arabic) helps developers and students discover, understand, and fix the most common classes of web vulnerabilities. It combines a Chrome extension that runs 31 passive scanners directly in the browser, an AI assistant that explains every finding in plain language, and a full-stack web dashboard for tracking scan history. The backend is built with C# .NET 8, the AI service with Python, and the frontend with React + Vite.
 
 ---
 
 ## Features
 
-- 28 passive vulnerability scanners across Critical, High, Medium, and Low tiers
+- 31 passive vulnerability scanners across Critical, High, Medium, and Low tiers
 - AI-powered chatbot that explains every finding and answers security questions
 - Chrome extension (Manifest V3) for one-click scanning of any website
 - Real-time risk scoring and severity triage
@@ -56,7 +56,7 @@ frontend/
     popup/           -- Extension popup UI
     background/      -- Service worker
     content/         -- Content script
-    scanners/        -- 28 passive vulnerability scanners
+    scanners/        -- 31 passive vulnerability scanners
     options/         -- Extension options page (configure backend URLs)
     config.js        -- Runtime config helper
     icons/           -- Extension icons
@@ -263,14 +263,14 @@ The Baseera Security Scanner Chrome Extension allows passive vulnerability scann
 
 ### Extension Location
 
-The 28 scanners are grouped by OWASP-aligned severity:
+The 31 scanners are grouped by OWASP-aligned severity:
 
 | Tier | Scanners |
 |------|----------|
 | **Critical** | SQL Injection, Command Injection, Exposed API Keys, Insecure Forms (Password over HTTP), XSS via `javascript:` URLs |
-| **High** | Missing CSP, Weak CSP, Sensitive Files, Insecure Storage, Outdated Components, DOM-based XSS, Insecure postMessage, Session Token in URL, Reflected XSS, iframe `srcdoc` XSS, External Form Action (with password) |
-| **Medium** | XSS code-smell (eval/innerHTML), Mixed Content, Clickjacking, Insecure Cookies, Missing SRI, CORS Misconfiguration, Debug Pages, Open Redirect, CSRF, Missing HSTS, Source Map Exposure, Directory Listing, External Form Action (no password) |
-| **Low** | XSS inline event handlers, Deprecated HTML, Excessive Trackers, Sensitive Autocomplete, Version Disclosure, Missing X-Content-Type-Options, Missing Permissions-Policy, Missing Cross-Origin-Opener-Policy, Missing Referrer-Policy |
+| **High** | Weak CSP, Sensitive Files, Insecure Storage, Outdated Components, DOM-based XSS, Insecure postMessage, Session Token in URL, Reflected XSS (dangerous-context only), iframe `srcdoc` XSS, External Form Action (with password), Insecure WebSocket (ws:// on HTTPS), Admin Endpoint Exposure |
+| **Medium** | Missing CSP, XSS code-smell (eval/innerHTML), Mixed Content, Clickjacking, Insecure Cookies, Missing SRI, CORS Misconfiguration, Debug Pages, Open Redirect, CSRF, Missing HSTS, Source Map Exposure, Directory Listing, External Form Action (no password) |
+| **Low** | Inline Event Handlers, Excessive Trackers (5+ scripts), Version Disclosure, Cloud Storage Reference, Missing X-Content-Type-Options, Missing Permissions-Policy, Missing Cross-Origin-Opener-Policy, Missing Referrer-Policy |
 
 Each scanner lives in `frontend/extension/scanners/` as a standalone file. The runtime logic that actually runs in the page is inlined in `popup/popup.js`. See `frontend/extension/scanners/index.js` for the canonical registry.
 

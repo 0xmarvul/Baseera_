@@ -918,9 +918,9 @@ public class ChatController : ControllerBase
                 "Disable debug mode in all production environments. Configure custom error pages. Remove debug endpoints."),
 
             // ── Specific security header queries (all map to Missing Security Headers) ──
-            ["missing csp"] = ("Missing CSP", "High",
-                "A missing Content-Security-Policy header leaves the page unprotected against XSS, data injection, and unauthorized resource loading. CSP tells the browser which script/style/resource sources are allowed to execute. Missing CSP is High severity because it directly enables XSS.",
-                "Add a strict Content-Security-Policy header to every response. Use nonces or hashes for inline scripts instead of 'unsafe-inline'. Enable CSP reporting to catch violations."),
+            ["missing csp"] = ("Missing CSP", "Medium",
+                "A missing Content-Security-Policy header leaves the page reliant on output encoding alone — every other XSS protection becomes the only line of defense. Treated as Medium (defence-in-depth gap, not a direct vulnerability). A WEAK CSP containing 'unsafe-inline' or wildcards is High since it directly enables XSS.",
+                "Add a Content-Security-Policy header (or meta tag) restricting script-src, style-src, and frame-ancestors. Start with report-only mode to discover violations, then enforce."),
             ["missing hsts"] = ("Missing Security Headers", "Medium",
                 "Missing Strict-Transport-Security (HSTS) lets attackers downgrade HTTPS to HTTP and intercept traffic on first visit or via stripping attacks.",
                 "Send 'Strict-Transport-Security: max-age=31536000; includeSubDomains; preload' on every HTTPS response. Submit to the HSTS preload list."),
@@ -1027,16 +1027,6 @@ public class ChatController : ControllerBase
                 "Subresource Integrity verifies that a fetched script/stylesheet matches a cryptographic hash, defeating CDN compromise.",
                 "Add integrity and crossorigin attributes to every cross-origin <script src> and <link rel=\"stylesheet\">."),
 
-            ["deprecated html"] = ("Deprecated HTML Tags", "Low",
-                "Tags like <center>, <font>, <marquee>, <blink>, <applet>, <frameset> were removed from HTML5. Browsers still render most for compatibility, but their presence signals an outdated codebase often missing security patches.",
-                "Replace each deprecated tag with its modern equivalent (CSS, <strong>, <em>, CSS animations, <iframe>). Run W3C validator and a linter like htmlhint."),
-            ["deprecated tags"] = ("Deprecated HTML Tags", "Low",
-                "HTML tags removed in HTML5 (center, font, marquee, blink, frameset) still render but signal a stale codebase.",
-                "Replace with modern equivalents (CSS, semantic tags, CSS animations)."),
-            ["obsolete html"] = ("Deprecated HTML Tags", "Low",
-                "Obsolete HTML tags signal an unmaintained codebase likely missing security patches as well.",
-                "Audit with the W3C validator and htmlhint, replace deprecated tags with modern equivalents."),
-
             ["excessive trackers"] = ("Excessive Third-Party Trackers", "Low",
                 "Embedding many analytics/ad/session-replay scripts gives each one full page access: they can read forms, URLs, and cookies. More trackers = larger attack surface and a single compromised tracker becomes a skimmer.",
                 "Audit every third-party script. Load via a consent manager (post-opt-in only). Self-host where possible. Add strict CSP script-src and SRI on remaining trackers."),
@@ -1107,13 +1097,6 @@ public class ChatController : ControllerBase
                 "A public sourcemap reveals your original source, giving attackers a full codebase to audit.",
                 "Strip the //# sourceMappingURL comment in prod builds, or host maps on an auth-protected path."),
 
-            ["autocomplete"] = ("Sensitive Form Autocomplete", "Low",
-                "Browsers auto-fill fields based on autocomplete attributes. Allowing autocomplete on credit-card fields, or using 'on' instead of 'new-password' / 'current-password', can leak data to shared-device users or browser-profile sync. Modern guidance (NIST 800-63B) actually favors password-manager autofill, so this is treated as low-tier hygiene rather than a true vulnerability.",
-                "Set autocomplete=\"current-password\" on login forms and \"new-password\" on signup/reset. Set autocomplete=\"off\" on credit-card inputs to avoid browser-stored PAN."),
-            ["sensitive autocomplete"] = ("Sensitive Form Autocomplete", "Low",
-                "Misconfigured autocomplete attributes on sensitive fields (passwords, credit cards) can leak data via shared-device autofill or browser-profile sync. Treated as low-tier hygiene; modern guidance favors password-manager autofill.",
-                "Use autocomplete=\"current-password\"/\"new-password\" for passwords and \"off\" for credit cards."),
-
             ["version disclosure"] = ("Server / Technology Version Disclosure", "Low",
                 "Generator meta tags, Server/X-Powered-By headers, and banner comments reveal the exact framework + version. Attackers map the target to known CVEs and pick pre-built exploits.",
                 "Remove the <meta name=\"generator\"> tag. Strip Server / X-Powered-By headers at the reverse proxy. Don't embed build versions in shipped HTML/JS."),
@@ -1157,6 +1140,50 @@ public class ChatController : ControllerBase
             ["directory listing enabled"] = ("Directory Listing Enabled", "Medium",
                 "Directory listing shows every file in a folder when no index file exists — commonly exposes backups, .git, or config remnants.",
                 "Disable at the web server ('autoindex off' / 'Options -Indexes'). Audit what's in the folder regardless."),
+
+            // ── New scanner entries (Inline Event Handlers, WebSocket, Admin Endpoint, Cloud Storage) ──
+            ["inline event handlers"] = ("Inline Event Handlers", "Low",
+                "onclick / onerror / onload (and similar) attributes embed JS in HTML. Not a vulnerability on their own, but they defeat strict Content Security Policy: while inline handlers are present you cannot drop 'unsafe-inline' from script-src.",
+                "Move every handler to addEventListener in a separate script file. Then enable a strict CSP without 'unsafe-inline' — that single change blocks most XSS variants by default."),
+            ["inline event handler"] = ("Inline Event Handlers", "Low",
+                "Inline event-handler attributes (onclick, onerror) are CSP-bypass surface and code-quality friction, not exploitable on their own.",
+                "Use addEventListener in external JS so CSP script-src can drop 'unsafe-inline'."),
+            ["onclick attribute"] = ("Inline Event Handlers", "Low",
+                "Inline onclick (and similar) attributes prevent strict CSP and complicate code review.",
+                "Migrate to addEventListener. Allow CSP to enforce 'no unsafe-inline'."),
+            ["insecure websocket"] = ("Insecure WebSocket (ws://) on HTTPS Page", "High",
+                "ws:// on an HTTPS page is unencrypted — an on-path attacker reads or injects messages. Modern browsers refuse the connection ('mixed content blocked'), silently breaking the feature.",
+                "Switch every WebSocket URL to wss:// with a valid TLS certificate. Keep ws:// only for localhost dev. Construct the URL with 'wss:' regardless of environment so the scheme can't drift."),
+            ["ws://"] = ("Insecure WebSocket (ws://) on HTTPS Page", "High",
+                "ws:// (insecure WebSocket) on HTTPS pages exposes traffic to network attackers; modern browsers block the connection entirely.",
+                "Use wss:// exclusively. Serve a valid certificate on the WebSocket endpoint."),
+            ["websocket"] = ("Insecure WebSocket (ws://) on HTTPS Page", "High",
+                "WebSocket security depends on the scheme: ws:// is unencrypted, wss:// uses TLS. On HTTPS pages only wss:// works.",
+                "Use wss:// exclusively. Pin certificates server-side if possible."),
+            ["mixed content websocket"] = ("Insecure WebSocket (ws://) on HTTPS Page", "High",
+                "An HTTPS page opening a ws:// WebSocket is mixed content — encrypted page, unencrypted side channel.",
+                "Switch to wss://. Browsers will refuse mixed-content WebSocket connections."),
+            ["admin endpoint exposure"] = ("Admin Endpoint Exposure", "High",
+                "Client-side JS that references /api/admin/, /api/internal/, /api/debug/ etc. hands attackers a target list. Server-side auth is still the primary control, but the leak makes reconnaissance trivial.",
+                "Strip admin/internal endpoint references from any code shipped to the browser. Split the build so admin routes get a separate bundle behind auth. Enforce authorization on every such route and consider blocking at edge/WAF outside the office IP."),
+            ["admin endpoint"] = ("Admin Endpoint Exposure", "High",
+                "Admin or internal API paths visible in browser-loaded JavaScript give attackers a recon shortcut.",
+                "Remove these paths from public bundles. Authorize them server-side; restrict by IP at edge if possible."),
+            ["internal api exposure"] = ("Admin Endpoint Exposure", "High",
+                "Internal API paths leaked in client code make them obvious targets even though server-side auth is the real control.",
+                "Don't ship internal endpoints to the browser. Bundle splitting + server-side authz + WAF rules."),
+            ["/api/admin"] = ("Admin Endpoint Exposure", "High",
+                "/api/admin paths referenced in client code expose admin surface to anyone reading the JS.",
+                "Move admin code to a separate bundle behind authentication. Enforce role-based authorization on every endpoint."),
+            ["cloud storage reference"] = ("Cloud Storage Reference", "Low",
+                "S3 / GCS / Azure Blob / R2 URLs in client HTML/JS are normal for public CDNs but become a red flag when the bucket name contains backup, private, internal, staging, dump, or secret — and when the bucket allows public listing.",
+                "Confirm the bucket policy isn't public-listable. AWS: enable 'Block Public Access' and use signed URLs for private content. GCS: 'Uniform bucket-level access', disable anonymous access. Rename suggestive bucket names to neutral strings."),
+            ["s3 bucket"] = ("Cloud Storage Reference", "Low",
+                "Public references to S3 buckets are normal for CDN use; they become a leak when buckets named 'backup' / 'private' / 'internal' are referenced — those should not be public.",
+                "Enable 'Block Public Access'. Use signed URLs for private objects. Rename suggestive buckets."),
+            ["public bucket"] = ("Cloud Storage Reference", "Low",
+                "Publicly listable cloud storage buckets have caused dozens of real-world data leaks (millions of records each).",
+                "Disable public listing. Audit bucket policies. Prefer signed URLs for private content."),
         };
 
         if (System.Text.RegularExpressions.Regex.IsMatch(lower,
@@ -1194,22 +1221,24 @@ public class ChatController : ControllerBase
                 "Insecure Forms (Password over HTTP)", "XSS (javascript: URLs)"
             },
             ["high"] = new[] {
-                "Missing CSP", "Weak CSP", "Sensitive Files Exposure",
+                "Weak CSP", "Sensitive Files Exposure",
                 "Insecure Client-Side Storage", "Vulnerable and Outdated Components",
                 "DOM-based XSS", "Insecure postMessage", "Session Token in URL",
                 "Reflected XSS", "iframe srcdoc XSS",
-                "External Form Action (with password)"
+                "External Form Action (with password)",
+                "Insecure WebSocket (ws://) on HTTPS Page",
+                "Admin Endpoint Exposure"
             },
             ["medium"] = new[] {
-                "XSS (eval/innerHTML code-smell)", "Mixed Content", "Clickjacking",
+                "Missing CSP", "XSS (eval/innerHTML code-smell)", "Mixed Content", "Clickjacking",
                 "Insecure Cookies", "Missing SRI", "CORS Misconfiguration",
                 "Debug Pages", "Open Redirect", "CSRF", "Missing HSTS",
                 "Source Map Exposure", "Directory Listing",
                 "External Form Action (no password)"
             },
             ["low"] = new[] {
-                "XSS (inline event handlers)", "Deprecated HTML", "Excessive Trackers",
-                "Sensitive Autocomplete", "Version Disclosure",
+                "Inline Event Handlers", "Excessive Trackers",
+                "Version Disclosure", "Cloud Storage Reference",
                 "Missing X-Content-Type-Options", "Missing Permissions-Policy",
                 "Missing Cross-Origin-Opener-Policy", "Missing Referrer-Policy"
             },
@@ -1282,23 +1311,24 @@ public class ChatController : ControllerBase
             lower.StartsWith("vulnerabilit"))
         {
             return ConversationalResponse(
-                "Supported vulnerability types (matching the extension scanner output):\n\n" +
+                "Supported vulnerability types (31 scanners, matching the extension output):\n\n" +
                 "**Critical**\n" +
                 "- SQL Injection\n- Command Injection\n- Exposed API Keys / Secrets\n" +
                 "- Insecure Forms (Password over HTTP)\n- XSS via javascript: URLs\n\n" +
                 "**High**\n" +
-                "- Missing CSP\n- Weak CSP\n- Sensitive Files Exposure\n" +
+                "- Weak CSP\n- Sensitive Files Exposure\n" +
                 "- Insecure Client-Side Storage\n- Vulnerable and Outdated Components\n" +
                 "- DOM-based XSS\n- Insecure postMessage\n- Session Token in URL\n" +
-                "- Reflected XSS\n- iframe srcdoc XSS\n- External Form Action (with password)\n\n" +
+                "- Reflected XSS (dangerous-context only)\n- iframe srcdoc XSS\n- External Form Action (with password)\n" +
+                "- Insecure WebSocket (ws://) on HTTPS Page\n- Admin Endpoint Exposure\n\n" +
                 "**Medium**\n" +
-                "- XSS code-smell (eval/innerHTML/document.write)\n- Mixed Content\n" +
+                "- Missing CSP\n- XSS code-smell (eval/innerHTML/document.write)\n- Mixed Content\n" +
                 "- Clickjacking\n- Insecure Cookies\n- Missing SRI\n- CORS Misconfiguration\n" +
                 "- Debug Pages\n- Open Redirect\n- CSRF\n- Missing HSTS\n" +
                 "- Source Map Exposure\n- Directory Listing\n- External Form Action (no password)\n\n" +
                 "**Low**\n" +
-                "- XSS via inline event handlers\n- Deprecated HTML\n- Excessive Trackers\n" +
-                "- Sensitive Autocomplete\n- Version Disclosure\n" +
+                "- Inline Event Handlers\n- Excessive Trackers (5+ scripts threshold)\n" +
+                "- Version Disclosure\n- Cloud Storage Reference\n" +
                 "- Missing X-Content-Type-Options\n- Missing Permissions-Policy\n" +
                 "- Missing Cross-Origin-Opener-Policy\n- Missing Referrer-Policy",
                 "meta:list");

@@ -383,8 +383,10 @@ VULNERABILITIES = {
             "Missing or misconfigured Content Security Policy (CSP) headers allow XSS attacks, "
             "data injection attacks, and unauthorized resource loading. "
             "A properly configured CSP restricts which sources are allowed to serve content to the page, "
-            "significantly reducing the attack surface. CSP is the primary defence-in-depth control "
-            "against XSS, so a missing or weak CSP is treated as High severity."
+            "significantly reducing the attack surface. Severity depends on the failure mode: "
+            "**weak CSP** containing 'unsafe-inline', 'unsafe-eval', or wildcards is treated as High "
+            "because it directly enables XSS; **missing CSP entirely** is Medium because it's a "
+            "defence-in-depth gap rather than a direct vulnerability."
         ),
         "severity": "High",
         "fix": (
@@ -528,29 +530,6 @@ VULNERABILITIES = {
                      "sourcemap", "sourcemap exposure", ".map file",
                      "sourcemappingurl", "source map leak"],
     },
-    "autocomplete_sensitive": {
-        "name": "Sensitive Form Autocomplete",
-        "explanation": (
-            "Password and credit-card fields that allow browser autocomplete can be auto-"
-            "populated on shared or compromised devices, and can leak PAN / credentials "
-            "into browser profile syncs. Note: modern guidance (NIST 800-63B) actually "
-            "favors password-manager autofill, so this is treated as a low-tier hygiene "
-            "finding rather than a true vulnerability."
-        ),
-        "severity": "Low",
-        "fix": (
-            "Use autocomplete=\"new-password\" for signup/reset forms and "
-            "autocomplete=\"current-password\" for login forms. "
-            "Set autocomplete=\"off\" on credit-card inputs to avoid storing full PANs. "
-            "Always serve these forms over HTTPS."
-        ),
-        "patterns": [
-            r"(autocomplete\s+(attribute|issue|vulnerability|sensitive)|password\s+autocomplete|credit\s+card\s+autocomplete|autofill\s+(issue|vulnerability))",
-        ],
-        "keywords": ["autocomplete", "sensitive autocomplete", "autocomplete attribute",
-                     "autofill", "password autocomplete", "credit card autocomplete",
-                     "autocomplete off", "autocomplete on"],
-    },
     "server_banner": {
         "name": "Server / Technology Version Disclosure",
         "explanation": (
@@ -649,31 +628,6 @@ VULNERABILITIES = {
                      "cdn supply chain", "external script integrity",
                      "script integrity"],
     },
-    "deprecated_html": {
-        "name": "Deprecated HTML Tags",
-        "explanation": (
-            "Tags like <center>, <font>, <marquee>, <blink>, <big>, <tt>, <strike>, "
-            "<frame>/<frameset>, <applet>, <isindex> were removed from HTML5. Browsers "
-            "still render most of them for backward compatibility, but their presence "
-            "signals an outdated codebase, often served by an unmaintained CMS or "
-            "framework whose security patches are likely also behind."
-        ),
-        "severity": "Low",
-        "fix": (
-            "Replace each deprecated tag with its modern equivalent: CSS for styling "
-            "(<font> → color/font-family), <strong>/<em> for emphasis, CSS animations "
-            "for <marquee>/<blink>, <iframe> for legacy <frame>. Audit with the W3C "
-            "validator (validator.w3.org) and a linter like htmlhint."
-        ),
-        "patterns": [
-            r"(deprecated\s+html|deprecated\s+tag|obsolete\s+(html|tag)|"
-            r"<(center|font|marquee|blink|applet|frameset)>)",
-        ],
-        "keywords": ["deprecated html", "deprecated tag", "deprecated tags",
-                     "obsolete html", "obsolete tags", "legacy html",
-                     "html5 migration", "marquee", "blink tag", "center tag",
-                     "font tag", "applet"],
-    },
     "excessive_trackers": {
         "name": "Excessive Third-Party Trackers",
         "explanation": (
@@ -757,6 +711,125 @@ VULNERABILITIES = {
                      "form action external", "phishing form",
                      "credential exfiltration", "form action phishing",
                      "form hijack"],
+    },
+    "inline_event_handlers": {
+        "name": "Inline Event Handlers",
+        "explanation": (
+            "Elements with onclick, onmouseover, onerror, onload (and similar) "
+            "attributes embed JavaScript inline in HTML. They are not a "
+            "vulnerability on their own, but they defeat strict Content "
+            "Security Policy: while inline handlers are present you cannot "
+            "drop 'unsafe-inline' from script-src, so every other XSS "
+            "protection is weaker by extension. They also complicate code "
+            "review and obscure script provenance."
+        ),
+        "severity": "Low",
+        "fix": (
+            "Move every inline event handler into addEventListener calls in "
+            "a separate script file. Once the HTML has no on* attributes, "
+            "enable a strict CSP without 'unsafe-inline' for script-src — "
+            "that single change blocks most XSS variants by default."
+        ),
+        "patterns": [
+            r"(inline\s+event\s+handler|onclick\s+attribute|on[a-z]+\s+attribute\s+in\s+html|"
+            r"inline\s+handler|inline\s+on[a-z]+)",
+        ],
+        "keywords": ["inline event handlers", "inline event handler",
+                     "onclick attribute", "onerror attribute", "onload attribute",
+                     "inline handler", "inline onclick", "html on-attribute",
+                     "csp unsafe inline"],
+    },
+    "insecure_websocket": {
+        "name": "Insecure WebSocket (ws://) on HTTPS Page",
+        "explanation": (
+            "When an HTTPS page opens a WebSocket using ws:// instead of "
+            "wss://, the WebSocket traffic is unencrypted even though the "
+            "page itself is secure. An on-path attacker (coffee-shop WiFi, "
+            "malicious VPN, compromised router) can read every message, "
+            "inject fake messages, or downgrade the connection. Modern "
+            "browsers refuse the connection in this configuration ('mixed "
+            "content blocked'), which silently breaks the feature for users."
+        ),
+        "severity": "High",
+        "fix": (
+            "Switch every WebSocket URL to wss:// and serve a valid TLS "
+            "certificate on the WebSocket endpoint. Keep ws:// only for "
+            "local development against http://localhost. In production code, "
+            "construct the URL with 'wss:' regardless of dev/prod so the "
+            "scheme can't drift back to ws:// accidentally."
+        ),
+        "patterns": [
+            r"(insecure\s+websocket|ws:\/\/|unencrypted\s+websocket|"
+            r"mixed[-\s]content\s+websocket|websocket\s+(on\s+https|http\s+downgrade))",
+        ],
+        "keywords": ["insecure websocket", "ws://", "unencrypted websocket",
+                     "mixed content websocket", "websocket downgrade",
+                     "websocket on https", "wss vs ws"],
+    },
+    "admin_endpoint": {
+        "name": "Admin Endpoint Exposure",
+        "explanation": (
+            "When client-side JavaScript references internal API paths like "
+            "/api/admin/, /api/internal/, or /api/debug/, those paths are "
+            "trivially discoverable by reading the page source. Server-side "
+            "authentication is still the primary control, but leaking a "
+            "target list hands attackers a known starting point and makes "
+            "their reconnaissance pointless. Common pattern: a SPA bundles "
+            "admin code into the same JS file as user code."
+        ),
+        "severity": "High",
+        "fix": (
+            "Strip admin/internal endpoint references from any code shipped "
+            "to the browser. Split your build so the admin bundle is served "
+            "only to admin routes, behind authentication. Enforce "
+            "authorization on every such endpoint server-side, and consider "
+            "blocking the entire path at your edge or WAF for traffic "
+            "outside the office IP range."
+        ),
+        "patterns": [
+            r"(admin\s+endpoint\s+(leak|exposure|disclosure)|"
+            r"internal\s+api\s+(leak|exposure)|"
+            r"/api/(admin|internal|debug|management)|"
+            r"exposed\s+admin\s+(api|endpoint))",
+        ],
+        "keywords": ["admin endpoint exposure", "admin endpoint", "admin api leak",
+                     "internal api exposure", "/api/admin", "/api/internal",
+                     "/api/debug", "exposed admin endpoint",
+                     "admin endpoint in client code"],
+    },
+    "cloud_storage": {
+        "name": "Cloud Storage Reference",
+        "explanation": (
+            "References to AWS S3, Google Cloud Storage, Azure Blob, or "
+            "Cloudflare R2 buckets in client-side HTML/JS are common (CDN "
+            "use is fine) — but they become a real risk when the bucket "
+            "name itself contains words like backup, private, internal, "
+            "staging, dump, or secret, or when the bucket allows public "
+            "listing. Misconfigured cloud storage has caused dozens of "
+            "real-world data leaks (millions of records each)."
+        ),
+        "severity": "Low",
+        "fix": (
+            "Confirm the bucket policy is not public-readable for listing. "
+            "On AWS S3: enable 'Block Public Access' at the account level "
+            "and prefer signed URLs for private content. On GCS: enable "
+            "'Uniform bucket-level access' and disable anonymous access. "
+            "On Azure / R2: disable anonymous reads and use SAS tokens. "
+            "Audit bucket names — rename anything labelled 'private' / "
+            "'backup' / 'internal' to a neutral string so it's not a "
+            "homing beacon for attackers."
+        ),
+        "patterns": [
+            r"(cloud\s+storage\s+(exposure|leak|reference)|"
+            r"s3\s+bucket\s+(exposed|public|leak)|"
+            r"gcs\s+bucket\s+(exposed|public)|"
+            r"azure\s+blob\s+(exposed|public)|"
+            r"public\s+(s3|gcs|azure)\s+bucket)",
+        ],
+        "keywords": ["cloud storage", "cloud storage reference", "s3 bucket",
+                     "s3 bucket exposure", "public s3", "gcs bucket",
+                     "azure blob", "r2 storage", "public bucket",
+                     "bucket policy", "object storage leak"],
     },
 }
 
