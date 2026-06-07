@@ -25,11 +25,22 @@ public class ChatController : ControllerBase
     // client-side regex doesn't cover. Server-side state keeps both clients honest.
     private static readonly ConcurrentDictionary<string, string> _pendingSuggestions = new();
 
-    public ChatController(IHttpClientFactory httpClientFactory, ILogger<ChatController> logger, IConfiguration configuration)
+    public ChatController(IHttpClientFactory httpClientFactory, ILogger<ChatController> logger, IConfiguration configuration, IHostEnvironment env)
     {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
-        _aiServiceUrl = configuration.GetValue<string>("AIChatServiceUrl") ?? "http://localhost:5001";
+        var configured = configuration.GetValue<string>("AIChatServiceUrl");
+        // In production a missing AIChatServiceUrl means every chat silently
+        // falls back to the C# keyword dictionary, masking a real outage.
+        // Warn loudly so the deploy fails the obvious-config-missing check
+        // rather than degrading invisibly.
+        if (string.IsNullOrWhiteSpace(configured))
+        {
+            if (env.IsProduction())
+                logger.LogError("AIChatServiceUrl is not configured. Falling back to keyword-only chat. Set AIChatServiceUrl in production config.");
+            configured = "http://localhost:5001";
+        }
+        _aiServiceUrl = configured;
     }
 
     /// <summary>

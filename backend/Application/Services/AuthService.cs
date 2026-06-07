@@ -187,14 +187,24 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task ChangePasswordAsync(int userId, string newPassword)
+    public async Task ChangePasswordAsync(int userId, string currentPassword, string newPassword)
     {
+        if (string.IsNullOrEmpty(currentPassword))
+            throw new ArgumentException("Current password is required.");
+
         if (!PasswordPolicy.IsValid(newPassword))
             throw new ArgumentException(PasswordPolicy.ErrorMessage);
 
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
             throw new UnauthorizedAccessException("User not found");
+
+        // Verify the caller actually knows the current password. Without this
+        // check, a stolen / hijacked JWT alone is enough to take over an
+        // account (rotate password, lock the real owner out). Equivalent to
+        // requiring re-authentication before a security-sensitive change.
+        if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
+            throw new UnauthorizedAccessException("Current password is incorrect.");
 
         // Reject if the new password matches the current one. Otherwise the
         // operation looks successful but nothing actually changed, which is

@@ -125,6 +125,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("reset-password")]
+    [EnableRateLimiting("reset-password")]
     public async Task<ActionResult<ResponseDto<string>>> ResetPassword([FromBody] ResetPasswordDto dto, CancellationToken ct)
     {
         try

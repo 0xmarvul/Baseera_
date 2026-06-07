@@ -4,11 +4,15 @@ import LandingNavbar from "../components/LandingNavbar";
 import PasswordChecklist from "../components/PasswordChecklist";
 import { authApi } from "../api/authApi";
 import { isPasswordValid, PASSWORD_ERROR_MESSAGE } from "../utils/passwordPolicy";
+import "../index.css";
+import "../login.css";
 import "../change-password.css";
 
 function ChangePassword() {
+    const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [showCurrent, setShowCurrent] = useState(false);
     const [showNew, setShowNew] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [error, setError] = useState("");
@@ -20,7 +24,7 @@ function ChangePassword() {
         setError("");
         setSuccess("");
 
-        if (!newPassword || !confirmPassword) {
+        if (!currentPassword || !newPassword || !confirmPassword) {
             setError("Please fill in all fields");
             return;
         }
@@ -36,7 +40,7 @@ function ChangePassword() {
         }
 
         try {
-            await authApi.changePassword(newPassword);
+            await authApi.changePassword(currentPassword, newPassword);
             setSuccess("Password changed successfully!");
             setTimeout(() => navigate("/profile"), 1500);
         } catch (err) {
@@ -59,6 +63,26 @@ function ChangePassword() {
                     {error && <div className="change-password-error">{error}</div>}
                     {success && <div className="change-password-success">{success}</div>}
                     <form className="change-password-form" onSubmit={handleSubmit}>
+                        <h5 className="change-password-form-title">Current Password</h5>
+                        <div className="change-password-input-wrapper">
+                            <i className="fa-solid fa-lock change-password-input-icon"></i>
+                            <input
+                                className="change-password-input"
+                                type={showCurrent ? "text" : "password"}
+                                placeholder="Enter your current password"
+                                value={currentPassword}
+                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                autoComplete="current-password"
+                            />
+                            <button
+                                type="button"
+                                className="change-password-toggle-icon"
+                                onClick={() => setShowCurrent((v) => !v)}
+                                aria-label={showCurrent ? "Hide password" : "Show password"}
+                            >
+                                <i className={showCurrent ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"}></i>
+                            </button>
+                        </div>
                         <h5 className="change-password-form-title">New Password</h5>
                         <div className="change-password-input-wrapper">
                             <i className="fa-solid fa-lock change-password-input-icon"></i>
