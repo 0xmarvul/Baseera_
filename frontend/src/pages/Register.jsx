@@ -140,56 +140,55 @@ function Register(){
                         </div>
                     </div>
 
-                    {/* Row 3: Password / spacer. Full-width is preferred for the
-                        password input so the policy checklist below it has room
-                        to breathe; placing it on a row with an empty right column
-                        keeps the visual rhythm with rows 1 and 2 above. */}
+                    {/* Row 3: Password (full width so the checklist below has
+                        room). Swapped position with Country per design, but the
+                        widths stay the same as the original layout. */}
+                    <h5 className="register-form-title">Password</h5>
+                    <div className="register-input-wrapper">
+                        <i className="fa-solid fa-lock register-input-icon"></i>
+                        <input
+                            className="register-form-input has-right-icon"
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            placeholder=" ********"
+                            disabled={loading}
+                            value={passwordValue}
+                            onChange={(e) => setPasswordValue(e.target.value)}
+                            required
+                            autoComplete="new-password"
+                        />
+                        <i
+                            className={showPassword ? "fa-solid fa-eye-slash register-input-icon-right" : "fa-solid fa-eye register-input-icon-right"}
+                            onClick={() => setShowPassword((prev) => !prev)}
+                            role="button"
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                            tabIndex={0}
+                            onKeyDown={(event) => {
+                                if (event.key === "Enter" || event.key === " ") {
+                                    event.preventDefault();
+                                    setShowPassword((prev) => !prev);
+                                }
+                            }}
+                        ></i>
+                    </div>
+                    <PasswordChecklist password={passwordValue} />
+
+                    {/* Row 4: Country (half-width left, spacer right). Fixed
+                        select list so we capture clean names, not free-text. */}
                     <div className="register-form-row">
                         <div className="register-form-col">
-                            <h5 className="register-form-title">Password</h5>
+                            <h5 className="register-form-title">Country</h5>
                             <div className="register-input-wrapper">
-                                <i className="fa-solid fa-lock register-input-icon"></i>
-                                <input
-                                    className="register-form-input has-right-icon"
-                                    name="password"
-                                    type={showPassword ? "text" : "password"}
-                                    placeholder=" ********"
-                                    disabled={loading}
-                                    value={passwordValue}
-                                    onChange={(e) => setPasswordValue(e.target.value)}
-                                    required
-                                    autoComplete="new-password"
-                                />
-                                <i
-                                    className={showPassword ? "fa-solid fa-eye-slash register-input-icon-right" : "fa-solid fa-eye register-input-icon-right"}
-                                    onClick={() => setShowPassword((prev) => !prev)}
-                                    role="button"
-                                    aria-label={showPassword ? "Hide password" : "Show password"}
-                                    tabIndex={0}
-                                    onKeyDown={(event) => {
-                                        if (event.key === "Enter" || event.key === " ") {
-                                            event.preventDefault();
-                                            setShowPassword((prev) => !prev);
-                                        }
-                                    }}
-                                ></i>
+                                <i className="fa-solid fa-globe register-input-icon"></i>
+                                <select className="register-form-input" name="country" disabled={loading} required defaultValue="">
+                                    <option value="" disabled>Select your country</option>
+                                    {COUNTRIES.map((c) => (
+                                        <option key={c} value={c}>{c}</option>
+                                    ))}
+                                </select>
                             </div>
-                            <PasswordChecklist password={passwordValue} />
                         </div>
                         <div className="register-form-col" aria-hidden="true" />
-                    </div>
-
-                    {/* Row 4: Country (fixed select list so we capture clean
-                        ISO-style names instead of free-text typos). */}
-                    <h5 className="register-form-title">Country</h5>
-                    <div className="register-input-wrapper">
-                        <i className="fa-solid fa-globe register-input-icon"></i>
-                        <select className="register-form-input" name="country" disabled={loading} required defaultValue="">
-                            <option value="" disabled>Select your country</option>
-                            {COUNTRIES.map((c) => (
-                                <option key={c} value={c}>{c}</option>
-                            ))}
-                        </select>
                     </div>
 
                             <div className="btn">
