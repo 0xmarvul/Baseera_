@@ -347,9 +347,7 @@ ${faviconHtml}
         <div className="baseera-widget-panel" role="dialog" aria-label="Baseera chat widget">
           {/* Header */}
           <div className="baseera-widget-header">
-            <div className="baseera-widget-header-logo-badge">
-              <img src={baseeraLogo} alt="Baseera" />
-            </div>
+            <img src={baseeraLogo} alt="Baseera" className="baseera-widget-header-logo" />
             <div className="baseera-widget-header-info">
               <span className="baseera-widget-header-name">Baseera</span>
               <div className="baseera-widget-header-status">
