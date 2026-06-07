@@ -390,8 +390,8 @@
 }
 
 .baseera-widget-empty-logo {
-  width: 64px;
-  height: 64px;
+  width: 88px;
+  height: 88px;
   object-fit: contain;
 }
 
@@ -450,7 +450,7 @@
 }
 
 .baseera-widget-msg.user .baseera-widget-bubble {
-  background: #6366f1;
+  background: linear-gradient(135deg, #00bc7d 0%, #00b8db 100%);
   border-color: transparent;
   border-radius: 14px 14px 4px 14px;
   color: #fff;

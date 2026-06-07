@@ -422,7 +422,7 @@
 }
 
 .chat-message.user .message-avatar {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #00bc7d 0%, #00b8db 100%);
   color: #fff;
 }
 
@@ -450,7 +450,7 @@
 }
 
 .chat-message.user .message-bubble {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #00bc7d 0%, #00b8db 100%);
   color: #fff;
   border-bottom-right-radius: 4px;
 }
