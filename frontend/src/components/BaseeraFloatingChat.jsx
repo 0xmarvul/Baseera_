@@ -16,6 +16,7 @@ const buildGreeting = () => {
 };
 
 const WIDGET_STORAGE_KEY = 'baseera_widget_conversations';
+const WIDGET_OPEN_KEY = 'baseera_widget_open';
 const WIDGET_CONV_ID = 'widget_conv';
 
 const QUICK_PROMPTS = [
@@ -68,16 +69,28 @@ const renderContent = (content) => {
 };
 
 export default function BaseeraFloatingChat() {
-  const [open, setOpen] = useState(false);
+  // Restore the panel's open/closed state across page navigations and
+  // reloads so the user doesn't lose context every time they switch routes.
+  const [open, setOpen] = useState(() => {
+    try { return localStorage.getItem(WIDGET_OPEN_KEY) === '1'; } catch { return false; }
+  });
   const [messages, setMessages] = useState(loadMessages);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  // Count of bot replies that arrived while the panel was closed. Renders
+  // as a small red badge on the FAB so users don't miss a reply they
+  // requested before closing.
+  const [unreadCount, setUnreadCount] = useState(0);
   // User avatar from Profile page (data URL or null). Re-read on open so an
   // edit on /edit-profile reflects without a hard refresh.
   const [userAvatar, setUserAvatar] = useState(() => localStorage.getItem('userAvatar') || null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  // Ref mirror of `open` so async send-message callbacks can check the
+  // current state without recapturing the closure.
+  const openRef = useRef(open);
+  useEffect(() => { openRef.current = open; }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -86,12 +99,24 @@ export default function BaseeraFloatingChat() {
   }, [messages, isTyping, open]);
 
   useEffect(() => {
+    try { localStorage.setItem(WIDGET_OPEN_KEY, open ? '1' : '0'); } catch {}
     if (open && inputRef.current) {
       inputRef.current.focus();
     }
     if (open) {
       setUserAvatar(localStorage.getItem('userAvatar') || null);
+      // Opening the panel clears the unread badge; any pending replies
+      // are now visible.
+      setUnreadCount(0);
     }
+  }, [open]);
+
+  // Esc closes the panel when it's open. Standard floating-panel UX.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
   // Close the export-format menu when the user clicks outside it.
@@ -113,6 +138,14 @@ export default function BaseeraFloatingChat() {
     if (window.confirm('Clear all messages?')) {
       updateMessages([]);
     }
+  };
+
+  // "New chat" — positive framing, no confirm. Useful when the user wants
+  // to switch topic without the destructive-feeling trash modal.
+  const newChat = () => {
+    updateMessages([]);
+    setUnreadCount(0);
+    inputRef.current?.focus();
   };
 
   // Shared branded chat export template — same shape as the AIChatbot page.
@@ -327,6 +360,9 @@ ${faviconHtml}
         timestamp: new Date().toISOString(),
       };
       updateMessages([...updatedMsgs, botMsg]);
+      // If the user closed the panel while we were awaiting the reply,
+      // surface it as an unread badge on the FAB.
+      if (!openRef.current) setUnreadCount((n) => n + 1);
     } catch {
       const errorMsg = {
         id: generateId(),
@@ -335,6 +371,7 @@ ${faviconHtml}
         timestamp: new Date().toISOString(),
       };
       updateMessages([...updatedMsgs, errorMsg]);
+      if (!openRef.current) setUnreadCount((n) => n + 1);
     } finally {
       setIsTyping(false);
     }
@@ -358,6 +395,11 @@ ${faviconHtml}
       >
         <img src={baseeraLogo} alt="Baseera" className="baseera-widget-fab-logo" />
         <span className="baseera-widget-status-dot" />
+        {!open && unreadCount > 0 && (
+          <span className="baseera-widget-unread-badge" aria-label={`${unreadCount} unread`}>
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
       </button>
 
       {/* Chat panel */}
@@ -373,6 +415,14 @@ ${faviconHtml}
                 <span className="baseera-widget-header-online">Online</span>
               </div>
             </div>
+            <button
+              className="baseera-widget-clear-btn baseera-widget-new-btn"
+              onClick={newChat}
+              aria-label="New chat"
+              title="New chat"
+            >
+              <i className="fa-solid fa-pen-to-square" />
+            </button>
             <div className="baseera-widget-export-wrapper">
               <button
                 className="baseera-widget-clear-btn"

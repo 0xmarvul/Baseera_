@@ -125,6 +125,35 @@
   animation: baseera-widget-status-ripple 1.8s ease-out infinite;
 }
 
+/* Unread reply badge on the FAB. Sits at top-right so it doesn't collide
+   with the online status dot at bottom-right. Pulses softly to draw the
+   eye without being obnoxious. */
+.baseera-widget-unread-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  background: #ef4444;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  border-radius: 999px;
+  border: 2px solid #0f1724;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.7);
+  animation: baseera-widget-unread-pulse 1.6s ease-in-out infinite;
+  z-index: 3;
+}
+
+@keyframes baseera-widget-unread-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.12); }
+}
+
 /* ── FAB animations ── */
 @keyframes baseera-widget-float {
   0%, 100% { transform: translateY(0); }
@@ -177,6 +206,13 @@
   max-width: calc(100vw - 32px);
   height: 595px;
   max-height: calc(100vh - 120px);
+  /* User can drag-resize from the bottom-right corner. min-* prevents the
+     panel from collapsing into an unusable size; max-* values above keep
+     it inside the viewport. resize draws an OS-style corner grip. */
+  min-width: 340px;
+  min-height: 420px;
+  resize: both;
+  overflow: hidden; /* messages-area handles its own scroll */
   background: #0f1724;
   border: 1px solid #1e2d3d;
   border-radius: 16px;
@@ -309,6 +345,13 @@
 .baseera-widget-export-wrapper .baseera-widget-clear-btn:hover:not([disabled]) {
   color: #00d9a5;
   background: rgba(0, 217, 165, 0.12);
+}
+
+/* "New chat" is a positive action (start fresh), not destructive, so it
+   gets the same teal hover treatment as export rather than trash's red. */
+.baseera-widget-new-btn:hover:not([disabled]) {
+  color: #00d9a5 !important;
+  background: rgba(0, 217, 165, 0.12) !important;
 }
 
 .baseera-widget-export-menu {
