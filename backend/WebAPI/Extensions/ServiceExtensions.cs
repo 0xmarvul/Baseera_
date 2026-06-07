@@ -53,6 +53,8 @@ public static class ServiceExtensions
     {
         var jwtSettings = configuration.GetSection("Jwt");
         var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is not configured");
+        var issuer = jwtSettings["Issuer"] ?? throw new InvalidOperationException("JWT Issuer is not configured");
+        var audience = jwtSettings["Audience"] ?? throw new InvalidOperationException("JWT Audience is not configured");
 
         services.AddAuthentication(options =>
         {
@@ -65,8 +67,13 @@ public static class ServiceExtensions
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-                ValidateIssuer = false,
-                ValidateAudience = false,
+                // Validate issuer/audience so a token signed with the same
+                // secret but meant for a different service can't be replayed
+                // against this API. Defense in depth alongside secret rotation.
+                ValidateIssuer = true,
+                ValidIssuer = issuer,
+                ValidateAudience = true,
+                ValidAudience = audience,
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero
             };

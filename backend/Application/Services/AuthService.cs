@@ -169,8 +169,13 @@ public class AuthService : IAuthService
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
-                ValidateIssuer = false,
-                ValidateAudience = false,
+                // Mirror the JwtBearer config in ServiceExtensions.AddJwtAuthentication:
+                // validate issuer + audience so tokens minted for other services
+                // can't be replayed here even if the same secret is reused.
+                ValidateIssuer = true,
+                ValidIssuer = _configuration["Jwt:Issuer"],
+                ValidateAudience = true,
+                ValidAudience = _configuration["Jwt:Audience"],
                 ClockSkew = TimeSpan.Zero
             }, out SecurityToken validatedToken);
 
@@ -369,6 +374,8 @@ public class AuthService : IAuthService
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.UTF8.GetBytes(_configuration["Jwt:SecretKey"] ?? "");
+        // Read expiry from config so deploy-time changes don't need a rebuild.
+        var expiryHours = int.TryParse(_configuration["Jwt:ExpiryHours"], out var h) ? h : 24;
 
         var claims = new[]
         {
@@ -381,7 +388,12 @@ public class AuthService : IAuthService
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddHours(24),
+            // Issuer + Audience now stamped on every token so the new
+            // ValidateIssuer / ValidateAudience checks in JwtBearer +
+            // ValidateTokenAsync pass.
+            Issuer = _configuration["Jwt:Issuer"],
+            Audience = _configuration["Jwt:Audience"],
+            Expires = DateTime.UtcNow.AddHours(expiryHours),
             SigningCredentials = new SigningCredentials(
                 new SymmetricSecurityKey(key),
                 SecurityAlgorithms.HmacSha256Signature)
