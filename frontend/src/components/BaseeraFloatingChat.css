@@ -390,10 +390,11 @@
 }
 
 .baseera-widget-empty-logo {
-  /* Uses the 128px source so it stays sharp at this size (the small 25px
-     asset would blur). */
-  width: 76px;
-  height: 76px;
+  /* Source PNG is 25x25. Keeping the displayed size close to native
+     (40px) so it stays sharp — anything larger blurs because the source
+     simply doesn't have more pixels. */
+  width: 40px;
+  height: 40px;
   object-fit: contain;
 }
 

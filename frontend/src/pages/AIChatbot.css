@@ -388,8 +388,10 @@
 }
 
 .chat-empty-icon img {
-  width: 96px;
-  height: 96px;
+  /* Source PNG is 25x25 — anything bigger upscales and blurs. 48px
+     stays close enough to native to stay sharp on retina screens. */
+  width: 48px;
+  height: 48px;
   object-fit: contain;
 }
 
