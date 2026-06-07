@@ -639,7 +639,7 @@ ${faviconHtml}
             {messages.length === 0 && !isTyping && (
               <div className="chat-empty">
                 <div className="chat-empty-icon">
-                  <img src={baseeraLogo} alt="Baseera" style={{ width: '64px', height: '64px' }} />
+                  <img src={baseeraLogo} alt="Baseera" />
                 </div>
                 <p>Ask Baseera about web vulnerabilities, fixes, and security best practices.</p>
               </div>

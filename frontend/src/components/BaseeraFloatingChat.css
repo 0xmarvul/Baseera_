@@ -9,10 +9,13 @@
   width: 62px;
   height: 62px;
   border-radius: 50% 50% 50% 12px;
+  /* Dark navy bg lets the original colored Baseera logo show through
+     clearly (no white-mask filter needed). Teal accent border keeps the
+     brand presence; gradient still animates underneath via background-size. */
   background:
-    linear-gradient(135deg, #00bc7d 0%, #00d4b8 50%, #00b8db 100%);
+    linear-gradient(135deg, #0d2137 0%, #132f4c 50%, #0d2137 100%);
   background-size: 200% 200%;
-  border: none;
+  border: 1.5px solid rgba(0, 217, 165, 0.45);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -85,7 +88,9 @@
   width: 36px;
   height: 36px;
   object-fit: contain;
-  filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+  /* Original colored logo — no white-mask filter. Dark navy FAB background
+     above lets the real Baseera mark show clearly. */
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
   animation: baseera-widget-logo-breathe 3.5s ease-in-out infinite;
   transition: transform 0.3s ease;
   z-index: 1;
@@ -385,10 +390,9 @@
 }
 
 .baseera-widget-empty-logo {
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
   object-fit: contain;
-  opacity: 0.5;
 }
 
 /* ── Message rows ── */
