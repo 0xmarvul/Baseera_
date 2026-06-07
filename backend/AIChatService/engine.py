@@ -45,7 +45,7 @@ VULNERABILITIES = {
             "Validate and sanitize every input on the server side."
         ),
         "patterns": [
-            # Match XSS variants but NOT "dom xss" / "dom-based xss" — those go to dom_xss.
+            # Match XSS variants but NOT "dom xss" / "dom-based xss", those go to dom_xss.
             # Two lookbehinds: reject "dom xss"/"dom-xss" AND "...based xss"/"...based-xss".
             r"(cross[-\s]site\s*script|(?<!dom[-\s])(?<!dom)(?<!based[-\s])xss|"
             r"\bscript\s+inject|reflected\s+xss|stored\s+xss|persistent\s+xss)",
@@ -561,7 +561,7 @@ VULNERABILITIES = {
         ),
         "severity": "Critical",
         "fix": (
-            "Serve the entire site over HTTPS — no HTTP fallback. Redirect HTTP to "
+            "Serve the entire site over HTTPS, no HTTP fallback. Redirect HTTP to "
             "HTTPS at the web server, enable HSTS (with preload), and ensure the "
             "form's action URL is also HTTPS. Never mix an HTTPS page with an HTTP "
             "form action, since the POST itself leaks the password."
@@ -617,7 +617,7 @@ VULNERABILITIES = {
             "crossorigin=\"anonymous\" to every <script src> and <link rel=\"stylesheet\"> "
             "that points to a different origin. Generate hashes with 'openssl dgst "
             "-sha384 -binary file.js | openssl base64 -A' or srihash.org. Pin library "
-            "versions — SRI only works if the file doesn't change underneath you."
+            "versions, SRI only works if the file doesn't change underneath you."
         ),
         "patterns": [
             r"(missing\s+sri|subresource\s+integrity|sri\s+(missing|hash)|"
@@ -672,7 +672,7 @@ VULNERABILITIES = {
             "Don't use '*' for ACAO when credentials are in play. Maintain a strict "
             "allow-list of trusted origins and echo only matching ones. Set "
             "'Vary: Origin' so caches don't leak across origins. Prefer separate "
-            "public / authenticated endpoints. Never reflect Origin blindly — validate "
+            "public / authenticated endpoints. Never reflect Origin blindly, validate "
             "it against a list. Use SameSite cookies as defense in depth."
         ),
         "patterns": [
@@ -688,8 +688,8 @@ VULNERABILITIES = {
         "name": "External Form Action (Credential Exfiltration Risk)",
         "explanation": (
             "When a <form> submits to a different origin than the page it lives on, "
-            "everything typed into the form — including passwords and payment details "
-            "— is sent to that external site. Attackers exploit this by compromising "
+            "everything typed into the form, including passwords and payment details "
+            ", is sent to that external site. Attackers exploit this by compromising "
             "third-party form endpoints, typosquatting domains, or hijacking legitimate "
             "form handlers. Users see the trusted page in the URL bar and have no "
             "indication their credentials are leaving."
@@ -727,7 +727,7 @@ VULNERABILITIES = {
         "fix": (
             "Move every inline event handler into addEventListener calls in "
             "a separate script file. Once the HTML has no on* attributes, "
-            "enable a strict CSP without 'unsafe-inline' for script-src — "
+            "enable a strict CSP without 'unsafe-inline' for script-src, "
             "that single change blocks most XSS variants by default."
         ),
         "patterns": [
@@ -802,7 +802,7 @@ VULNERABILITIES = {
         "explanation": (
             "References to AWS S3, Google Cloud Storage, Azure Blob, or "
             "Cloudflare R2 buckets in client-side HTML/JS are common (CDN "
-            "use is fine) — but they become a real risk when the bucket "
+            "use is fine), but they become a real risk when the bucket "
             "name itself contains words like backup, private, internal, "
             "staging, dump, or secret, or when the bucket allows public "
             "listing. Misconfigured cloud storage has caused dozens of "
@@ -815,7 +815,7 @@ VULNERABILITIES = {
             "and prefer signed URLs for private content. On GCS: enable "
             "'Uniform bucket-level access' and disable anonymous access. "
             "On Azure / R2: disable anonymous reads and use SAS tokens. "
-            "Audit bucket names — rename anything labelled 'private' / "
+            "Audit bucket names, rename anything labelled 'private' / "
             "'backup' / 'internal' to a neutral string so it's not a "
             "homing beacon for attackers."
         ),
@@ -1021,7 +1021,7 @@ def _handle_meta(text: str) -> Optional[dict]:
         }
 
     # ------------------------------------------------------------------
-    # Greetings (expanded — accepts trailing ? ! . , and casual forms)
+    # Greetings (expanded, accepts trailing ? ! ., and casual forms)
     # ------------------------------------------------------------------
     greetings = {
         "hi", "hii", "hiii", "hiiii", "hey", "heyy", "heyyy", "hello", "helloo",
@@ -1041,7 +1041,7 @@ def _handle_meta(text: str) -> Optional[dict]:
     ):
         return _meta_response(
             "Hello! 👋 I'm Baseera Assistant, your AI-powered security advisor. "
-            "Ask me about any web vulnerability — e.g., 'What is XSS?' "
+            "Ask me about any web vulnerability. For example: 'What is XSS?' "
             "or 'How do I fix SQL Injection?'",
             "meta:greeting",
         )
@@ -1116,12 +1116,12 @@ def _handle_meta(text: str) -> Optional[dict]:
             "**Cybersecurity** is the practice of protecting systems, networks, applications, and data "
             "from digital attacks, unauthorized access, damage, or theft. 🛡️\n\n"
             "It covers several important areas:\n"
-            "• **Application Security** — protecting software and web apps from flaws like SQL Injection, XSS, and CSRF.\n"
-            "• **Network Security** — defending the infrastructure that moves data (firewalls, VPNs, intrusion detection).\n"
-            "• **Information Security** — keeping data confidential, available, and unaltered (the CIA triad).\n"
-            "• **Operational Security** — processes and decisions for handling and protecting data assets.\n"
-            "• **End-User Education** — training people to avoid phishing and social-engineering attacks.\n\n"
-            "Baseera focuses on **web application security** — scanning websites for vulnerabilities and explaining how to fix them. "
+            "• **Application Security**, protecting software and web apps from flaws like SQL Injection, XSS, and CSRF.\n"
+            "• **Network Security**, defending the infrastructure that moves data (firewalls, VPNs, intrusion detection).\n"
+            "• **Information Security**, keeping data confidential, available, and unaltered (the CIA triad).\n"
+            "• **Operational Security**, processes and decisions for handling and protecting data assets.\n"
+            "• **End-User Education**, training people to avoid phishing and social-engineering attacks.\n\n"
+            "Baseera focuses on **web application security**, scanning websites for vulnerabilities and explaining how to fix them. "
             "Ask me 'What is XSS?' or 'List all vulnerabilities' to get started!",
             "meta:what_is_cybersecurity",
         )
@@ -1151,7 +1151,7 @@ def _handle_meta(text: str) -> Optional[dict]:
     if re.search(r"\b(what\s+is\s+(an\s+)?exploit|define\s+exploit|exploit\s+meaning|what\s+does\s+exploit\s+mean)\b", t):
         return _meta_response(
             "An **exploit** is a piece of code, a technique, or a sequence of steps that takes advantage of a vulnerability "
-            "to perform malicious actions — such as stealing data, crashing a system, or getting unauthorized access. 💥\n\n"
+            "to perform malicious actions, such as stealing data, crashing a system, or getting unauthorized access. 💥\n\n"
             "Think of a vulnerability as the unlocked window, and the exploit as the thief climbing through it.",
             "meta:what_is_exploit",
         )
@@ -1159,12 +1159,12 @@ def _handle_meta(text: str) -> Optional[dict]:
         return _meta_response(
             "A **zero-day** (0-day) is a vulnerability that is unknown to the software vendor or has no patch available yet. ⏰\n\n"
             "Attackers who discover zero-days can exploit them before defenders get a chance to fix them, which makes these "
-            "bugs extremely valuable and dangerous. The name comes from 'day zero' — the vendor has had zero days to respond.",
+            "bugs extremely valuable and dangerous. The name comes from 'day zero', the vendor has had zero days to respond.",
             "meta:what_is_zero_day",
         )
     if re.search(r"\b(what\s+is\s+(a\s+)?cve|define\s+cve|cve\s+(meaning|definition|explain)|what\s+does\s+cve\s+stand\s+for|what\s+does\s+cve\s+mean)\b", t):
         return _meta_response(
-            "**CVE** stands for **Common Vulnerabilities and Exposures** — a public catalog of known security flaws, "
+            "**CVE** stands for **Common Vulnerabilities and Exposures**, a public catalog of known security flaws, "
             "each assigned a unique ID like `CVE-2024-12345`. 📋\n\n"
             "CVEs make it easy to reference and track vulnerabilities across vendors, tools, and research reports. "
             "You can look them up at https://cve.mitre.org.",
@@ -1174,7 +1174,7 @@ def _handle_meta(text: str) -> Optional[dict]:
         return _meta_response(
             "**OWASP** (Open Worldwide Application Security Project) is a non-profit foundation that publishes free resources "
             "on web application security. 🌐\n\n"
-            "The **OWASP Top 10** is the most widely known list — it ranks the most critical web application security risks, "
+            "The **OWASP Top 10** is the most widely known list, it ranks the most critical web application security risks, "
             "such as Injection, Broken Access Control, and Cryptographic Failures. It's essentially the starting point for "
             "anyone doing web security.",
             "meta:what_is_owasp",
@@ -1184,9 +1184,9 @@ def _handle_meta(text: str) -> Optional[dict]:
     if re.search(r"\b(cia\s+triad|what\s+is\s+cia|cia\s+(in\s+)?security|confidentiality\s+integrity\s+availability)\b", t):
         return _meta_response(
             "The **CIA Triad** is the foundation of information security:\n\n"
-            "• **Confidentiality** — only authorized people can see the data\n"
-            "• **Integrity** — data is accurate and hasn't been tampered with\n"
-            "• **Availability** — systems and data are accessible when needed\n\n"
+            "• **Confidentiality**, only authorized people can see the data\n"
+            "• **Integrity**, data is accurate and hasn't been tampered with\n"
+            "• **Availability**, systems and data are accessible when needed\n\n"
             "Most vulnerabilities break at least one of these three. 🛡️",
             "meta:cia_triad",
         )
@@ -1209,7 +1209,7 @@ def _handle_meta(text: str) -> Optional[dict]:
     if re.search(r"\b(what\s+is\s+ransomware|define\s+ransomware|ransomware\s+(meaning|definition|explain|attack))\b", t):
         return _meta_response(
             "**Ransomware** is malware that encrypts a victim's files and demands payment (usually in cryptocurrency) to decrypt them. 💰🔒\n\n"
-            "Defenses: offline backups, patch management, email filtering, endpoint detection, and **never pay** when avoidable — "
+            "Defenses: offline backups, patch management, email filtering, endpoint detection, and **never pay** when avoidable, "
             "payment funds more attacks and doesn't guarantee recovery.",
             "meta:what_is_ransomware",
         )
@@ -1233,7 +1233,7 @@ def _handle_meta(text: str) -> Optional[dict]:
         )
     if re.search(r"\b(what\s+is\s+social\s+engineering|social\s+engineering\s+(meaning|definition|explain|attack))\b", t):
         return _meta_response(
-            "**Social engineering** manipulates people into breaking security procedures — e.g., impersonating IT support to get a password. 🧠\n\n"
+            "**Social engineering** manipulates people into breaking security procedures, e.g., impersonating IT support to get a password. 🧠\n\n"
             "It targets humans, not technology. Defenses: awareness training, strong verification procedures, and a culture where employees feel safe saying 'no' or 'let me verify first'.",
             "meta:what_is_social_engineering",
         )
@@ -1244,34 +1244,34 @@ def _handle_meta(text: str) -> Optional[dict]:
             "**Encryption** converts readable data (plaintext) into scrambled data (ciphertext) using an algorithm and a key, "
             "so only someone with the right key can read it. 🔐\n\n"
             "Two main types:\n"
-            "• **Symmetric** (same key for encrypt & decrypt) — e.g., AES.\n"
-            "• **Asymmetric** (public/private key pair) — e.g., RSA, ECC.\n\n"
+            "• **Symmetric** (same key for encrypt & decrypt), e.g., AES.\n"
+            "• **Asymmetric** (public/private key pair), e.g., RSA, ECC.\n\n"
             "Used everywhere: HTTPS, messaging apps, disk encryption, and password storage (well, hashing for passwords).",
             "meta:what_is_encryption",
         )
     if re.search(r"\b(what\s+is\s+hashing|define\s+hashing|hashing\s+(meaning|definition|explain)|what\s+is\s+(a\s+)?hash(\s+function)?|difference\s+between\s+encryption\s+and\s+hashing)\b", t):
         return _meta_response(
             "**Hashing** is a one-way function that turns input data into a fixed-size fingerprint. Unlike encryption, it **cannot be reversed**. 🔢\n\n"
-            "Used for: storing passwords (use **bcrypt**, **scrypt**, or **Argon2** — never MD5/SHA1!), verifying file integrity, and digital signatures.",
+            "Used for: storing passwords (use **bcrypt**, **scrypt**, or **Argon2**, never MD5/SHA1!), verifying file integrity, and digital signatures.",
             "meta:what_is_hashing",
         )
     if re.search(r"\b(what\s+is\s+https|https\s+(meaning|definition|explain)|difference\s+between\s+http\s+and\s+https)\b", t):
         return _meta_response(
             "**HTTPS** is HTTP with **TLS encryption**. It protects data in transit between the browser and the server "
             "from eavesdropping and tampering. 🔒\n\n"
-            "Always use HTTPS — modern browsers penalize HTTP sites, and tools like Let's Encrypt make certificates free.",
+            "Always use HTTPS, modern browsers penalize HTTP sites, and tools like Let's Encrypt make certificates free.",
             "meta:what_is_https",
         )
     if re.search(r"\b(what\s+is\s+tls|what\s+is\s+ssl|tls\s+(meaning|definition|explain)|ssl\s+(meaning|definition|explain)|difference\s+between\s+tls\s+and\s+ssl)\b", t):
         return _meta_response(
             "**TLS** (Transport Layer Security) is the successor to **SSL** (Secure Sockets Layer). They both encrypt network "
-            "communication, but SSL is deprecated — **use TLS 1.2 or 1.3**. 🔐\n\n"
+            "communication, but SSL is deprecated, **use TLS 1.2 or 1.3**. 🔐\n\n"
             "TLS powers HTTPS, secure email (SMTPS, IMAPS), VPNs, and more.",
             "meta:what_is_tls",
         )
     if re.search(r"\b(what\s+is\s+(a\s+)?firewall|firewall\s+(meaning|definition|explain))\b", t):
         return _meta_response(
-            "A **firewall** is a security device (hardware or software) that filters network traffic based on rules — "
+            "A **firewall** is a security device (hardware or software) that filters network traffic based on rules, "
             "allowing trusted traffic and blocking the rest. 🧱\n\n"
             "Types include: network firewalls, host firewalls, and **Web Application Firewalls (WAF)** that inspect HTTP traffic for attack patterns like SQLi and XSS.",
             "meta:what_is_firewall",
@@ -1280,24 +1280,24 @@ def _handle_meta(text: str) -> Optional[dict]:
         return _meta_response(
             "A **VPN** (Virtual Private Network) creates an encrypted tunnel between your device and a remote server, "
             "hiding your real IP and protecting traffic from local eavesdroppers. 🌐🔒\n\n"
-            "Great for: untrusted Wi-Fi, remote work, and privacy. Not a silver bullet — the VPN provider itself can see your traffic, so pick a trustworthy one.",
+            "Great for: untrusted Wi-Fi, remote work, and privacy. Not a silver bullet, the VPN provider itself can see your traffic, so pick a trustworthy one.",
             "meta:what_is_vpn",
         )
     if re.search(r"\b(what\s+is\s+(a\s+)?waf|waf\s+(meaning|definition|explain)|web\s+application\s+firewall)\b", t):
         return _meta_response(
             "A **WAF** (Web Application Firewall) sits in front of a web app and inspects HTTP requests, blocking common attacks "
             "like SQLi, XSS, and path traversal. 🛡️\n\n"
-            "Popular options: Cloudflare WAF, AWS WAF, ModSecurity. A WAF is defense-in-depth — not a replacement for secure code.",
+            "Popular options: Cloudflare WAF, AWS WAF, ModSecurity. A WAF is defense-in-depth, not a replacement for secure code.",
             "meta:what_is_waf",
         )
     if re.search(r"\b(what\s+is\s+mfa|what\s+is\s+2fa|mfa\s+(meaning|definition|explain)|2fa\s+(meaning|definition|explain)|multi[\s\-]factor|two[\s\-]factor)\b", t):
         return _meta_response(
-            "**MFA** (Multi-Factor Authentication) — and its subset **2FA** — require more than just a password to log in. 🔑📱\n\n"
+            "**MFA** (Multi-Factor Authentication), and its subset **2FA**, require more than just a password to log in. 🔑📱\n\n"
             "Factors come in three flavors:\n"
             "• Something you **know** (password, PIN)\n"
             "• Something you **have** (phone, hardware key)\n"
             "• Something you **are** (fingerprint, face)\n\n"
-            "Prefer TOTP apps or hardware keys over SMS — SMS can be intercepted via SIM swapping.",
+            "Prefer TOTP apps or hardware keys over SMS, SMS can be intercepted via SIM swapping.",
             "meta:what_is_mfa",
         )
 
@@ -1312,9 +1312,9 @@ def _handle_meta(text: str) -> Optional[dict]:
         return _meta_response(
             "**Ethical hacking** means using offensive security skills legally and with permission to strengthen defenses. 🤍🎩\n\n"
             "Types of hackers:\n"
-            "• **White hat** — ethical, authorized\n"
-            "• **Black hat** — malicious, illegal\n"
-            "• **Gray hat** — somewhere in between (often unauthorized but not malicious)",
+            "• **White hat**, ethical, authorized\n"
+            "• **Black hat**, malicious, illegal\n"
+            "• **Gray hat**, somewhere in between (often unauthorized but not malicious)",
             "meta:ethical_hacking",
         )
     if re.search(r"\b(what\s+is\s+(a\s+)?bug\s+bounty|bug\s+bounty\s+(program|meaning|definition|explain))\b", t):
@@ -1326,22 +1326,22 @@ def _handle_meta(text: str) -> Optional[dict]:
     if re.search(r"\b(red\s+team|blue\s+team|purple\s+team|red\s+vs\s+blue)\b", t):
         return _meta_response(
             "In security operations:\n\n"
-            "• **Red Team** — simulates attackers; tries to break in.\n"
-            "• **Blue Team** — defenders; monitors, detects, and responds.\n"
-            "• **Purple Team** — a collaboration between the two to improve defenses using red-team findings. 🟣",
+            "• **Red Team**, simulates attackers; tries to break in.\n"
+            "• **Blue Team**, defenders; monitors, detects, and responds.\n"
+            "• **Purple Team**, a collaboration between the two to improve defenses using red-team findings. 🟣",
             "meta:red_blue_team",
         )
 
     # CIA, access control, RBAC, least privilege, zero trust
     if re.search(r"\b(what\s+is\s+least\s+privilege|principle\s+of\s+least\s+privilege|polp)\b", t):
         return _meta_response(
-            "**Principle of Least Privilege (PoLP)** — every user, process, or system should have only the minimum permissions needed to do its job. 🔑\n\n"
+            "**Principle of Least Privilege (PoLP)**, every user, process, or system should have only the minimum permissions needed to do its job. 🔑\n\n"
             "Limits blast radius when something is compromised. A web app shouldn't run as root; a DB user shouldn't have DROP permission on production.",
             "meta:least_privilege",
         )
     if re.search(r"\b(what\s+is\s+zero\s+trust|zero[\s\-]trust\s+(meaning|definition|explain|architecture))\b", t):
         return _meta_response(
-            "**Zero Trust** is a security model that assumes no user or device should be trusted by default — "
+            "**Zero Trust** is a security model that assumes no user or device should be trusted by default, "
             "every request is verified regardless of where it comes from. 🚫🤝\n\n"
             "Motto: *'never trust, always verify'*. Relies heavily on identity, device posture, and continuous authentication.",
             "meta:zero_trust",
@@ -1360,22 +1360,22 @@ def _handle_meta(text: str) -> Optional[dict]:
             "🔹 **HTTPS everywhere** (HSTS, TLS 1.2/1.3)\n"
             "🔹 **Input validation & output encoding** (prevent XSS, SQLi)\n"
             "🔹 **Parameterized queries** for all DB access\n"
-            "🔹 **Strong authentication** — hash passwords with bcrypt/Argon2, add MFA\n"
-            "🔹 **Security headers** — CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy\n"
-            "🔹 **Secure cookies** — HttpOnly, Secure, SameSite=Strict\n"
+            "🔹 **Strong authentication**, hash passwords with bcrypt/Argon2, add MFA\n"
+            "🔹 **Security headers**, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy\n"
+            "🔹 **Secure cookies**, HttpOnly, Secure, SameSite=Strict\n"
             "🔹 **CSRF tokens** on state-changing requests\n"
             "🔹 **Keep dependencies patched** (use `npm audit`, `pip-audit`, Snyk, Dependabot)\n"
             "🔹 **Log & monitor** (no secrets in logs)\n"
-            "🔹 **Regular pen tests & scans** — run Baseera on every deploy!\n\n"
+            "🔹 **Regular pen tests & scans**, run Baseera on every deploy!\n\n"
             "Want details on any of these? Ask me 'What is CSP?' or 'How to fix SQL Injection?'",
             "meta:how_to_secure_site",
         )
     if re.search(r"\b(how\s+(do\s+i|can\s+i|to)\s+(create|make|choose)\s+(a\s+)?strong\s+password|strong\s+password\s+tips)\b", t):
         return _meta_response(
             "A strong password is:\n\n"
-            "• **Long** — 14+ characters is the sweet spot\n"
-            "• **Unique** — never reused across sites\n"
-            "• **Random** — generated by a password manager (1Password, Bitwarden, KeePass)\n"
+            "• **Long**, 14+ characters is the sweet spot\n"
+            "• **Unique**, never reused across sites\n"
+            "• **Random**, generated by a password manager (1Password, Bitwarden, KeePass)\n"
             "• **Protected by MFA** whenever possible\n\n"
             "Better than complexity rules is **length**. A passphrase of 5 random words beats `P@ssw0rd!` any day. 🔑",
             "meta:strong_password",
@@ -1384,11 +1384,11 @@ def _handle_meta(text: str) -> Optional[dict]:
         return _meta_response(
             "Practical defenses against phishing and account takeover:\n\n"
             "• Use **MFA** everywhere (prefer TOTP/hardware keys over SMS)\n"
-            "• **Verify URLs** before entering credentials — hover links, check the domain\n"
+            "• **Verify URLs** before entering credentials, hover links, check the domain\n"
             "• Never click **unsolicited attachments**; verify sender out-of-band\n"
-            "• Use a **password manager** — it won't autofill on fake domains\n"
+            "• Use a **password manager**, it won't autofill on fake domains\n"
             "• Keep OS and browser **patched**\n"
-            "• Be suspicious of urgency ('act now!') — attackers exploit emotional pressure 🧠",
+            "• Be suspicious of urgency ('act now!'), attackers exploit emotional pressure 🧠",
             "meta:avoid_phishing",
         )
     if re.search(r"\b(how\s+do\s+(i|you)\s+(learn|start|get\s+into)\s+(cyber[\s\-]?security|hacking|infosec|penetration\s+testing|pentesting)|how\s+to\s+(learn|start)\s+cyber)\b", t):
@@ -1405,9 +1405,9 @@ def _handle_meta(text: str) -> Optional[dict]:
     if re.search(r"\b(am\s+i\s+(hacked|compromised)|have\s+i\s+been\s+(hacked|pwned)|was\s+i\s+hacked|did\s+i\s+get\s+hacked)\b", t):
         return _meta_response(
             "If you think you might have been compromised:\n\n"
-            "1. **Change passwords** (from a trusted device) — start with email, then everything else\n"
+            "1. **Change passwords** (from a trusted device), start with email, then everything else\n"
             "2. **Enable MFA** on every important account\n"
-            "3. **Check sessions** — log out of all devices in account settings\n"
+            "3. **Check sessions**, log out of all devices in account settings\n"
             "4. **Scan devices** with an up-to-date antivirus/EDR\n"
             "5. **Check https://haveibeenpwned.com** to see if your email is in known breaches\n"
             "6. **Review bank/card activity** and freeze credit if needed\n\n"
@@ -1418,7 +1418,7 @@ def _handle_meta(text: str) -> Optional[dict]:
     # Is X safe / should I use X (general guidance, not specific product reviews)
     if re.search(r"\b(is\s+(http|plain\s+http|my\s+website|this\s+site)\s+(safe|secure))\b", t):
         return _meta_response(
-            "Plain **HTTP** is not safe — data travels in plaintext and can be read or modified by anyone on the network. "
+            "Plain **HTTP** is not safe, data travels in plaintext and can be read or modified by anyone on the network. "
             "Always use **HTTPS** with TLS 1.2 or 1.3. Modern browsers also warn users on HTTP sites. 🚨",
             "meta:is_http_safe",
         )
@@ -1489,7 +1489,7 @@ def _handle_meta(text: str) -> Optional[dict]:
         t,
     ):
         return _meta_response(
-            "No problem — let me try again. 🙂 Could you tell me which part was unclear, "
+            "No problem, let me try again. 🙂 Could you tell me which part was unclear, "
             "or just ask the question in a different way? For example, you can say:\n"
             "• 'Explain XSS in simple words'\n"
             "• 'What does that mean?'\n"
@@ -1560,7 +1560,7 @@ def _handle_meta(text: str) -> Optional[dict]:
     ):
         return _meta_response(
             "I'm here to help you with cybersecurity topics! 😊 "
-            "Let's keep it professional — feel free to ask me anything about security.",
+            "Let's keep it professional, feel free to ask me anything about security.",
             "meta:profanity",
         )
 
