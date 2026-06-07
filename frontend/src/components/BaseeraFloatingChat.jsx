@@ -99,11 +99,18 @@ export default function BaseeraFloatingChat() {
   // Multi-thread state. `conversations` is the source of truth; `activeId`
   // picks which one is rendered. activeConv === null means "no thread open
   // yet, show greeting only" — first user message lazily creates a thread.
-  const [conversations, setConversations] = useState(loadConversations);
-  const [activeId, setActiveId] = useState(() => {
-    const initial = loadConversations();
-    return initial[0]?.id ?? null;
-  });
+  //
+  // Critically: we call loadConversations() ONCE and reuse the result for
+  // both `conversations` and the initial `activeId`. The legacy-migration
+  // branch generates a random id each call, so two calls would produce
+  // mismatched ids and activeId would point at a phantom conversation
+  // (symptom: user message vanishes, no reply renders).
+  const initialConvsRef = useRef(null);
+  if (initialConvsRef.current === null) {
+    initialConvsRef.current = loadConversations();
+  }
+  const [conversations, setConversations] = useState(initialConvsRef.current);
+  const [activeId, setActiveId] = useState(() => initialConvsRef.current[0]?.id ?? null);
   const [showThreadList, setShowThreadList] = useState(false);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -437,13 +444,35 @@ ${faviconHtml}
     updateConversations(updatedConvs);
     setIsTyping(true);
 
+    // Append the bot reply by reading the LATEST conversations state, not
+    // the `updatedConvs` snapshot above. Otherwise any intermediate edit
+    // (or even React batching a stale closure) can drop the reply into
+    // the wrong array and the bubble never renders.
     const appendBotMsg = (botMsg) => {
-      const finalConvs = updatedConvs.map((c) =>
-        c.id === convId
-          ? { ...c, messages: [...c.messages, botMsg], timestamp: new Date().toISOString() }
-          : c
-      );
-      updateConversations(finalConvs);
+      setConversations((prev) => {
+        const idx = prev.findIndex((c) => c.id === convId);
+        // The convo we wrote into may have been deleted while we awaited
+        // the reply. In that case, just resurrect it so the user still
+        // sees their reply rather than losing it silently.
+        if (idx === -1) {
+          const resurrected = {
+            id: convId,
+            title: buildTitle(trimmed),
+            timestamp: new Date().toISOString(),
+            messages: [userMsg, botMsg],
+          };
+          const next = [resurrected, ...prev];
+          saveConversations(next);
+          return next;
+        }
+        const next = prev.map((c, i) =>
+          i === idx
+            ? { ...c, messages: [...c.messages, botMsg], timestamp: new Date().toISOString() }
+            : c
+        );
+        saveConversations(next);
+        return next;
+      });
     };
 
     try {
