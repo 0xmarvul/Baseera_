@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import LandingNavbar from '../components/LandingNavbar';
 import apiClient from '../api/axios.config';
 import baseeraLogo from '../assets/logo.png';
+// High-res 128px logo for the welcome card — see note in BaseeraFloatingChat.
+import baseeraLogoLg from '../assets/logo-128.png';
 import './AIChatbot.css';
 
 const MAX_INPUT_HEIGHT = 120;
@@ -650,7 +652,7 @@ ${faviconHtml}
             {messages.length === 0 && !isTyping && (
               <div className="chat-empty">
                 <div className="chat-empty-icon">
-                  <img src={baseeraLogo} alt="Baseera" />
+                  <img src={baseeraLogoLg} alt="Baseera" />
                 </div>
                 <p>Ask Baseera about web vulnerabilities, fixes, and security best practices.</p>
               </div>

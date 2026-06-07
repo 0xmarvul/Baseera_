@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import apiClient from '../api/axios.config';
 import baseeraLogo from '../assets/logo.png';
+// High-res 128px version of the logo for the welcome card. The plain
+// logo.png is 25x25 which goes blurry past ~30px; the 128px asset stays
+// crisp anywhere between 32px and ~128px.
+import baseeraLogoLg from '../assets/logo-128.png';
 import './BaseeraFloatingChat.css';
 
 const WIDGET_STORAGE_KEY = 'baseera_widget_conversations';
@@ -412,7 +416,7 @@ ${faviconHtml}
           <div className="baseera-widget-messages">
             {messages.length === 0 && !isTyping && (
               <div className="baseera-widget-empty">
-                <img src={baseeraLogo} alt="Baseera" className="baseera-widget-empty-logo" />
+                <img src={baseeraLogoLg} alt="Baseera" className="baseera-widget-empty-logo" />
                 <span>Ask Baseera about web vulnerabilities, fixes, and security best practices.</span>
               </div>
             )}
