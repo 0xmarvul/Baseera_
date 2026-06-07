@@ -21,8 +21,9 @@
 }
 .logo-icon{
     display: flex;
-    justify-content: space-between;
-    gap: 3px;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
     margin-top: 18px;
 }
 .register-info{
@@ -33,7 +34,7 @@
 .logo-title{
     color: #00D492;
 font-family: Inter;
-font-size: 23.04px;
+font-size: 22.04px;
 font-style: normal;
 font-weight: 700;
 line-height: normal;
