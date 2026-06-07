@@ -153,7 +153,7 @@ function Login(){
                         </div>
                     )}
 
-                <form className="login-form" onSubmit={handleSubmit} autoComplete="off">
+                <form className="login-form" onSubmit={handleSubmit}>
                     <h5 className="login-form-title">
                         Email Address
                     </h5>
@@ -168,7 +168,7 @@ function Login(){
                             onChange={(e) => setEmail(e.target.value)}
                             disabled={loading}
                             required
-                            autoComplete="email"
+                            autoComplete="email username"
                         />
                     </div>
 

@@ -134,14 +134,27 @@ function Register(){
                             <h5 className="register-form-title">Email Address</h5>
                             <div className="register-input-wrapper">
                                 <i className="fa-solid fa-envelope register-input-icon"></i>
-                                <input className="register-form-input" name="email" type="email" placeholder="Mark.johnson@baseera.security" disabled={loading} required autoComplete="email" />
+                                {/* autoComplete="email username" pairs the
+                                    password manager's saved identifier with
+                                    the email field (since login uses email,
+                                    not the @handle). Without this, browsers
+                                    pick the closest text field to password
+                                    — the username — and store the wrong
+                                    identifier, then mis-autofill on login. */}
+                                <input className="register-form-input" name="email" type="email" placeholder="Mark.johnson@baseera.security" disabled={loading} required autoComplete="email username" />
                             </div>
                         </div>
                         <div className="register-form-col">
                             <h5 className="register-form-title">Username</h5>
                             <div className="register-input-wrapper">
                                 <i className="fa-solid fa-at register-input-icon"></i>
-                                <input className="register-form-input" name="username" type="text" placeholder="Markjohnson" disabled={loading} required autoComplete="off" />
+                                {/* autoComplete="nickname" tells the browser
+                                    this is a display handle, not a login
+                                    identifier — so it pairs the password
+                                    with the email field above instead of
+                                    this one. "off" alone is ignored by
+                                    Chrome on signup-shaped forms. */}
+                                <input className="register-form-input" name="username" type="text" placeholder="Markjohnson" disabled={loading} required autoComplete="nickname" />
                             </div>
                         </div>
                     </div>
