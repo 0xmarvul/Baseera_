@@ -17,7 +17,6 @@ const buildGreeting = () => {
 
 const WIDGET_STORAGE_KEY = 'baseera_widget_conversations';
 const WIDGET_OPEN_KEY = 'baseera_widget_open';
-const WIDGET_CONV_ID = 'widget_conv';
 
 const QUICK_PROMPTS = [
   'Show critical vulnerabilities',
@@ -33,16 +32,39 @@ const formatTime = (isoString) => {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
-const loadMessages = () => {
+// First-user-message becomes the thread title (truncated). Same idea as the
+// AIChatbot page so the UX feels consistent.
+const buildTitle = (msg) => {
+  const text = String(msg || '').slice(0, 32);
+  return text.length < (msg?.length || 0) ? text + '…' : (text || 'New chat');
+};
+
+// Multi-thread storage. Each entry is { id, title, timestamp, messages: [...] }.
+// Migration: the original shape stored a flat array of messages under the same
+// key, so wrap legacy data into a single conversation on first load. This way
+// users don't lose their old chats when the new feature ships.
+const loadConversations = () => {
   try {
-    return JSON.parse(localStorage.getItem(WIDGET_STORAGE_KEY) || '[]');
+    const raw = JSON.parse(localStorage.getItem(WIDGET_STORAGE_KEY) || '[]');
+    if (!Array.isArray(raw) || raw.length === 0) return [];
+    const looksLikeOldMessages =
+      raw[0] && typeof raw[0] === 'object' && 'role' in raw[0] && 'content' in raw[0];
+    if (looksLikeOldMessages) {
+      return [{
+        id: 'legacy_' + Math.random().toString(36).slice(2, 8),
+        title: buildTitle(raw.find((m) => m.role === 'user')?.content || 'Previous chat'),
+        timestamp: raw[raw.length - 1]?.timestamp || new Date().toISOString(),
+        messages: raw,
+      }];
+    }
+    return raw;
   } catch {
     return [];
   }
 };
 
-const saveMessages = (msgs) => {
-  localStorage.setItem(WIDGET_STORAGE_KEY, JSON.stringify(msgs));
+const saveConversations = (convs) => {
+  localStorage.setItem(WIDGET_STORAGE_KEY, JSON.stringify(convs));
 };
 
 const buildBotMessage = (payload) => {
@@ -74,7 +96,15 @@ export default function BaseeraFloatingChat() {
   const [open, setOpen] = useState(() => {
     try { return localStorage.getItem(WIDGET_OPEN_KEY) === '1'; } catch { return false; }
   });
-  const [messages, setMessages] = useState(loadMessages);
+  // Multi-thread state. `conversations` is the source of truth; `activeId`
+  // picks which one is rendered. activeConv === null means "no thread open
+  // yet, show greeting only" — first user message lazily creates a thread.
+  const [conversations, setConversations] = useState(loadConversations);
+  const [activeId, setActiveId] = useState(() => {
+    const initial = loadConversations();
+    return initial[0]?.id ?? null;
+  });
+  const [showThreadList, setShowThreadList] = useState(false);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -129,23 +159,60 @@ export default function BaseeraFloatingChat() {
     return () => document.removeEventListener('mousedown', onClick);
   }, [showExportMenu]);
 
-  const updateMessages = (msgs) => {
-    setMessages(msgs);
-    saveMessages(msgs);
+  // Same outside-click pattern for the recent-threads dropdown.
+  useEffect(() => {
+    if (!showThreadList) return;
+    const onClick = (e) => {
+      if (!e.target.closest?.('.baseera-widget-threadlist-wrapper')) setShowThreadList(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [showThreadList]);
+
+  const activeConv = conversations.find((c) => c.id === activeId) || null;
+  const messages = activeConv ? activeConv.messages : [];
+
+  const updateConversations = (updated) => {
+    setConversations(updated);
+    saveConversations(updated);
   };
 
-  const clearChat = () => {
-    if (window.confirm('Clear all messages?')) {
-      updateMessages([]);
+  // Wipes every thread. Distinct from "New chat" (which just archives the
+  // current one and starts a fresh thread).
+  const clearAllThreads = () => {
+    if (!conversations.length) return;
+    if (window.confirm('Delete ALL chat history? This cannot be undone.')) {
+      updateConversations([]);
+      setActiveId(null);
     }
   };
 
-  // "New chat" — positive framing, no confirm. Useful when the user wants
-  // to switch topic without the destructive-feeling trash modal.
+  // "New chat" — archive whatever's open and start a fresh, empty thread.
+  // The old thread is preserved in the dropdown, not deleted. No confirm
+  // because nothing is destroyed.
   const newChat = () => {
-    updateMessages([]);
+    // If the active thread is itself empty, don't pile up empty drafts.
+    if (activeConv && activeConv.messages.length === 0) {
+      inputRef.current?.focus();
+      setShowThreadList(false);
+      return;
+    }
+    setActiveId(null);
+    setShowThreadList(false);
     setUnreadCount(0);
     inputRef.current?.focus();
+  };
+
+  const switchThread = (id) => {
+    setActiveId(id);
+    setShowThreadList(false);
+  };
+
+  const deleteThread = (id, e) => {
+    e?.stopPropagation();
+    const updated = conversations.filter((c) => c.id !== id);
+    updateConversations(updated);
+    if (activeId === id) setActiveId(updated[0]?.id ?? null);
   };
 
   // Shared branded chat export template — same shape as the AIChatbot page.
@@ -342,35 +409,64 @@ ${faviconHtml}
       timestamp: new Date().toISOString(),
     };
 
-    const updatedMsgs = [...messages, userMsg];
-    updateMessages(updatedMsgs);
+    // Lazily create a new conversation if none is active. The thread's title
+    // is derived from this first message so it shows up nicely in the
+    // dropdown later. We compute updatedConvs synchronously so the awaited
+    // reply below knows exactly which thread to write into.
+    let convId = activeId;
+    let updatedConvs;
+    if (!convId) {
+      const newConv = {
+        id: generateId(),
+        title: buildTitle(trimmed),
+        timestamp: new Date().toISOString(),
+        messages: [userMsg],
+      };
+      convId = newConv.id;
+      updatedConvs = [newConv, ...conversations];
+      setActiveId(convId);
+    } else {
+      updatedConvs = conversations.map((c) =>
+        c.id === convId
+          ? { ...c, messages: [...c.messages, userMsg], timestamp: new Date().toISOString() }
+          : c
+      );
+    }
+    updateConversations(updatedConvs);
     setIsTyping(true);
+
+    const appendBotMsg = (botMsg) => {
+      const finalConvs = updatedConvs.map((c) =>
+        c.id === convId
+          ? { ...c, messages: [...c.messages, botMsg], timestamp: new Date().toISOString() }
+          : c
+      );
+      updateConversations(finalConvs);
+    };
 
     try {
       const data = await apiClient.post('/chat', {
         message: trimmed,
-        conversationId: WIDGET_CONV_ID,
+        conversationId: convId,
       });
 
       const payload = data?.data || data;
-      const botMsg = {
+      appendBotMsg({
         id: generateId(),
         role: 'bot',
         content: buildBotMessage(payload),
         timestamp: new Date().toISOString(),
-      };
-      updateMessages([...updatedMsgs, botMsg]);
+      });
       // If the user closed the panel while we were awaiting the reply,
       // surface it as an unread badge on the FAB.
       if (!openRef.current) setUnreadCount((n) => n + 1);
     } catch {
-      const errorMsg = {
+      appendBotMsg({
         id: generateId(),
         role: 'bot',
         content: 'Sorry, I could not reach the AI service right now. Please try again later.',
         timestamp: new Date().toISOString(),
-      };
-      updateMessages([...updatedMsgs, errorMsg]);
+      });
       if (!openRef.current) setUnreadCount((n) => n + 1);
     } finally {
       setIsTyping(false);
@@ -415,6 +511,44 @@ ${faviconHtml}
                 <span className="baseera-widget-header-online">Online</span>
               </div>
             </div>
+            <div className="baseera-widget-threadlist-wrapper">
+              <button
+                className="baseera-widget-clear-btn baseera-widget-threadlist-btn"
+                onClick={() => conversations.length && setShowThreadList((v) => !v)}
+                aria-label="Chat history"
+                title="Chat history"
+                disabled={conversations.length === 0}
+                style={{ opacity: conversations.length === 0 ? 0.35 : 1 }}
+              >
+                <i className="fa-solid fa-clock-rotate-left" />
+              </button>
+              {showThreadList && (
+                <div className="baseera-widget-threadlist-menu" role="menu">
+                  <div className="baseera-widget-threadlist-header">Recent chats</div>
+                  {conversations.length === 0 && (
+                    <div className="baseera-widget-threadlist-empty">No chats yet.</div>
+                  )}
+                  {conversations.map((c) => (
+                    <div
+                      key={c.id}
+                      className={`baseera-widget-threadlist-item${c.id === activeId ? ' is-active' : ''}`}
+                      onClick={() => switchThread(c.id)}
+                      role="menuitem"
+                    >
+                      <div className="baseera-widget-threadlist-title">{c.title}</div>
+                      <button
+                        className="baseera-widget-threadlist-delete"
+                        onClick={(e) => deleteThread(c.id, e)}
+                        aria-label="Delete this chat"
+                        title="Delete this chat"
+                      >
+                        <i className="fa-solid fa-xmark" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
               className="baseera-widget-clear-btn baseera-widget-new-btn"
               onClick={newChat}
@@ -453,11 +587,11 @@ ${faviconHtml}
             </div>
             <button
               className="baseera-widget-clear-btn"
-              onClick={clearChat}
-              aria-label="Clear chat"
-              title="Clear chat"
-              disabled={messages.length === 0}
-              style={{ opacity: messages.length === 0 ? 0.35 : 1 }}
+              onClick={clearAllThreads}
+              aria-label="Delete all chat history"
+              title="Delete all chat history"
+              disabled={conversations.length === 0}
+              style={{ opacity: conversations.length === 0 ? 0.35 : 1 }}
             >
               <i className="fa-solid fa-trash" />
             </button>
