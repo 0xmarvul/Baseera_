@@ -1,8 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare } from 'lucide-react';
 import apiClient from '../api/axios.config';
 import baseeraLogo from '../assets/logo.png';
 import './BaseeraFloatingChat.css';
+
+// Personalised welcome greeting used when the conversation is empty.
+// Reads the stored username and only personalises when it looks like a
+// real name (not 'user' / 'User' / empty). Returns plain greeting otherwise.
+const buildGreeting = () => {
+  const raw = (localStorage.getItem('baseeraUserName') || '').trim();
+  const looksReal = raw && raw.toLowerCase() !== 'user' && raw.length >= 2;
+  if (looksReal) {
+    return `👋 Hey ${raw}, I'm Baseera AI, your security assistant. Ask me about any vulnerability and I'll explain what it is and how to fix it.`;
+  }
+  return `👋 Hey there! I'm Baseera AI, your security assistant. Ask me about any vulnerability and I'll explain what it is and how to fix it.`;
+};
+
+// Clickable suggestion chips shown alongside the empty-state greeting.
+const SUGGESTION_CHIPS = [
+  'What is XSS?',
+  'How to fix SQL Injection?',
+  'Show critical vulnerabilities',
+];
 
 const WIDGET_STORAGE_KEY = 'baseera_widget_conversations';
 const WIDGET_CONV_ID = 'widget_conv';
@@ -412,12 +430,35 @@ ${faviconHtml}
           {/* Messages */}
           <div className="baseera-widget-messages">
             {messages.length === 0 && !isTyping && (
-              <div className="baseera-widget-empty">
-                <div className="baseera-widget-empty-icon">
-                  <MessageSquare size={36} strokeWidth={1.6} />
+              <>
+                {/* Transient welcome bubble. Not persisted, not exported,
+                    not counted in messages.length. Disappears as soon as the
+                    user sends their first message. */}
+                <div className="baseera-widget-msg bot baseera-widget-greeting">
+                  <div className="baseera-widget-avatar">
+                    <img src={baseeraLogo} alt="Baseera" />
+                  </div>
+                  <div>
+                    <div className="baseera-widget-bubble">
+                      <p>{buildGreeting()}</p>
+                    </div>
+                  </div>
                 </div>
-                <span>Ask Baseera about web vulnerabilities, fixes, and security best practices.</span>
-              </div>
+
+                <div className="baseera-widget-chips">
+                  {SUGGESTION_CHIPS.map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      className="baseera-widget-chip"
+                      onClick={() => sendMessage(q)}
+                      disabled={isTyping}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
 
             {messages.map((msg) => (

@@ -400,10 +400,47 @@
 }
 
 .chat-empty-icon img {
-  /* Legacy raster fallback — unused now that we render a Lucide icon. */
+  /* Legacy raster fallback, unused now that we render a Lucide icon. */
   width: 48px;
   height: 48px;
   object-fit: contain;
+}
+
+/* Quick-prompt chips shown under the empty-state welcome bubble. */
+.chat-greeting-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  /* Align under the bot bubble: avatar (36px) + gap (12px) = 48px */
+  padding-left: 48px;
+  margin-top: -4px;
+}
+
+.chat-greeting-chip {
+  background: rgba(0, 217, 165, 0.08);
+  border: 1px solid rgba(0, 217, 165, 0.30);
+  color: #00d9a5;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.chat-greeting-chip:hover:not([disabled]) {
+  background: rgba(0, 217, 165, 0.18);
+  border-color: rgba(0, 217, 165, 0.55);
+}
+
+.chat-greeting-chip:active:not([disabled]) {
+  transform: scale(0.97);
+}
+
+.chat-greeting-chip[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* Individual messages */

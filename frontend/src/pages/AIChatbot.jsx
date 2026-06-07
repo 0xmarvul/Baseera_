@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare } from 'lucide-react';
 import LandingNavbar from '../components/LandingNavbar';
 import apiClient from '../api/axios.config';
 import baseeraLogo from '../assets/logo.png';
@@ -14,6 +13,25 @@ const SUGGESTED_PROMPTS = [
   'What is XSS?',
   'List all vulnerabilities',
 ];
+
+// Chips shown next to the empty-state greeting. Kept short on purpose so
+// they fit on one row inside the chat column.
+const GREETING_CHIPS = [
+  'What is XSS?',
+  'How to fix SQL Injection?',
+  'Show critical vulnerabilities',
+];
+
+// Personalised welcome bubble. Falls back to a neutral greeting when the
+// stored username is empty or the generic 'user' placeholder.
+const buildGreeting = () => {
+  const raw = (localStorage.getItem('baseeraUserName') || '').trim();
+  const looksReal = raw && raw.toLowerCase() !== 'user' && raw.length >= 2;
+  if (looksReal) {
+    return `👋 Hey ${raw}, I'm Baseera AI, your security assistant. Ask me about any vulnerability and I'll explain what it is and how to fix it.`;
+  }
+  return `👋 Hey there! I'm Baseera AI, your security assistant. Ask me about any vulnerability and I'll explain what it is and how to fix it.`;
+};
 
 const generateId = () => Math.random().toString(36).slice(2, 10);
 
@@ -649,12 +667,35 @@ ${faviconHtml}
           {/* Messages */}
           <div className="chat-messages">
             {messages.length === 0 && !isTyping && (
-              <div className="chat-empty">
-                <div className="chat-empty-icon">
-                  <MessageSquare size={44} strokeWidth={1.5} />
+              <>
+                {/* Transient welcome bubble. Not persisted, not exported,
+                    not part of messages[]. Disappears the moment the user
+                    sends their first message. */}
+                <div className="chat-message bot chat-greeting">
+                  <div className="message-avatar">
+                    <img src={baseeraLogo} alt="Baseera" className="bot-icon-img" />
+                  </div>
+                  <div className="message-content">
+                    <div className="message-bubble">
+                      <p>{buildGreeting()}</p>
+                    </div>
+                  </div>
                 </div>
-                <p>Ask Baseera about web vulnerabilities, fixes, and security best practices.</p>
-              </div>
+
+                <div className="chat-greeting-chips">
+                  {GREETING_CHIPS.map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      className="chat-greeting-chip"
+                      onClick={() => sendMessage(q)}
+                      disabled={isTyping}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
 
             {messages.map((msg) => (
