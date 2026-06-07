@@ -136,8 +136,14 @@ select.register-form-input {
     cursor: pointer;
 }
 select.register-form-input:focus {
-    /* Chevron shifts to brand teal on focus to mirror the border colour. */
+    /* Chevron shifts to brand teal on focus to mirror the border colour.
+       Must re-declare background-repeat/position here: without them the
+       inheritance from .register-form-input's `background:` shorthand
+       gets reset by the focus rule and the chevron tiles across the
+       whole field. */
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2300D492' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
 }
 /* Options inherit the select's background-image (chevron SVG) and end
    up with a tiny arrow rendered on every row in the dropdown list.
