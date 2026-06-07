@@ -57,6 +57,9 @@ export default function AIChatbot() {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [showExportMenu, setShowExportMenu] = useState(false);
+  // User avatar from Profile page (data URL) — falls back to a Font Awesome
+  // glyph if the user has not uploaded one.
+  const [userAvatar, setUserAvatar] = useState(() => localStorage.getItem('userAvatar') || null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -76,6 +79,14 @@ export default function AIChatbot() {
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
   }, [showExportMenu]);
+
+  // Re-read the user avatar when the tab gets focus so a profile-image
+  // change on /profile shows up here without a hard reload.
+  useEffect(() => {
+    const refresh = () => setUserAvatar(localStorage.getItem('userAvatar') || null);
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, []);
 
   const updateConversations = (updated) => {
     setConversations(updated);
@@ -649,7 +660,9 @@ ${faviconHtml}
               <div key={msg.id} className={`chat-message ${msg.role}`}>
                 <div className="message-avatar">
                   {msg.role === 'user' ? (
-                    <i className="fa-solid fa-user" />
+                    userAvatar
+                      ? <img src={userAvatar} alt="You" className="user-avatar-img" />
+                      : <i className="fa-solid fa-user" />
                   ) : (
                     <img src={baseeraLogo} alt="Baseera" className="bot-icon-img" />
                   )}

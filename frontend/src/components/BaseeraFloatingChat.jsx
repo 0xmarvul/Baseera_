@@ -61,6 +61,9 @@ export default function BaseeraFloatingChat() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  // User avatar from Profile page (data URL or null). Re-read on open so an
+  // edit on /edit-profile reflects without a hard refresh.
+  const [userAvatar, setUserAvatar] = useState(() => localStorage.getItem('userAvatar') || null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -73,6 +76,9 @@ export default function BaseeraFloatingChat() {
   useEffect(() => {
     if (open && inputRef.current) {
       inputRef.current.focus();
+    }
+    if (open) {
+      setUserAvatar(localStorage.getItem('userAvatar') || null);
     }
   }, [open]);
 
@@ -426,7 +432,9 @@ ${faviconHtml}
                 </div>
                 {msg.role === 'user' && (
                   <div className="baseera-widget-avatar user-avatar">
-                    <i className="fa-solid fa-user" />
+                    {userAvatar
+                      ? <img src={userAvatar} alt="You" />
+                      : <i className="fa-solid fa-user" />}
                   </div>
                 )}
               </div>

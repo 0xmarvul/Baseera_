@@ -607,6 +607,14 @@
   object-fit: cover;
 }
 
+/* User profile picture inside the avatar circle (same shape as bot). */
+.user-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .conv-item-header {
   display: flex;
   align-items: center;
