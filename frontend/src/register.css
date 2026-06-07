@@ -21,8 +21,9 @@
 }
 .logo-icon{
     display: flex;
-    justify-content: space-between;
-    gap: 3px;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
     margin-top: 18px;
 }
 .register-info{
@@ -33,7 +34,7 @@
 .logo-title{
     color: #00D492;
 font-family: Inter;
-font-size: 23.04px;
+font-size: 22.04px;
 font-style: normal;
 font-weight: 700;
 line-height: normal;
@@ -68,6 +69,25 @@ align-items: stretch;
 margin-top: 0;
 /* gap: 37px; */
 }
+
+/* Two-column row inside the register form. Used to pair fields like
+   First Name + Last Name on a single line so the form is shorter and
+   easier to scan. Collapses to a single column under 560px so mobile
+   layout stays readable. */
+.register-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.register-form-col {
+    min-width: 0; /* prevents grid blowout when an input has long content */
+}
+@media (max-width: 560px) {
+    .register-form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+}
 .register-form-title{
     color: #90A1B9;
 font-family: Arimo;
@@ -95,6 +115,61 @@ background: rgba(15, 23, 42, 0.6);
 }
 .register-form-input:focus {
     border-color: #00D492;
+}
+
+/* Native <select> needs an explicit appearance reset, otherwise:
+   - Chrome hides the dropdown caret entirely on some platforms
+   - Vertical text alignment is off because `display: flex` doesn't
+     reposition the internal option text (descenders 'y' / 'g' clip)
+   We reset appearance here and let the wrapper paint a chevron via a
+   ::after pseudo-element (see .register-input-wrapper:has(select)
+   below). This is more reliable than `background-image` on the select
+   itself because the background shorthand on .register-form-input was
+   resetting the image in some cascades. */
+select.register-form-input {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    display: block;        /* overrides the flex from .register-form-input */
+    line-height: 1.4;      /* gives descenders room to breathe */
+    padding-right: 40px;   /* reserve space for the chevron */
+    cursor: pointer;
+}
+/* Painted chevron lives on the wrapper, not on the select, so it can't
+   be overridden by the shared `background:` shorthand on the input. The
+   :has(> select) selector scopes it to wrappers that actually contain a
+   select, so we don't accidentally draw arrows on text inputs.
+   pointer-events: none so the chevron doesn't swallow clicks meant for
+   the select underneath. */
+.register-input-wrapper:has(> select.register-form-input)::after {
+    content: '';
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    transform: translateY(-60%) rotate(45deg);
+    border-right: 2px solid #90A1B9;
+    border-bottom: 2px solid #90A1B9;
+    pointer-events: none;
+    transition: border-color 0.2s;
+}
+/* On focus the chevron picks up the brand teal so it mirrors the
+   border colour transition. */
+.register-input-wrapper:has(> select.register-form-input:focus)::after {
+    border-right-color: #00D492;
+    border-bottom-color: #00D492;
+}
+/* The dropdown list options - background matches the form theme,
+   no chevron inheritance because the chevron is a pseudo, not a
+   background-image on the select. */
+select.register-form-input option {
+    background: #0f172a;
+    color: #ffffff;
+}
+select.register-form-input:invalid,
+select.register-form-input:has(option[value=""]:checked) {
+    color: #62748E; /* matches input::placeholder */
 }
 input::placeholder{
     color: #62748E;

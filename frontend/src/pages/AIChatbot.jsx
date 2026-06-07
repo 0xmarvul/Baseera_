@@ -14,6 +14,17 @@ const SUGGESTED_PROMPTS = [
   'List all vulnerabilities',
 ];
 
+// Personalised welcome bubble. Falls back to a neutral greeting when the
+// stored username is empty or the generic 'user' placeholder.
+const buildGreeting = () => {
+  const raw = (localStorage.getItem('baseeraUserName') || '').trim();
+  const looksReal = raw && raw.toLowerCase() !== 'user' && raw.length >= 2;
+  if (looksReal) {
+    return `👋 Hey ${raw}, I'm Baseera AI, your security assistant. Ask me about any vulnerability and I'll explain what it is and how to fix it.`;
+  }
+  return `👋 Hey there! I'm Baseera AI, your security assistant. Ask me about any vulnerability and I'll explain what it is and how to fix it.`;
+};
+
 const generateId = () => Math.random().toString(36).slice(2, 10);
 
 const formatTime = (isoString) => {
@@ -56,6 +67,10 @@ export default function AIChatbot() {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  // User avatar from Profile page (data URL) — falls back to a Font Awesome
+  // glyph if the user has not uploaded one.
+  const [userAvatar, setUserAvatar] = useState(() => localStorage.getItem('userAvatar') || null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -65,6 +80,24 @@ export default function AIChatbot() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
+
+  // Close the export-format menu when the user clicks anywhere outside it.
+  useEffect(() => {
+    if (!showExportMenu) return;
+    const onClick = (e) => {
+      if (!e.target.closest?.('.chat-export-wrapper')) setShowExportMenu(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [showExportMenu]);
+
+  // Re-read the user avatar when the tab gets focus so a profile-image
+  // change on /profile shows up here without a hard reload.
+  useEffect(() => {
+    const refresh = () => setUserAvatar(localStorage.getItem('userAvatar') || null);
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, []);
 
   const updateConversations = (updated) => {
     setConversations(updated);
@@ -91,6 +124,20 @@ export default function AIChatbot() {
     }
   };
 
+  // Clears only the messages inside the currently-open conversation.
+  // Different from clearConversations (which wipes the whole sidebar) and
+  // from deleteConversation (which removes the row entirely).
+  const clearActiveConversation = () => {
+    if (!activeId) return;
+    if (!window.confirm('Clear all messages in this conversation?')) return;
+    const updated = conversations.map((c) =>
+      c.id === activeId
+        ? { ...c, messages: [], preview: '', timestamp: new Date().toISOString() }
+        : c
+    );
+    updateConversations(updated);
+  };
+
   const deleteConversation = (convId, e) => {
     e.stopPropagation();
     const updated = conversations.filter((c) => c.id !== convId);
@@ -113,10 +160,13 @@ export default function AIChatbot() {
     setEditingId(null);
   };
 
-  const exportChatAsHTML = async () => {
-    if (!activeConv || messages.length === 0) return;
-
-    // Convert logo to base64 data URI for embedding in standalone HTML
+  // Shared chat export template — same look for HTML download and PDF print.
+  // Mirrors the website: navy bg #0a1929, teal->cyan gradient header,
+  // Inter font, glass cards. forPrint adds @media print invert so it looks
+  // good on paper too.
+  const buildChatHtml = async ({ forPrint }) => {
+    // Convert logo PNG to base64 once so the exported HTML is fully
+    // self-contained and renders the logo offline (and in the print preview).
     let logoDataUri = null;
     try {
       const resp = await fetch(baseeraLogo);
@@ -127,62 +177,180 @@ export default function AIChatbot() {
         reader.onerror = reject;
         reader.readAsDataURL(blob);
       });
-    } catch {
-      // fall back to "B" text if image conversion fails
-    }
+    } catch { /* fall back to text 'B' */ }
 
-    const logoHtml = logoDataUri
-      ? `<img src="${logoDataUri}" alt="Baseera" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
-      : 'B';
-    const faviconHtml = logoDataUri
-      ? `<link rel="icon" href="${logoDataUri}" />`
-      : '';
+    const logoMark = logoDataUri
+      ? `<img src="${logoDataUri}" alt="Baseera" />`
+      : '<span class="logo-fallback">B</span>';
+    const faviconHtml = logoDataUri ? `<link rel="icon" href="${logoDataUri}" />` : '';
 
-    const msgHTML = messages.map((msg) => {
+    const esc = (s) => String(s ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+    const fmtTime = (iso) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const fmtFull = new Date().toLocaleString(undefined, {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    const msgHtml = messages.map((msg) => {
       const isUser = msg.role === 'user';
       const role = isUser ? 'You' : 'Baseera Assistant';
-      const roleIcon = isUser ? '👤' : '🛡️';
-      const bgColor = isUser ? '#6366f1' : '#1e293b';
-      const textColor = '#e2e8f0';
-      const align = isUser ? 'flex-end' : 'flex-start';
-      const borderRadius = isUser
-        ? '14px 14px 4px 14px'
-        : '14px 14px 14px 4px';
-      const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const escapedContent = msg.content
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      const time = fmtTime(msg.timestamp);
+      const body = esc(msg.content)
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/\n/g, '<br/>');
       return `
-      <div style="display:flex;justify-content:${align};margin-bottom:16px;">
-        <div style="max-width:70%;background:${bgColor};color:${textColor};padding:14px 18px;border-radius:${borderRadius};border:${isUser ? 'none' : '1px solid #2d3748'};">
-          <div style="font-weight:600;margin-bottom:6px;font-size:0.78rem;color:${isUser ? 'rgba(255,255,255,0.7)' : '#94a3b8'};">${roleIcon} ${role} · ${time}</div>
-          <div style="white-space:pre-wrap;line-height:1.6;font-size:0.9rem;">${escapedContent}</div>
+      <div class="msg-row ${isUser ? 'msg-user' : 'msg-bot'}">
+        <div class="msg-bubble">
+          <div class="msg-meta">
+            <span class="msg-role">${role}</span>
+            <span class="msg-time">${esc(time)}</span>
+          </div>
+          <div class="msg-body">${body}</div>
         </div>
       </div>`;
     }).join('');
 
-    const html = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8">${faviconHtml}<title>${activeConv.title} - Baseera Chat Export</title>
+    const printStyles = forPrint ? `
+      @page { margin: 16mm 12mm; }
+      @media print {
+        body { background: #ffffff !important; }
+        .export-shell { background: #ffffff !important; }
+        .hero, .msg-bubble { background: #ffffff !important; border-color: #d6dde6 !important; box-shadow: none !important; }
+        .hero-title, .hero-subtitle, .msg-role, .msg-body { color: #0a1929 !important; }
+        .msg-time, .hero-sub { color: #475569 !important; }
+        .msg-user .msg-bubble { background: #ecfdf5 !important; border-color: #a7f3d0 !important; }
+        .msg-row { page-break-inside: avoid; }
+      }` : '';
+
+    return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+${faviconHtml}
+<title>${esc(activeConv.title)} — Baseera Chat</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <style>
-  body { background: #0f1724; font-family: 'Inter', 'Segoe UI', sans-serif; padding: 40px 20px; max-width: 800px; margin: 0 auto; }
-  .export-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-  .export-logo { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #00bc7d, #00b8db); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px; overflow: hidden; }
-  .export-logo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-  h1 { color: #f1f5f9; font-size: 1.3rem; margin: 0; }
-  .export-meta { color: #64748b; font-size: 0.82rem; margin-bottom: 30px; margin-left: 48px; }
-  .divider { border: none; border-top: 1px solid #1e2d3d; margin: 0 0 24px 0; }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a1929;
+    color: #e2e8f0;
+    line-height: 1.6;
+  }
+  .export-shell { max-width: 820px; margin: 0 auto; padding: 48px 24px 80px; }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #0d2137 0%, #132f4c 60%, #0d2137 100%);
+    border: 1px solid #1e3a5f;
+    border-radius: 18px;
+    padding: 30px 32px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .hero::before {
+    content: ""; position: absolute; top: -60px; right: -60px;
+    width: 240px; height: 240px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,217,165,0.20), transparent 65%);
+    pointer-events: none;
+  }
+  .hero-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .hero-logo {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: linear-gradient(135deg, #00d9a5 0%, #00b4d8 100%);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .hero-logo img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+  .logo-fallback { color: #fff; font-weight: 800; font-size: 18px; }
+  .hero-brand-name { color: #ffffff; font-weight: 700; font-size: 17px; letter-spacing: 0.2px; }
+  .hero-title {
+    color: #f1f5f9;
+    font-size: 24px;
+    font-weight: 700;
+    margin: 6px 0 6px;
+    line-height: 1.25;
+    word-break: break-word;
+  }
+  .hero-sub { color: #94a3b8; font-size: 13px; margin: 0; }
+
+  /* Messages */
+  .messages { display: flex; flex-direction: column; gap: 14px; }
+  .msg-row { display: flex; }
+  .msg-row.msg-user { justify-content: flex-end; }
+  .msg-row.msg-bot  { justify-content: flex-start; }
+  .msg-bubble {
+    max-width: 78%;
+    padding: 14px 18px;
+    border-radius: 16px;
+  }
+  .msg-user .msg-bubble {
+    background: linear-gradient(135deg, rgba(0,188,125,0.20) 0%, rgba(0,184,219,0.20) 100%);
+    border: 1px solid rgba(0,217,165,0.35);
+    border-bottom-right-radius: 6px;
+    color: #f1f5f9;
+  }
+  .msg-bot .msg-bubble {
+    background: #0d2137;
+    border: 1px solid #1e3a5f;
+    border-bottom-left-radius: 6px;
+    color: #e2e8f0;
+  }
+  .msg-meta {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+    font-size: 11px; letter-spacing: 0.4px; text-transform: uppercase; font-weight: 600;
+  }
+  .msg-user .msg-meta { color: #5eead4; }
+  .msg-bot  .msg-meta { color: #94a3b8; }
+  .msg-time { font-weight: 500; opacity: 0.7; }
+  .msg-body { font-size: 14px; line-height: 1.65; white-space: pre-wrap; word-wrap: break-word; }
+  .msg-body strong { color: #00d9a5; font-weight: 700; }
+
+  /* Footer */
+  .export-footer {
+    text-align: center; margin-top: 48px; padding-top: 22px;
+    border-top: 1px solid #1e3a5f;
+    color: #64748b; font-size: 11.5px;
+  }
+  .export-footer .accent { color: #00d9a5; }
+
+  ${printStyles}
 </style>
-</head><body>
-<div class="export-header">
-  <div class="export-logo">${logoHtml}</div>
-  <h1>${activeConv.title}</h1>
-</div>
-<div class="export-meta">Exported from Baseera Assistant · ${new Date().toLocaleString()}</div>
-<hr class="divider">
-${msgHTML}
-<div style="text-align:center;color:#475569;font-size:0.75rem;margin-top:30px;padding-top:20px;border-top:1px solid #1e2d3d;">Powered by Baseera · Cybersecurity AI Assistant</div>
-</body></html>`;
+</head>
+<body>
+  <div class="export-shell">
+    <div class="hero">
+      <div class="hero-brand">
+        <div class="hero-logo">${logoMark}</div>
+        <span class="hero-brand-name">Baseera Assistant</span>
+      </div>
+      <h1 class="hero-title">${esc(activeConv.title)}</h1>
+      <p class="hero-sub">Exported ${esc(fmtFull)} · ${messages.length} message${messages.length === 1 ? '' : 's'}</p>
+    </div>
+
+    <div class="messages">
+      ${msgHtml}
+    </div>
+
+    <div class="export-footer">
+      Baseera · <span class="accent">Cybersecurity AI Assistant</span> · Conversation archive
+    </div>
+  </div>
+</body>
+</html>`;
+  };
+
+  const exportChatAsHTML = async () => {
+    if (!activeConv || messages.length === 0) return;
+    const html = await buildChatHtml({ forPrint: false });
 
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
@@ -191,6 +359,20 @@ ${msgHTML}
     a.download = `${activeConv.title.replace(/[^a-z0-9]/gi, '_')}_chat.html`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  // Opens the chat in a new window and triggers the browser print dialog so
+  // the user can save as PDF. We use the print path (no jsPDF dep) because it
+  // keeps the bundle small and gives users control over paper size.
+  const exportChatAsPDF = async () => {
+    if (!activeConv || messages.length === 0) return;
+    const html = await buildChatHtml({ forPrint: true });
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      setTimeout(() => { try { win.focus(); win.print(); } catch (_) {} }, 350);
+    }
   };
 
   const sendMessage = async (text) => {
@@ -430,7 +612,36 @@ ${msgHTML}
               )}
             </div>
             <div className="chat-header-right">
-              <i className="fa-solid fa-download chat-icon-btn" title="Export as HTML" onClick={exportChatAsHTML} style={{ cursor: messages.length ? 'pointer' : 'not-allowed', opacity: messages.length ? 1 : 0.4 }} />
+              <div className="chat-export-wrapper" style={{ position: 'relative' }}>
+                <i
+                  className="fa-solid fa-download chat-icon-btn"
+                  title="Export this conversation"
+                  onClick={() => messages.length && setShowExportMenu(v => !v)}
+                  style={{ cursor: messages.length ? 'pointer' : 'not-allowed', opacity: messages.length ? 1 : 0.4 }}
+                />
+                {showExportMenu && (
+                  <div className="chat-export-menu">
+                    <button
+                      className="chat-export-item"
+                      onClick={() => { setShowExportMenu(false); exportChatAsHTML(); }}
+                    >
+                      <i className="fa-solid fa-file-code" /> Export as HTML
+                    </button>
+                    <button
+                      className="chat-export-item"
+                      onClick={() => { setShowExportMenu(false); exportChatAsPDF(); }}
+                    >
+                      <i className="fa-solid fa-file-pdf" /> Export as PDF
+                    </button>
+                  </div>
+                )}
+              </div>
+              <i
+                className="fa-solid fa-trash chat-icon-btn chat-icon-danger"
+                title="Clear this conversation"
+                onClick={clearActiveConversation}
+                style={{ cursor: messages.length ? 'pointer' : 'not-allowed', opacity: messages.length ? 1 : 0.4 }}
+              />
             </div>
           </div>
 
@@ -447,20 +658,29 @@ ${msgHTML}
 
           {/* Messages */}
           <div className="chat-messages">
-            {messages.length === 0 && !isTyping && (
-              <div className="chat-empty">
-                <div className="chat-empty-icon">
-                  <img src={baseeraLogo} alt="Baseera" style={{ width: '64px', height: '64px' }} />
-                </div>
-                <p>Ask Baseera about web vulnerabilities, fixes, and security best practices.</p>
+            {/* Persistent welcome bubble. Always rendered at the top of
+                the conversation, even after the user starts chatting. Not
+                pushed into messages[] so it isn't persisted to localStorage
+                or included in exports. Bottom SUGGESTED_PROMPTS already
+                covers quick-prompt UX, so no chips here. */}
+            <div className="chat-message bot chat-greeting">
+              <div className="message-avatar">
+                <img src={baseeraLogo} alt="Baseera" className="bot-icon-img" />
               </div>
-            )}
+              <div className="message-content">
+                <div className="message-bubble">
+                  <p>{buildGreeting()}</p>
+                </div>
+              </div>
+            </div>
 
             {messages.map((msg) => (
               <div key={msg.id} className={`chat-message ${msg.role}`}>
                 <div className="message-avatar">
                   {msg.role === 'user' ? (
-                    <i className="fa-solid fa-user" />
+                    userAvatar
+                      ? <img src={userAvatar} alt="You" className="user-avatar-img" />
+                      : <i className="fa-solid fa-user" />
                   ) : (
                     <img src={baseeraLogo} alt="Baseera" className="bot-icon-img" />
                   )}

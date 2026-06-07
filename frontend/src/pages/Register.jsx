@@ -9,6 +9,8 @@ import { authApi } from '../api/authApi';
 import Navbar from "../components/Navbar";
 import PasswordChecklist from "../components/PasswordChecklist";
 import { isPasswordValid, PASSWORD_ERROR_MESSAGE } from "../utils/passwordPolicy";
+import { COUNTRIES } from "../utils/countries";
+import { clearUserSession } from "../utils/session";
 
 
 
@@ -24,11 +26,6 @@ function Register(){
     const [showPassword, setShowPassword] = useState(false);
     const [passwordValue, setPasswordValue] = useState("");
 
-    // Date of birth constraints
-    const today = new Date();
-    const maxDate = new Date(today.getFullYear() - 15, today.getMonth(), today.getDate()).toISOString().split('T')[0];
-    const minDate = new Date(today.getFullYear() - 120, today.getMonth(), today.getDate()).toISOString().split('T')[0];
-
     const handleSubmit = async (event) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
@@ -38,16 +35,13 @@ function Register(){
         const username = (formData.get("username") || "").toString().trim();
         const email = (formData.get("email") || "").toString().trim();
         const password = (formData.get("password") || "").toString().trim();
-        const phoneNumber = (formData.get("phoneNumber") || "").toString().trim() || null;
-        const gender = (formData.get("gender") || "").toString().trim() || null;
-        const dateOfBirth = (formData.get("dateOfBirth") || "").toString().trim() || null;
-        const country = (formData.get("country") || "").toString().trim() || null;
+        const country = (formData.get("country") || "").toString().trim();
 
         setError("");
         setSuccess("");
         setLoading(true);
 
-        if (!firstName || !lastName || !username || !email || !password) {
+        if (!firstName || !lastName || !username || !email || !password || !country) {
             setError("Please fill all fields");
             setLoading(false);
             return;
@@ -65,31 +59,6 @@ function Register(){
             return;
         }
 
-        if (dateOfBirth) {
-            const dob = new Date(dateOfBirth);
-            const ageDiff = today.getFullYear() - dob.getFullYear();
-            const monthDiff = today.getMonth() - dob.getMonth();
-            const dayDiff = today.getDate() - dob.getDate();
-            let age = ageDiff;
-            if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) age--;
-
-            if (dob > today) {
-                setError("Date of birth cannot be in the future");
-                setLoading(false);
-                return;
-            }
-            if (age < 15) {
-                setError("You must be at least 15 years old to register");
-                setLoading(false);
-                return;
-            }
-            if (age > 120) {
-                setError("Please enter a valid date of birth");
-                setLoading(false);
-                return;
-            }
-        }
-
         try {
             const response = await authApi.register({
                 email,
@@ -97,13 +66,15 @@ function Register(){
                 firstName,
                 lastName,
                 password,
-                phoneNumber,
-                gender,
-                dateOfBirth,
                 country
             });
 
             if (response.success) {
+                // Wipe any leftover per-user data from a previous account
+                // on this browser (chat history, avatar, profile cache).
+                // Otherwise a new signup on a shared device would inherit
+                // the previous user's chats.
+                clearUserSession();
                 setSuccess("Account created successfully! Please check your email to verify your account.");
                 setTimeout(() => {
                     navigate("/account-verification", { state: { email } });
@@ -139,37 +110,59 @@ function Register(){
                     {error && <div className="form-error-msg">{error}</div>}
                     {success && <div className="form-success-msg">{success}</div>}
                 <form className="register-form" onSubmit={handleSubmit}>
-                    <h5 className="register-form-title">
-                        First Name
-                    </h5>
-                    <div className="register-input-wrapper">
-                        <i className="fa-solid fa-user register-input-icon"></i>
-                        <input className="register-form-input" name="fullName" type="text" placeholder="Mark " disabled={loading} required autoComplete="given-name" />
+                    {/* Row 1: First / Last name */}
+                    <div className="register-form-row">
+                        <div className="register-form-col">
+                            <h5 className="register-form-title">First Name</h5>
+                            <div className="register-input-wrapper">
+                                <i className="fa-solid fa-user register-input-icon"></i>
+                                <input className="register-form-input" name="fullName" type="text" placeholder="Mark" disabled={loading} required autoComplete="given-name" />
+                            </div>
+                        </div>
+                        <div className="register-form-col">
+                            <h5 className="register-form-title">Last Name</h5>
+                            <div className="register-input-wrapper">
+                                <i className="fa-solid fa-user register-input-icon"></i>
+                                <input className="register-form-input" name="lastName" type="text" placeholder="Johnson" disabled={loading} required autoComplete="family-name" />
+                            </div>
+                        </div>
                     </div>
-                    <h5 className="register-form-title">
-                        Last Name
-                    </h5>
-                    <div className="register-input-wrapper">
-                        <i className="fa-solid fa-user register-input-icon"></i>
-                        <input className="register-form-input" name="lastName" type="text" placeholder="Johnson" disabled={loading} required autoComplete="family-name" />
+
+                    {/* Row 2: Email / Username */}
+                    <div className="register-form-row">
+                        <div className="register-form-col">
+                            <h5 className="register-form-title">Email Address</h5>
+                            <div className="register-input-wrapper">
+                                <i className="fa-solid fa-envelope register-input-icon"></i>
+                                {/* autoComplete="email username" pairs the
+                                    password manager's saved identifier with
+                                    the email field (since login uses email,
+                                    not the @handle). Without this, browsers
+                                    pick the closest text field to password
+                                    — the username — and store the wrong
+                                    identifier, then mis-autofill on login. */}
+                                <input className="register-form-input" name="email" type="email" placeholder="Mark.johnson@baseera.security" disabled={loading} required autoComplete="email username" />
+                            </div>
+                        </div>
+                        <div className="register-form-col">
+                            <h5 className="register-form-title">Username</h5>
+                            <div className="register-input-wrapper">
+                                <i className="fa-solid fa-at register-input-icon"></i>
+                                {/* autoComplete="nickname" tells the browser
+                                    this is a display handle, not a login
+                                    identifier — so it pairs the password
+                                    with the email field above instead of
+                                    this one. "off" alone is ignored by
+                                    Chrome on signup-shaped forms. */}
+                                <input className="register-form-input" name="username" type="text" placeholder="Markjohnson" disabled={loading} required autoComplete="nickname" />
+                            </div>
+                        </div>
                     </div>
-                    <h5 className="register-form-title">
-                        Username
-                    </h5>
-                    <div className="register-input-wrapper">
-                        <i className="fa-solid fa-at register-input-icon"></i>
-                        <input className="register-form-input" name="username" type="text" placeholder=" Markjohnson" disabled={loading} required autoComplete="off" />
-                    </div>
-                    <h5 className="register-form-title">
-                        Email Address
-                    </h5>
-                    <div className="register-input-wrapper">
-                        <i className="fa-solid fa-envelope register-input-icon"></i>
-                        <input className="register-form-input" name="email" type="email" placeholder=" Mark.johnson@baseera.security" disabled={loading} required autoComplete="email" />
-                    </div>
-                    <h5 className="register-form-title">
-                        Password
-                    </h5>
+
+                    {/* Row 3: Password (full width so the checklist below has
+                        room). Swapped position with Country per design, but the
+                        widths stay the same as the original layout. */}
+                    <h5 className="register-form-title">Password</h5>
                     <div className="register-input-wrapper">
                         <i className="fa-solid fa-lock register-input-icon"></i>
                         <input
@@ -199,49 +192,25 @@ function Register(){
                     </div>
                     <PasswordChecklist password={passwordValue} />
 
-                    <h5 className="register-form-title">
-                        Phone Number <span style={{fontWeight: 'normal', fontSize: '12px'}}>(Optional)</span>
-                    </h5>
-                    <div className="register-input-wrapper">
-                        <i className="fa-solid fa-phone register-input-icon"></i>
-                        <input className="register-form-input" name="phoneNumber" type="tel" placeholder="+1 (555) 000-0000" disabled={loading} />
+                    {/* Row 4: Country (half-width left, spacer right). Fixed
+                        select list so we capture clean names, not free-text. */}
+                    <div className="register-form-row">
+                        <div className="register-form-col">
+                            <h5 className="register-form-title">Country</h5>
+                            <div className="register-input-wrapper">
+                                <i className="fa-solid fa-globe register-input-icon"></i>
+                                <select className="register-form-input" name="country" disabled={loading} required defaultValue="">
+                                    <option value="" disabled>Select your country</option>
+                                    {COUNTRIES.map((c) => (
+                                        <option key={c} value={c}>{c}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="register-form-col" aria-hidden="true" />
                     </div>
-                    
-                    <h5 className="register-form-title">
-                        Gender <span style={{fontWeight: 'normal', fontSize: '12px'}}>(Optional)</span>
-                    </h5>
-                    <div className="register-input-wrapper">
-                        <i className="fa-solid fa-venus-mars register-input-icon"></i>
-                        <select className="register-form-input" name="gender" disabled={loading}>
-                            <option value="">Select gender</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                        </select>
-                    </div>
-                    
-                    <h5 className="register-form-title">
-                        Date of Birth <span style={{fontWeight: 'normal', fontSize: '12px'}}>(Optional)</span>
-                    </h5>
-                    <div className="register-input-wrapper">
-                        <input 
-                            className="register-form-input" 
-                            name="dateOfBirth" 
-                            type="date" 
-                            disabled={loading}
-                            max={maxDate}
-                            min={minDate}
-                        />
-                    </div>
-                    
-                    <h5 className="register-form-title">
-                        Country <span style={{fontWeight: 'normal', fontSize: '12px'}}>(Optional)</span>
-                    </h5>
-                    <div className="register-input-wrapper">
-                        <i className="fa-solid fa-globe register-input-icon"></i>
-                        <input className="register-form-input" name="country" type="text" placeholder="Your country" disabled={loading} />
-                    </div>
-                    
-                            <div className="btn">  
+
+                            <div className="btn">
                                 <button type="submit" disabled={loading}>
                                     {loading ? "Creating Account..." : "Create Account"}
                                 </button>

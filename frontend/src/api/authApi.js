@@ -46,8 +46,10 @@ export const authApi = {
   },
 
   // PUT /api/users/change-password
-  changePassword: async (newPassword) => {
-    return apiClient.put('/users/change-password', { newPassword });
+  // Current password is required server-side so a stolen JWT alone can't
+  // rotate the password and lock the real owner out.
+  changePassword: async (currentPassword, newPassword) => {
+    return apiClient.put('/users/change-password', { currentPassword, newPassword });
   },
 
   // POST /api/auth/forgot-password

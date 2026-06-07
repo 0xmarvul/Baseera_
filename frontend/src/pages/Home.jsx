@@ -56,7 +56,7 @@ function Home() {
           </h2>
 
           <p className="home-subtitle reveal reveal-delay-2">
-            Baseera is a passive web security scanner that detects 28 classes
+            Baseera is a passive web security scanner that detects 31 classes
             of vulnerabilities, from XSS and SQL injection to leaked API keys
             and missing security headers, without ever modifying the page or
             sending data to third parties.
@@ -93,7 +93,7 @@ function Home() {
                 <h2>Install The Baseera Extension</h2>
                 <p>
                   Add Baseera to Chrome and scan any website with a single
-                  click. The extension runs 28 passive scanners directly in
+                  click. The extension runs 31 passive scanners directly in
                   your browser. No requests sent, no page modifications, no
                   tracking.
                 </p>
@@ -102,7 +102,7 @@ function Home() {
               <div className="small-icon">
                 <div className="feature-item">
                   <Check size={18} strokeWidth={3} className="lucide-check" />
-                  <h6>28 scanners across Critical, High, Medium, Low</h6>
+                  <h6>31 scanners across Critical, High, Medium, Low</h6>
                 </div>
                 <div className="feature-item">
                   <Check size={18} strokeWidth={3} className="lucide-check" />
@@ -191,7 +191,7 @@ function Home() {
           <p className="security-badge">What Baseera Detects</p>
           <h2 className="security-title">Vulnerability Coverage</h2>
           <p className="security-description">
-            Baseera ships with 28 scanners covering the OWASP Top 10 and
+            Baseera ships with 31 scanners covering the OWASP Top 10 and
             beyond. Each finding is mapped to a severity tier and explained
             in plain language by the built-in AI assistant.
           </p>
@@ -329,7 +329,7 @@ function Home() {
 
       <p className="protection-description">
       Open the website you want to inspect, click the Baseera icon, and hit
-      Start Scan. All 28 scanners run locally against the page&apos;s DOM and
+      Start Scan. All 31 scanners run locally against the page&apos;s DOM and
       surface findings within seconds. No installation per site, no
       configuration.
       </p>
@@ -386,7 +386,7 @@ function Home() {
             <div className="security-icon network">
               <Network size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
-            <h3 className="text-sec3">28</h3>
+            <h3 className="text-sec3">31</h3>
             <p className="par-sec3">
             Vulnerability Scanners
             </p>

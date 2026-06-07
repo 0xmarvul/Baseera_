@@ -6,6 +6,7 @@ using Core.Exceptions;
 using Application.DTOs.Common;
 using Application.DTOs.Vulnerabilities;
 using Application.DTOs.Scans;
+using WebAPI.Middleware;
 
 namespace WebAPI.Controllers;
 
@@ -123,10 +124,12 @@ public class VulnerabilitiesController : ControllerBase
     }
 
     /// <summary>
-    /// Callback endpoint for Scanner to report vulnerabilities
+    /// Callback endpoint for Scanner to report vulnerabilities.
+    /// Authorised via shared scanner API key in X-Scanner-Api-Key header.
     /// </summary>
     [HttpPost("vulnerabilities/callback")]
-    [AllowAnonymous] // يمكن تغييرها لـ API Key authentication
+    [AllowAnonymous]
+    [RequireScannerApiKey]
     public async Task<ActionResult<ResponseDto<object>>> ReceiveVulnerability(
         [FromBody] VulnerabilityCallbackDto dto)
     {
@@ -189,10 +192,12 @@ public class VulnerabilitiesController : ControllerBase
     }
 
     /// <summary>
-    /// Update scan status (for Scanner to mark as Completed/Failed)
+    /// Update scan status (for Scanner to mark as Completed/Failed).
+    /// Authorised via shared scanner API key in X-Scanner-Api-Key header.
     /// </summary>
     [HttpPut("scans/{scanId}/status")]
-    [AllowAnonymous] // يمكن تغييرها لـ API Key authentication
+    [AllowAnonymous]
+    [RequireScannerApiKey]
     public async Task<ActionResult<ResponseDto<object>>> UpdateScanStatus(
         int scanId,
         [FromBody] UpdateScanStatusDto dto)

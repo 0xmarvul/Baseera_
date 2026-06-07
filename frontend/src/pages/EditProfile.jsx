@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import LandingNavbar from "../components/LandingNavbar";
 import "../EditProfile.css";
 import { authApi } from "../api/authApi";
+import { COUNTRIES } from "../utils/countries";
 
 function EditProfile() {
   const navigate = useNavigate();
@@ -10,10 +11,7 @@ function EditProfile() {
   const [formData, setFormData] = useState({
     fullName: "",
     username: "",
-    gender: "",
-    dateOfBirth: "",
     email: "",
-    phone: "",
     country: "",
     bio: "",
   });
@@ -32,11 +30,8 @@ function EditProfile() {
             fullName: `${d.firstName || ''} ${d.lastName || ''}`.trim(),
             username: d.username || '',
             email: d.email || '',
-            phone: d.phoneNumber || '',
             country: d.country || '',
             bio: d.bio || '',
-            gender: d.gender ? d.gender.toLowerCase() : '',
-            dateOfBirth: d.dateOfBirth ? (typeof d.dateOfBirth === 'string' ? d.dateOfBirth.substring(0, 10) : new Date(d.dateOfBirth).toISOString().substring(0, 10)) : ''
           }));
         }
       })
@@ -51,14 +46,11 @@ function EditProfile() {
               fullName: `${parsed.fullName || ''} ${parsed.lastName || ''}`.trim() || prev.fullName,
               username: parsed.username || prev.username,
               email: parsed.email || prev.email,
-              phone: parsed.phone || prev.phone,
               country: parsed.country || prev.country,
               bio: parsed.bio || prev.bio,
-              gender: parsed.gender || prev.gender,
-              dateOfBirth: parsed.dateOfBirth || prev.dateOfBirth
             }));
-          } catch (error) {
-            console.log("Error loading user data:", error);
+          } catch {
+            // localStorage fallback parse failed — fields keep their defaults.
           }
         }
       });
@@ -106,21 +98,22 @@ function EditProfile() {
       return;
     }
 
-    // Optional fields: send the empty string (not null) so the backend can tell
-    // "user wants to clear this" from "field not present in payload".
-    // DateOfBirth needs an explicit ClearDateOfBirth flag because null is the
-    // wire shape for both "no change" and "wipe it".
+    const countryTrimmed = formData.country.trim();
+    if (!countryTrimmed) {
+      setSaveError("Country is required.");
+      return;
+    }
+
+    // Phone, gender, dateOfBirth were removed from the form. Backend keeps
+    // the DTO columns nullable so old data isn't wiped server-side; we just
+    // stop sending those fields. Country is required.
     const payload = {
       username: usernameTrimmed,
       email: emailTrimmed,
       firstName,
       lastName,
-      phoneNumber: formData.phone || "",
-      gender: formData.gender || "",
-      country: formData.country || "",
+      country: countryTrimmed,
       bio: formData.bio || "",
-      dateOfBirth: formData.dateOfBirth || null,
-      clearDateOfBirth: !formData.dateOfBirth,
     };
 
     try {
@@ -167,11 +160,8 @@ function EditProfile() {
           fullName: `${firstName} ${lastName}`.trim(),
           username: usernameTrimmed,
           email: emailTrimmed,
-          phone: formData.phone || "",
           country: formData.country || "",
           bio: formData.bio || "",
-          gender: formData.gender || "",
-          dateOfBirth: formData.dateOfBirth || "",
         };
         localStorage.setItem("baseeraUserData", JSON.stringify(updatedData));
         localStorage.setItem("baseeraUserName", usernameTrimmed);
@@ -236,42 +226,6 @@ function EditProfile() {
                 </div>
               </div>
 
-              <div className="form-group">
-                <label>Gender <span className="optional">(Optional)</span></label>
-                <div className="input-wrapper">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="6" cy="10" r="3.33333" stroke="#90A1B9" strokeWidth="1.33333"/>
-                    <path d="M13.3333 2.66667L9.33333 6.66667M13.3333 2.66667V5.33333M13.3333 2.66667H10.6667" stroke="#90A1B9" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <select 
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleChange}
-                  >
-                    <option value="">Select gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Date of Birth <span className="optional">(Optional)</span></label>
-                <div className="input-wrapper">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="2" y="3.33333" width="12" height="10.6667" rx="1.33333" stroke="#90A1B9" strokeWidth="1.33333"/>
-                    <path d="M10.6667 2V4.66667" stroke="#90A1B9" strokeWidth="1.33333" strokeLinecap="round"/>
-                    <path d="M5.33333 2V4.66667" stroke="#90A1B9" strokeWidth="1.33333" strokeLinecap="round"/>
-                    <path d="M2 6.66667H14" stroke="#90A1B9" strokeWidth="1.33333"/>
-                  </svg>
-                  <input 
-                    type="date" 
-                    name="dateOfBirth"
-                    value={formData.dateOfBirth}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
             </div>
           </div>
 
@@ -306,21 +260,6 @@ function EditProfile() {
                 </div>
               </div>
 
-              <div className="form-group">
-                <label>Phone Number <span className="optional">(Optional)</span></label>
-                <div className="input-wrapper">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M14.6667 11.28V13.28C14.6675 13.4657 14.6292 13.6494 14.5543 13.8195C14.4793 13.9897 14.3694 14.1424 14.2316 14.2679C14.0937 14.3934 13.9308 14.4889 13.7538 14.5485C13.5768 14.6081 13.3897 14.6308 13.2033 14.6153C11.1429 14.3904 9.16636 13.6584 7.42667 12.4767C5.8157 11.4113 4.46515 9.99357 3.48 8.32C2.29782 6.568 1.56736 4.57667 1.34667 2.50001C1.33117 2.31427 1.3537 2.12765 1.41295 1.95113C1.4722 1.77461 1.56713 1.61206 1.69209 1.47439C1.81705 1.33672 1.96901 1.22662 2.13838 1.15124C2.30775 1.07586 2.49081 1.03684 2.67667 1.03668H4.67667C5.00435 1.03342 5.32136 1.14708 5.57144 1.35716C5.82152 1.56725 5.98612 1.85962 6.03667 2.18001C6.13065 2.82001 6.29659 3.44811 6.53333 4.05334C6.62476 4.29175 6.64543 4.55155 6.59283 4.80096C6.54022 5.05036 6.41664 5.27874 6.23667 5.46001L5.39333 6.30334C6.39446 7.97647 7.82687 9.40888 9.5 10.41L10.3433 9.56668C10.5246 9.38671 10.753 9.26312 11.0024 9.21052C11.2518 9.15792 11.5116 9.17858 11.75 9.27001C12.3552 9.50675 12.9833 9.6727 13.6233 9.76668C13.9475 9.81756 14.2432 9.98535 14.4539 10.2399C14.6646 10.4945 14.7760 10.8172 14.7667 11.1467V11.28Z" stroke="#90A1B9" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <input 
-                    type="tel" 
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="+1 (555) 000-0000"
-                  />
-                </div>
-              </div>
             </div>
           </div>
 
@@ -337,20 +276,28 @@ function EditProfile() {
             </div>
 
             <div className="form-group">
-              <label>Country <span className="optional">(Optional)</span></label>
+              <label>Country <span className="required">*</span></label>
               <div className="input-wrapper">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <circle cx="8" cy="8" r="6" stroke="#90A1B9" strokeWidth="1.33333"/>
                   <path d="M2 8H14" stroke="#90A1B9" strokeWidth="1.33333"/>
                   <path d="M8 2C9.5 3.5 10.5 5.5 10.5 8C10.5 10.5 9.5 12.5 8 14C6.5 12.5 5.5 10.5 5.5 8C5.5 5.5 6.5 3.5 8 2Z" stroke="#90A1B9" strokeWidth="1.33333"/>
                 </svg>
-                <input 
-                  type="text" 
+                {/* Same fixed ISO 3166-1 list as Register so the country
+                    string we store stays consistent across signup + edit.
+                    Required: a user can't unset their country once it's set,
+                    which matches Register's NotEmpty rule on the backend. */}
+                <select
                   name="country"
                   value={formData.country}
                   onChange={handleChange}
-                  placeholder="Enter your country"
-                />
+                  required
+                >
+                  <option value="" disabled>Select your country</option>
+                  {COUNTRIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>

@@ -65,43 +65,51 @@ scanner for the modern web. It analyses the page you are visiting and
 reports security issues in seconds — without sending any requests, without
 modifying the page, and without tracking you.
 
-🛡️ WHAT IT DETECTS (28 scanners across 4 severity tiers)
+🛡️ WHAT IT DETECTS (31 scanners across 4 severity tiers)
 
 CRITICAL
-• Cross-Site Scripting (XSS) sinks
-• SQL Injection patterns
-• Command Injection patterns
+• Cross-Site Scripting via javascript: URLs
+• SQL Injection error patterns
+• Command Injection error patterns
 • Exposed API keys & secrets (OpenAI, Stripe, AWS, JWT, private keys…)
 • Insecure forms submitting passwords over HTTP
 
 HIGH
-• Missing / weak Content Security Policy
+• Weak Content Security Policy (unsafe-inline / unsafe-eval / wildcards)
 • Sensitive files exposed (.env, .git, .DS_Store, backups, admin panels)
 • Insecure client-side storage (passwords/tokens in localStorage)
 • Outdated JavaScript libraries (jQuery, AngularJS, lodash, Bootstrap)
-• DOM-based XSS sinks
-• Insecure postMessage handlers
+• DOM-based XSS sinks (location → innerHTML / eval)
+• Insecure postMessage handlers (missing origin check)
 • Session tokens in URLs
+• Reflected XSS in a dangerous context (script / handler / src)
+• iframe srcdoc HTML injection surface
+• External form action submitting passwords
+• Insecure WebSocket (ws://) on HTTPS pages
+• Admin/internal API endpoint references in client code
 
 MEDIUM
+• Missing Content Security Policy
+• XSS code-smell (eval/innerHTML/document.write)
 • Mixed content
 • Missing HSTS
-• Clickjacking risk
-• Insecure cookies
-• Missing Subresource Integrity
-• CORS misconfiguration
+• Clickjacking risk (missing X-Frame-Options)
+• Insecure cookies (missing HttpOnly)
+• Missing Subresource Integrity (SRI)
+• CORS misconfiguration (wildcard)
 • Debug pages exposed
 • Open redirects
-• CSRF gaps
-• Missing security headers (Permissions-Policy, COOP, COEP, etc.)
+• CSRF token gaps
 • Source map exposure
-• Sensitive autocomplete
-• Forms posting to external origins
+• Directory listing enabled
+• External form action (no password)
 
 LOW
-• Deprecated HTML
-• Excessive third-party trackers
-• Version disclosure (X-Powered-By, generator tags)
+• Inline event handlers (CSP bypass surface)
+• Excessive 3rd-party trackers (5+ scripts)
+• Version disclosure (X-Powered-By / generator tags)
+• Cloud storage references with suspicious bucket names
+• Missing X-Content-Type-Options / Permissions-Policy / COOP / Referrer-Policy
 
 🤖 BUILT-IN AI ASSISTANT
 Ask Baseera what any finding means and how to fix it. The assistant
@@ -147,7 +155,7 @@ Passively scan the website the user is visiting for security vulnerabilities and
 |---|---|
 | `activeTab` | Required to inject passive DOM-reading scanners into the user's currently active tab when they explicitly click "Start Scan". |
 | `storage` | Stores scan history, user preferences, configured backend URLs, and the authentication token locally so the user does not re-login each session. |
-| `scripting` | Used with `chrome.scripting.executeScript` to run 28 passive vulnerability scanners against the active tab's DOM. No third-party code is injected. |
+| `scripting` | Used with `chrome.scripting.executeScript` to run 31 passive vulnerability scanners against the active tab's DOM. No third-party code is injected. |
 | `tabs` | Needed to read the current tab's URL for scan tracking and to query the active tab when the popup opens. |
 | `<all_urls>` host permission | Baseera is a security scanner — to be useful it must run on any website the user chooses to scan. Scanning is always user-initiated; the extension does not access pages in the background. |
 | `remote code` | **NOT USED.** All scanner code ships inside the extension package. Tick "No, I am not using remote code". |

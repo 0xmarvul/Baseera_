@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../api/authApi';
 import icon7 from "../assets/lock.png";
 import Navbar from "../components/Navbar";
+import { clearUserSession } from "../utils/session";
 
 function Login(){
     const [showPassword, setShowPassword] = useState(false);
@@ -40,6 +41,13 @@ function Login(){
             const response = await authApi.login({ email, password });
 
             if (response.success) {
+
+                // Defensive wipe: if a previous user logged out (or didn't),
+                // their per-user keys (chat history, avatar, profile cache)
+                // could still be in localStorage on this device. Clear them
+                // before we plant the new user's keys so chats can't leak
+                // across identities on a shared browser.
+                clearUserSession();
 
                 // ✅ Save token
                 const token = response.data;
@@ -78,8 +86,8 @@ function Login(){
                             token: response.data,
                             email: email
                         }, '*');
-                    } catch (e) {
-                        console.log("Extension notification via postMessage failed:", e);
+                    } catch {
+                        // postMessage to extension is best-effort — backup path runs below regardless.
                     }
                 }
 
@@ -145,7 +153,7 @@ function Login(){
                         </div>
                     )}
 
-                <form className="login-form" onSubmit={handleSubmit} autoComplete="off">
+                <form className="login-form" onSubmit={handleSubmit}>
                     <h5 className="login-form-title">
                         Email Address
                     </h5>
@@ -160,7 +168,7 @@ function Login(){
                             onChange={(e) => setEmail(e.target.value)}
                             disabled={loading}
                             required
-                            autoComplete="email"
+                            autoComplete="email username"
                         />
                     </div>
 

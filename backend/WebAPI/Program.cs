@@ -90,6 +90,14 @@ builder.Services.AddRateLimiter(options =>
     // Chat: 30 / 60s — AI quota / cold-start protection. Genuine users
     // don't fire 30 questions in a minute; bots do.
     options.AddPolicy("chat", ctx => ByIp(ctx, 30, 60));
+
+    // Reset-password: 10 / 15min — same email-flood concerns as forgot,
+    // plus brute-forcing token+email pairs is the worst-case here.
+    options.AddPolicy("reset-password", ctx => ByIp(ctx, 10, 900));
+
+    // Contact form: 3 / 10min — open SMTP relay protection. Without this,
+    // any anonymous user can flood the inbox and burn the Gmail quota.
+    options.AddPolicy("contact", ctx => ByIp(ctx, 3, 600));
 });
 
 var app = builder.Build();

@@ -114,7 +114,7 @@ public class UsersController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            await _authService.ChangePasswordAsync(userId, dto.NewPassword);
+            await _authService.ChangePasswordAsync(userId, dto.CurrentPassword, dto.NewPassword);
 
             return Ok(new ResponseDto<object>
             {

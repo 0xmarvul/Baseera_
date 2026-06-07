@@ -3,22 +3,45 @@ import LandingNavbar from "../components/LandingNavbar";
 import "../profile.css";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../api/authApi";
+import { clearUserSession } from "../utils/session";
 
 const PLACEHOLDER_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2390a1b9'%3E%3Cpath d='M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z'/%3E%3C/svg%3E";
 
 function Profile() {
   const navigate = useNavigate();
   const [avatarImage, setAvatarImage] = useState(localStorage.getItem("userAvatar") || PLACEHOLDER_AVATAR);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [userData, setUserData] = useState({
     name: "User",
     username: "@user",
     email: "",
-    phone: "",
     country: "",
     accountCreated: "",
     bio: "",
     avatar: localStorage.getItem("userAvatar") || PLACEHOLDER_AVATAR,
   });
+
+  // Close the avatar action menu when the user clicks outside it.
+  useEffect(() => {
+    if (!avatarMenuOpen) return;
+    const onClick = (e) => {
+      if (!e.target.closest?.('.avatar-action-wrapper')) setAvatarMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [avatarMenuOpen]);
+
+  // Resets the avatar both in the UI and on the server. The Profile page
+  // only ever stores avatars as data URLs (via canvas resize in
+  // handleImageUpload), so 'delete' is just clearing the URL on both sides.
+  const handleDeleteAvatar = () => {
+    if (!window.confirm('Delete your profile picture?')) return;
+    setAvatarMenuOpen(false);
+    setAvatarImage(PLACEHOLDER_AVATAR);
+    localStorage.removeItem('userAvatar');
+    setUserData(prev => ({ ...prev, avatar: PLACEHOLDER_AVATAR }));
+    authApi.updateProfile({ profileImageUrl: '' }).catch(() => {});
+  };
 
   useEffect(() => {
     // Fetch profile from API
@@ -35,7 +58,6 @@ function Profile() {
             name: `${d.firstName} ${d.lastName}`.trim() || "User",
             username: "@" + d.username,
             email: d.email,
-            phone: d.phoneNumber || "",
             country: d.country || "",
             accountCreated: d.createdAt ? new Date(d.createdAt).toLocaleDateString() : "",
             bio: d.bio || "",
@@ -56,7 +78,6 @@ function Profile() {
               name: `${parsed.fullName || ''} ${parsed.lastName || ''}`.trim() || prev.name,
               username: "@" + (parsed.username || "user"),
               email: parsed.email || prev.email,
-              phone: parsed.phone || prev.phone,
             }));
           } catch {}
         }
@@ -118,23 +139,41 @@ function Profile() {
                 alt={userData.name}
                 className="profile-avatar"
               />
-              <input 
-                type="file" 
-                id="avatar-upload" 
-                accept="image/*" 
-                onChange={handleImageUpload}
+              <input
+                type="file"
+                id="avatar-upload"
+                accept="image/*"
+                onChange={(e) => { setAvatarMenuOpen(false); handleImageUpload(e); }}
                 style={{display: 'none'}}
               />
-              <label 
-                htmlFor="avatar-upload" 
-                className="avatar-upload-btn"
-                title="Change profile picture"
-              >
-                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 4.16669V15.8334" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M4.16699 10H15.8337" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </label>
+              <div className="avatar-action-wrapper">
+                <button
+                  type="button"
+                  className="avatar-upload-btn"
+                  title="Profile picture options"
+                  onClick={() => setAvatarMenuOpen(v => !v)}
+                >
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 4.16669V15.8334" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M4.16699 10H15.8337" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                {avatarMenuOpen && (
+                  <div className="avatar-action-menu">
+                    <label htmlFor="avatar-upload" className="avatar-action-item">
+                      <i className="fa-solid fa-camera" /> Change Profile Picture
+                    </label>
+                    <button
+                      type="button"
+                      className="avatar-action-item danger"
+                      onClick={handleDeleteAvatar}
+                      disabled={!localStorage.getItem('userAvatar')}
+                    >
+                      <i className="fa-solid fa-trash" /> Delete Profile Picture
+                    </button>
+                  </div>
+                )}
+              </div>
     
             </div>
           </div>
@@ -163,19 +202,6 @@ function Profile() {
               <div className="profile-info-content">
                 <p className="profile-info-label">Email Address</p>
                 <p className="profile-info-value">{userData.email}</p>
-              </div>
-            </div>
-
-            {/* Phone */}
-            <div className="profile-info-box">
-              <div className="profile-info-icon phone-icon">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18.3082 14.0999V16.5999C18.3091 16.8245 18.2627 17.0467 18.172 17.2525C18.0813 17.4583 17.9482 17.6433 17.7812 17.7959C17.6141 17.9485 17.4168 18.0655 17.2017 18.1395C16.9865 18.2134 16.7582 18.2428 16.5315 18.2257C14.0064 17.9712 11.5782 17.108 9.44148 15.7082C7.45731 14.4288 5.77119 12.7427 4.49148 10.7582C3.08317 8.60397 2.21944 6.15596 1.97398 3.61157C1.95694 3.38568 1.98611 3.15829 2.05962 2.94382C2.13313 2.72936 2.24946 2.53261 2.40127 2.36572C2.55308 2.19883 2.73714 2.06561 2.94205 1.97455C3.14696 1.88348 3.36827 1.83642 3.59148 1.83657H6.09148C6.4792 1.83263 6.85478 1.9672 7.15134 2.21592C7.44791 2.46464 7.64624 2.81213 7.70815 3.19407C7.82434 3.95804 8.02679 4.70803 8.31148 5.42907C8.41771 5.70303 8.44076 6.00085 8.37791 6.28731C8.31505 6.57377 8.16889 6.83587 7.95815 7.04157L6.91148 8.08824C8.08783 10.1535 9.80283 11.8685 11.8682 13.0449L12.9148 11.9982C13.1205 11.7875 13.3826 11.6413 13.6691 11.5785C13.9555 11.5156 14.2534 11.5387 14.5273 11.6449C15.2484 11.9296 15.9984 12.132 16.7623 12.2482C17.1489 12.3107 17.5002 12.5124 17.7498 12.8139C17.9995 13.1154 18.1316 13.4972 18.1232 13.8882L18.3082 14.0999Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <div className="profile-info-content">
-                <p className="profile-info-label">Phone Number</p>
-                <p className="profile-info-value">{userData.phone || "—"}</p>
               </div>
             </div>
 
@@ -241,13 +267,14 @@ function Profile() {
             <button
               className="profile-btn profile-btn-secondary"
               onClick={() => {
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('baseeraUserName');
-                localStorage.removeItem('baseeraUserData');
-                localStorage.removeItem('userAvatar');
+                clearUserSession();
                 // Notify extension about logout
                 window.postMessage({ type: 'BASEERA_AUTH_LOGOUT' }, '*');
-                navigate('/login');
+                // Full reload (not SPA navigation) so app-level components
+                // like the floating chat widget reinitialise from a clean
+                // localStorage and don't keep the previous user's state
+                // in React memory.
+                window.location.href = '/login';
               }}
             >
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">

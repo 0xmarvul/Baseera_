@@ -259,6 +259,7 @@
 .chat-header-right {
   display: flex;
   gap: 14px;
+  align-items: center;
 }
 
 .chat-icon-btn {
@@ -269,7 +270,56 @@
 }
 
 .chat-icon-btn:hover {
-  color: #e2e8f0;
+  color: #00d9a5;
+}
+
+/* Danger icon (trash) — hovers red, not teal */
+.chat-icon-danger:hover {
+  color: #ef4444;
+}
+
+/* Export-format dropdown anchored under the download icon */
+.chat-export-wrapper {
+  position: relative;
+}
+.chat-export-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  min-width: 180px;
+  background: #0d2137;
+  border: 1px solid #1e3a5f;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px -10px rgba(0, 0, 0, 0.6);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.chat-export-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.chat-export-item:hover {
+  background: rgba(0, 217, 165, 0.10);
+  color: #00d9a5;
+}
+.chat-export-item i {
+  width: 14px;
+  text-align: center;
+  font-size: 13px;
 }
 
 /* Search bar */
@@ -333,14 +383,29 @@
   padding: 40px;
 }
 
+/* Empty-state Lucide chat-bubble icon — vector, always sharp, teal accent
+   inside a soft teal-tinted circle. Same visual language as the rest of
+   the site's Lucide icons. */
 .chat-empty-icon {
-  font-size: 2.5rem;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(0, 217, 165, 0.10);
+  border: 1px solid rgba(0, 217, 165, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00d9a5;
+  margin-bottom: 4px;
 }
 
 .chat-empty-icon img {
-  width: 64px;
-  height: 64px;
+  /* Legacy raster fallback, unused now that we render a Lucide icon. */
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
 }
+
 
 /* Individual messages */
 .chat-message {
@@ -371,7 +436,7 @@
 }
 
 .chat-message.user .message-avatar {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #00bc7d 0%, #00b8db 100%);
   color: #fff;
 }
 
@@ -399,7 +464,7 @@
 }
 
 .chat-message.user .message-bubble {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #00bc7d 0%, #00b8db 100%);
   color: #fff;
   border-bottom-right-radius: 4px;
 }
@@ -550,6 +615,14 @@
 
 /* ─── Responsive ─── */
 .bot-icon-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* User profile picture inside the avatar circle (same shape as bot). */
+.user-avatar-img {
   width: 100%;
   height: 100%;
   border-radius: 50%;

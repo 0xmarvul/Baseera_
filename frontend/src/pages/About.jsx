@@ -65,7 +65,7 @@ Baseera (meaning &quot;insight&quot; or &quot;vision&quot; in Arabic) is a focus
                     Our Mission
                 </h4>
                 <p className="mission-description">
-                    To make web security review accessible to anyone with a browser. Most vulnerability scanners are paid, complex, or invasive. Baseera proves that a passive, transparent, in-browser scanner can still cover 28 real vulnerability classes, and explain each one in language a developer can act on.
+                    To make web security review accessible to anyone with a browser. Most vulnerability scanners are paid, complex, or invasive. Baseera proves that a passive, transparent, in-browser scanner can still cover 31 real vulnerability classes, and explain each one in language a developer can act on.
                 </p>
             </div>
             </div>
@@ -86,7 +86,7 @@ Baseera (meaning &quot;insight&quot; or &quot;vision&quot; in Arabic) is a focus
                     Passive Detection
                 </h4>
                 <p className="do-description">
-            28 scanners read the DOM of the page you choose and report findings. No requests sent, nothing modified.
+            31 scanners read the DOM of the page you choose and report findings. No requests sent, nothing modified.
                 </p>
                 </div>
             </div>

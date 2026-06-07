@@ -9,10 +9,13 @@
   width: 62px;
   height: 62px;
   border-radius: 50% 50% 50% 12px;
+  /* Dark navy bg lets the original colored Baseera logo show through
+     clearly (no white-mask filter needed). Teal accent border keeps the
+     brand presence; gradient still animates underneath via background-size. */
   background:
-    linear-gradient(135deg, #00bc7d 0%, #00d4b8 50%, #00b8db 100%);
+    linear-gradient(135deg, #0d2137 0%, #132f4c 50%, #0d2137 100%);
   background-size: 200% 200%;
-  border: none;
+  border: 1.5px solid rgba(0, 217, 165, 0.45);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -85,7 +88,9 @@
   width: 36px;
   height: 36px;
   object-fit: contain;
-  filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+  /* Original colored logo — no white-mask filter. Dark navy FAB background
+     above lets the real Baseera mark show clearly. */
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
   animation: baseera-widget-logo-breathe 3.5s ease-in-out infinite;
   transition: transform 0.3s ease;
   z-index: 1;
@@ -118,6 +123,35 @@
   background: #22c55e;
   opacity: 0.6;
   animation: baseera-widget-status-ripple 1.8s ease-out infinite;
+}
+
+/* Unread reply badge on the FAB. Sits at top-right so it doesn't collide
+   with the online status dot at bottom-right. Pulses softly to draw the
+   eye without being obnoxious. */
+.baseera-widget-unread-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  background: #ef4444;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  border-radius: 999px;
+  border: 2px solid #0f1724;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.7);
+  animation: baseera-widget-unread-pulse 1.6s ease-in-out infinite;
+  z-index: 3;
+}
+
+@keyframes baseera-widget-unread-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.12); }
 }
 
 /* ── FAB animations ── */
@@ -168,10 +202,17 @@
   bottom: 96px;
   right: 24px;
   z-index: 9999;
-  width: 380px;
+  width: 455px;
   max-width: calc(100vw - 32px);
-  height: 520px;
+  height: 595px;
   max-height: calc(100vh - 120px);
+  /* User can drag-resize from the bottom-right corner. min-* prevents the
+     panel from collapsing into an unusable size; max-* values above keep
+     it inside the viewport. resize draws an OS-style corner grip. */
+  min-width: 340px;
+  min-height: 420px;
+  resize: both;
+  overflow: hidden; /* messages-area handles its own scroll */
   background: #0f1724;
   border: 1px solid #1e2d3d;
   border-radius: 16px;
@@ -286,9 +327,178 @@
   flex-shrink: 0;
 }
 
-.baseera-widget-clear-btn:hover {
+.baseera-widget-clear-btn[disabled] {
+  cursor: not-allowed;
+}
+
+/* Trash hovers red. Export (download icon) hovers teal — set by the
+   wrapper class below so the same .baseera-widget-clear-btn rule serves
+   both buttons without a class rename. */
+.baseera-widget-clear-btn:hover:not([disabled]) {
   color: #ef4444;
   background: #7f1d1d30;
+}
+
+.baseera-widget-export-wrapper {
+  position: relative;
+}
+.baseera-widget-export-wrapper .baseera-widget-clear-btn:hover:not([disabled]) {
+  color: #00d9a5;
+  background: rgba(0, 217, 165, 0.12);
+}
+
+/* "New chat" is a positive action (start fresh), not destructive, so it
+   gets the same teal hover treatment as export rather than trash's red. */
+.baseera-widget-new-btn:hover:not([disabled]) {
+  color: #00d9a5 !important;
+  background: rgba(0, 217, 165, 0.12) !important;
+}
+
+/* Recent-threads dropdown — same visual language as the export menu so
+   the header feels cohesive. */
+.baseera-widget-threadlist-wrapper {
+  position: relative;
+}
+.baseera-widget-threadlist-btn:hover:not([disabled]) {
+  color: #00d9a5;
+  background: rgba(0, 217, 165, 0.12);
+}
+.baseera-widget-threadlist-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  width: 260px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: #0d2137;
+  border: 1px solid #1e3a5f;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px -10px rgba(0, 0, 0, 0.6);
+  padding: 6px;
+}
+.baseera-widget-threadlist-header {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #94a3b8;
+  padding: 6px 10px 8px;
+}
+.baseera-widget-threadlist-empty {
+  padding: 10px;
+  text-align: center;
+  color: #64748b;
+  font-size: 12.5px;
+}
+.baseera-widget-threadlist-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #cbd5e1;
+  font-size: 13px;
+  transition: background 0.15s, color 0.15s;
+}
+.baseera-widget-threadlist-item:hover {
+  background: rgba(0, 217, 165, 0.10);
+  color: #ffffff;
+}
+.baseera-widget-threadlist-item.is-active {
+  background: rgba(0, 217, 165, 0.18);
+  color: #ffffff;
+}
+.baseera-widget-threadlist-title {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.baseera-widget-threadlist-rename,
+.baseera-widget-threadlist-delete {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 11px;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+.baseera-widget-threadlist-rename:hover {
+  color: #00d9a5;
+  background: rgba(0, 217, 165, 0.15);
+}
+.baseera-widget-threadlist-delete:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+/* Inline rename input. Stretches to fill the row so the user can see
+   the whole title while editing; teal underline ties it to the brand. */
+.baseera-widget-threadlist-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #00d9a5;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 2px 0;
+  outline: none;
+}
+.baseera-widget-threadlist-item.is-editing {
+  background: rgba(0, 217, 165, 0.08);
+  cursor: default;
+}
+
+.baseera-widget-export-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  min-width: 170px;
+  background: #0d2137;
+  border: 1px solid #1e3a5f;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px -10px rgba(0, 0, 0, 0.6);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.baseera-widget-export-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.baseera-widget-export-item:hover {
+  background: rgba(0, 217, 165, 0.12);
+  color: #00d9a5;
+}
+.baseera-widget-export-item i {
+  width: 14px;
+  text-align: center;
+  font-size: 13px;
 }
 
 /* ── Messages ── */
@@ -330,11 +540,29 @@
 }
 
 .baseera-widget-empty-logo {
-  width: 48px;
-  height: 48px;
+  /* Source PNG is 25x25. Keeping the displayed size close to native
+     (40px) so it stays sharp — anything larger blurs because the source
+     simply doesn't have more pixels. */
+  width: 40px;
+  height: 40px;
   object-fit: contain;
-  opacity: 0.5;
 }
+
+/* Vector chat-bubble icon in place of the raster logo. Stays crisp at
+   any size and matches the Lucide icons used across the rest of the site. */
+.baseera-widget-empty-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(0, 217, 165, 0.10);
+  border: 1px solid rgba(0, 217, 165, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00d9a5;
+  margin-bottom: 4px;
+}
+
 
 /* ── Message rows ── */
 .baseera-widget-msg {
@@ -372,10 +600,20 @@
   object-fit: contain;
 }
 
+/* When the user has uploaded a profile photo, fill the whole circle and
+   crop to cover (it's a photo, not a transparent icon — different fit). */
+.baseera-widget-avatar.user-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .baseera-widget-avatar.user-avatar {
-  background: #6366f1;
+  background: linear-gradient(135deg, #00bc7d 0%, #00b8db 100%);
   color: #fff;
   font-size: 0.75rem;
+  border-color: transparent;
 }
 
 .baseera-widget-bubble {
@@ -391,7 +629,7 @@
 }
 
 .baseera-widget-msg.user .baseera-widget-bubble {
-  background: #6366f1;
+  background: linear-gradient(135deg, #00bc7d 0%, #00b8db 100%);
   border-color: transparent;
   border-radius: 14px 14px 4px 14px;
   color: #fff;

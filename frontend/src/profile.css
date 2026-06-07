@@ -104,6 +104,8 @@ line-height: 24px; /* 150% */
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(0, 188, 125, 0.4);
   border: 3px solid rgba(15, 23, 43, 0.8);
+  padding: 0;
+  font-family: inherit;
 }
 
 .avatar-upload-btn:hover {
@@ -114,6 +116,73 @@ line-height: 24px; /* 150% */
 .avatar-upload-btn svg {
   width: 16px;
   height: 16px;
+}
+
+/* Wrapper keeps the menu anchored relative to the + button. */
+.avatar-action-wrapper {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+}
+
+/* Move the button into the wrapper-relative position so the menu can
+   anchor to it. */
+.avatar-action-wrapper .avatar-upload-btn {
+  position: static;
+}
+
+.avatar-action-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  min-width: 210px;
+  background: #0d2137;
+  border: 1px solid #1e3a5f;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px -10px rgba(0, 0, 0, 0.6);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.avatar-action-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.avatar-action-item:hover:not([disabled]) {
+  background: rgba(0, 217, 165, 0.10);
+  color: #00d9a5;
+}
+
+.avatar-action-item.danger:hover:not([disabled]) {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.avatar-action-item[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.avatar-action-item i {
+  width: 14px;
+  text-align: center;
+  font-size: 13px;
 }
 
 
@@ -163,9 +232,13 @@ line-height: 24px; /* 150% */
 }
 
 /* ====== INFO GRID ====== */
+/* Three cards now (Email, Country, Account Created) since Phone was
+   removed when the register form dropped optional fields. One row of
+   three on desktop reads better than 2x2 with a blank slot, and the
+   existing breakpoints below already collapse to one column on mobile. */
 .profile-info-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   padding: 32px;
 }
@@ -285,8 +358,10 @@ line-height: 24px; /* 150% */
     padding: 30px 15px;
   }
 
+  /* Tablet: 2 columns so the third card wraps onto its own row centered
+     rather than stretching uncomfortably wide. */
   .profile-info-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 16px;
   }
 }

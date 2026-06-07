@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Application.DTOs.Common;
 using Application.DTOs.Contact;
 using Core.Interfaces;
@@ -19,6 +20,7 @@ public class ContactController : ControllerBase
     }
 
     [HttpPost]
+    [EnableRateLimiting("contact")]
     public async Task<ActionResult<ResponseDto<string>>> SendMessage([FromBody] ContactMessageDto dto, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(dto.FullName) ||

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { clearUserSession } from '../utils/session';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -30,7 +31,10 @@ apiClient.interceptors.response.use(
       const url = error.config?.url || '';
       const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/forgot-password') || url.includes('/auth/reset-password') || url.includes('/auth/verify-email') || url.includes('/auth/resend-verification');
       if (!isAuthEndpoint) {
-        localStorage.removeItem('authToken');
+        // Session expired or revoked. Wipe the full per-user session so
+        // chats / avatar don't leak to whoever logs in next on this
+        // browser (and aren't shown to the same user as 'previous state').
+        clearUserSession();
         window.location.href = '/login';
       }
     }

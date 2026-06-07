@@ -25,11 +25,22 @@ public class ChatController : ControllerBase
     // client-side regex doesn't cover. Server-side state keeps both clients honest.
     private static readonly ConcurrentDictionary<string, string> _pendingSuggestions = new();
 
-    public ChatController(IHttpClientFactory httpClientFactory, ILogger<ChatController> logger, IConfiguration configuration)
+    public ChatController(IHttpClientFactory httpClientFactory, ILogger<ChatController> logger, IConfiguration configuration, IHostEnvironment env)
     {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
-        _aiServiceUrl = configuration.GetValue<string>("AIChatServiceUrl") ?? "http://localhost:5001";
+        var configured = configuration.GetValue<string>("AIChatServiceUrl");
+        // In production a missing AIChatServiceUrl means every chat silently
+        // falls back to the C# keyword dictionary, masking a real outage.
+        // Warn loudly so the deploy fails the obvious-config-missing check
+        // rather than degrading invisibly.
+        if (string.IsNullOrWhiteSpace(configured))
+        {
+            if (env.IsProduction())
+                logger.LogError("AIChatServiceUrl is not configured. Falling back to keyword-only chat. Set AIChatServiceUrl in production config.");
+            configured = "http://localhost:5001";
+        }
+        _aiServiceUrl = configured;
     }
 
     /// <summary>
@@ -52,7 +63,12 @@ public class ChatController : ControllerBase
         try
         {
             var client = _httpClientFactory.CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(30);
+            // 5s, not 30s. On Hugging Face cold-start the Python service can take
+            // 30-90s to wake, waiting 30s before falling back means the user
+            // stares at a spinner. 5s catches normal warm responses (<500ms) with
+            // plenty of margin, and on cold-start the C# keyword fallback fires
+            // quickly so the user gets a useful answer in ~1s instead of waiting.
+            client.Timeout = TimeSpan.FromSeconds(5);
 
             var payload = JsonSerializer.Serialize(new { message = request.Message });
             var content = new StringContent(payload, Encoding.UTF8, "application/json");
@@ -90,7 +106,7 @@ public class ChatController : ControllerBase
         var normalized = System.Text.RegularExpressions.Regex.Replace(lower, @"[\s!?.,;:~\-]+$", "");
 
         // Consume any pending "Did you mean X?" suggestion up-front. It's a one-shot
-        // that lives only until the user's next message — used below if the message
+        // that lives only until the user's next message, used below if the message
         // is affirmative, otherwise simply discarded so stale suggestions don't leak
         // into unrelated follow-ups.
         string? pendingSuggestion = null;
@@ -117,7 +133,7 @@ public class ChatController : ControllerBase
         {
             return ConversationalResponse(
                 "Hello! 👋 I'm Baseera Assistant, your AI-powered security advisor. " +
-                "Ask me about any web vulnerability — e.g., 'What is XSS?' or 'How do I fix SQL Injection?'",
+                "Ask me about any web vulnerability. For example: 'What is XSS?' or 'How do I fix SQL Injection?'",
                 "meta:greeting");
         }
 
@@ -175,12 +191,12 @@ public class ChatController : ControllerBase
                 "**Cybersecurity** is the practice of protecting systems, networks, applications, and data " +
                 "from digital attacks, unauthorized access, damage, or theft. 🛡️\n\n" +
                 "It covers several important areas:\n" +
-                "• **Application Security** — protecting software and web apps from flaws like SQL Injection, XSS, and CSRF.\n" +
-                "• **Network Security** — defending the infrastructure that moves data (firewalls, VPNs, intrusion detection).\n" +
-                "• **Information Security** — keeping data confidential, available, and unaltered (the CIA triad).\n" +
-                "• **Operational Security** — processes and decisions for handling and protecting data assets.\n" +
-                "• **End-User Education** — training people to avoid phishing and social-engineering attacks.\n\n" +
-                "Baseera focuses on **web application security** — scanning websites for vulnerabilities and explaining how to fix them. " +
+                "• **Application Security**, protecting software and web apps from flaws like SQL Injection, XSS, and CSRF.\n" +
+                "• **Network Security**, defending the infrastructure that moves data (firewalls, VPNs, intrusion detection).\n" +
+                "• **Information Security**, keeping data confidential, available, and unaltered (the CIA triad).\n" +
+                "• **Operational Security**, processes and decisions for handling and protecting data assets.\n" +
+                "• **End-User Education**, training people to avoid phishing and social-engineering attacks.\n\n" +
+                "Baseera focuses on **web application security**, scanning websites for vulnerabilities and explaining how to fix them. " +
                 "Ask me 'What is XSS?' or 'List all vulnerabilities' to get started!",
                 "meta:what_is_cybersecurity");
         }
@@ -210,7 +226,7 @@ public class ChatController : ControllerBase
         {
             return ConversationalResponse(
                 "An **exploit** is a piece of code, a technique, or a sequence of steps that takes advantage of a vulnerability " +
-                "to perform malicious actions — such as stealing data, crashing a system, or getting unauthorized access. 💥\n\n" +
+                "to perform malicious actions, such as stealing data, crashing a system, or getting unauthorized access. 💥\n\n" +
                 "Think of a vulnerability as the unlocked window, and the exploit as the thief climbing through it.",
                 "meta:what_is_exploit");
         }
@@ -220,14 +236,14 @@ public class ChatController : ControllerBase
             return ConversationalResponse(
                 "A **zero-day** (0-day) is a vulnerability that is unknown to the software vendor or has no patch available yet. ⏰\n\n" +
                 "Attackers who discover zero-days can exploit them before defenders get a chance to fix them, which makes these " +
-                "bugs extremely valuable and dangerous. The name comes from 'day zero' — the vendor has had zero days to respond.",
+                "bugs extremely valuable and dangerous. The name comes from 'day zero', the vendor has had zero days to respond.",
                 "meta:what_is_zero_day");
         }
         if (System.Text.RegularExpressions.Regex.IsMatch(lower,
             @"\b(what\s+is\s+(a\s+)?cve|define\s+cve|cve\s+(meaning|definition|explain)|what\s+does\s+cve\s+stand\s+for|what\s+does\s+cve\s+mean)\b"))
         {
             return ConversationalResponse(
-                "**CVE** stands for **Common Vulnerabilities and Exposures** — a public catalog of known security flaws, " +
+                "**CVE** stands for **Common Vulnerabilities and Exposures**, a public catalog of known security flaws, " +
                 "each assigned a unique ID like `CVE-2024-12345`. 📋\n\n" +
                 "CVEs make it easy to reference and track vulnerabilities across vendors, tools, and research reports. " +
                 "You can look them up at https://cve.mitre.org.",
@@ -239,7 +255,7 @@ public class ChatController : ControllerBase
             return ConversationalResponse(
                 "**OWASP** (Open Worldwide Application Security Project) is a non-profit foundation that publishes free resources " +
                 "on web application security. 🌐\n\n" +
-                "The **OWASP Top 10** is the most widely known list — it ranks the most critical web application security risks, " +
+                "The **OWASP Top 10** is the most widely known list, it ranks the most critical web application security risks, " +
                 "such as Injection, Broken Access Control, and Cryptographic Failures. It's essentially the starting point for " +
                 "anyone doing web security.",
                 "meta:what_is_owasp");
@@ -249,9 +265,9 @@ public class ChatController : ControllerBase
         {
             return ConversationalResponse(
                 "The **CIA Triad** is the foundation of information security:\n\n" +
-                "• **Confidentiality** — only authorized people can see the data\n" +
-                "• **Integrity** — data is accurate and hasn't been tampered with\n" +
-                "• **Availability** — systems and data are accessible when needed\n\n" +
+                "• **Confidentiality**, only authorized people can see the data\n" +
+                "• **Integrity**, data is accurate and hasn't been tampered with\n" +
+                "• **Availability**, systems and data are accessible when needed\n\n" +
                 "Most vulnerabilities break at least one of these three. 🛡️",
                 "meta:cia_triad");
         }
@@ -280,7 +296,7 @@ public class ChatController : ControllerBase
         {
             return ConversationalResponse(
                 "**Ransomware** is malware that encrypts a victim's files and demands payment (usually in cryptocurrency) to decrypt them. 💰🔒\n\n" +
-                "Defenses: offline backups, patch management, email filtering, endpoint detection, and **never pay** when avoidable — " +
+                "Defenses: offline backups, patch management, email filtering, endpoint detection, and **never pay** when avoidable, " +
                 "payment funds more attacks and doesn't guarantee recovery.",
                 "meta:what_is_ransomware");
         }
@@ -312,7 +328,7 @@ public class ChatController : ControllerBase
             @"\b(what\s+is\s+social\s+engineering|social\s+engineering\s+(meaning|definition|explain|attack))\b"))
         {
             return ConversationalResponse(
-                "**Social engineering** manipulates people into breaking security procedures — e.g., impersonating IT support to get a password. 🧠\n\n" +
+                "**Social engineering** manipulates people into breaking security procedures, e.g., impersonating IT support to get a password. 🧠\n\n" +
                 "It targets humans, not technology. Defenses: awareness training, strong verification procedures, and a culture where employees feel safe saying 'no' or 'let me verify first'.",
                 "meta:what_is_social_engineering");
         }
@@ -325,8 +341,8 @@ public class ChatController : ControllerBase
                 "**Encryption** converts readable data (plaintext) into scrambled data (ciphertext) using an algorithm and a key, " +
                 "so only someone with the right key can read it. 🔐\n\n" +
                 "Two main types:\n" +
-                "• **Symmetric** (same key for encrypt & decrypt) — e.g., AES.\n" +
-                "• **Asymmetric** (public/private key pair) — e.g., RSA, ECC.\n\n" +
+                "• **Symmetric** (same key for encrypt & decrypt), e.g., AES.\n" +
+                "• **Asymmetric** (public/private key pair), e.g., RSA, ECC.\n\n" +
                 "Used everywhere: HTTPS, messaging apps, disk encryption, and password storage (well, hashing for passwords).",
                 "meta:what_is_encryption");
         }
@@ -335,7 +351,7 @@ public class ChatController : ControllerBase
         {
             return ConversationalResponse(
                 "**Hashing** is a one-way function that turns input data into a fixed-size fingerprint. Unlike encryption, it **cannot be reversed**. 🔢\n\n" +
-                "Used for: storing passwords (use **bcrypt**, **scrypt**, or **Argon2** — never MD5/SHA1!), verifying file integrity, and digital signatures.",
+                "Used for: storing passwords (use **bcrypt**, **scrypt**, or **Argon2**, never MD5/SHA1!), verifying file integrity, and digital signatures.",
                 "meta:what_is_hashing");
         }
         if (System.Text.RegularExpressions.Regex.IsMatch(lower,
@@ -344,7 +360,7 @@ public class ChatController : ControllerBase
             return ConversationalResponse(
                 "**HTTPS** is HTTP with **TLS encryption**. It protects data in transit between the browser and the server " +
                 "from eavesdropping and tampering. 🔒\n\n" +
-                "Always use HTTPS — modern browsers penalize HTTP sites, and tools like Let's Encrypt make certificates free.",
+                "Always use HTTPS, modern browsers penalize HTTP sites, and tools like Let's Encrypt make certificates free.",
                 "meta:what_is_https");
         }
         if (System.Text.RegularExpressions.Regex.IsMatch(lower,
@@ -352,7 +368,7 @@ public class ChatController : ControllerBase
         {
             return ConversationalResponse(
                 "**TLS** (Transport Layer Security) is the successor to **SSL** (Secure Sockets Layer). They both encrypt network " +
-                "communication, but SSL is deprecated — **use TLS 1.2 or 1.3**. 🔐\n\n" +
+                "communication, but SSL is deprecated, **use TLS 1.2 or 1.3**. 🔐\n\n" +
                 "TLS powers HTTPS, secure email (SMTPS, IMAPS), VPNs, and more.",
                 "meta:what_is_tls");
         }
@@ -360,7 +376,7 @@ public class ChatController : ControllerBase
             @"\b(what\s+is\s+(a\s+)?firewall|firewall\s+(meaning|definition|explain))\b"))
         {
             return ConversationalResponse(
-                "A **firewall** is a security device (hardware or software) that filters network traffic based on rules — " +
+                "A **firewall** is a security device (hardware or software) that filters network traffic based on rules, " +
                 "allowing trusted traffic and blocking the rest. 🧱\n\n" +
                 "Types include: network firewalls, host firewalls, and **Web Application Firewalls (WAF)** that inspect HTTP traffic for attack patterns like SQLi and XSS.",
                 "meta:what_is_firewall");
@@ -371,7 +387,7 @@ public class ChatController : ControllerBase
             return ConversationalResponse(
                 "A **VPN** (Virtual Private Network) creates an encrypted tunnel between your device and a remote server, " +
                 "hiding your real IP and protecting traffic from local eavesdroppers. 🌐🔒\n\n" +
-                "Great for: untrusted Wi-Fi, remote work, and privacy. Not a silver bullet — the VPN provider itself can see your traffic, so pick a trustworthy one.",
+                "Great for: untrusted Wi-Fi, remote work, and privacy. Not a silver bullet, the VPN provider itself can see your traffic, so pick a trustworthy one.",
                 "meta:what_is_vpn");
         }
         if (System.Text.RegularExpressions.Regex.IsMatch(lower,
@@ -380,19 +396,19 @@ public class ChatController : ControllerBase
             return ConversationalResponse(
                 "A **WAF** (Web Application Firewall) sits in front of a web app and inspects HTTP requests, blocking common attacks " +
                 "like SQLi, XSS, and path traversal. 🛡️\n\n" +
-                "Popular options: Cloudflare WAF, AWS WAF, ModSecurity. A WAF is defense-in-depth — not a replacement for secure code.",
+                "Popular options: Cloudflare WAF, AWS WAF, ModSecurity. A WAF is defense-in-depth, not a replacement for secure code.",
                 "meta:what_is_waf");
         }
         if (System.Text.RegularExpressions.Regex.IsMatch(lower,
             @"\b(what\s+is\s+mfa|what\s+is\s+2fa|mfa\s+(meaning|definition|explain)|2fa\s+(meaning|definition|explain)|multi[\s\-]factor|two[\s\-]factor)\b"))
         {
             return ConversationalResponse(
-                "**MFA** (Multi-Factor Authentication) — and its subset **2FA** — require more than just a password to log in. 🔑📱\n\n" +
+                "**MFA** (Multi-Factor Authentication), and its subset **2FA**, require more than just a password to log in. 🔑📱\n\n" +
                 "Factors come in three flavors:\n" +
                 "• Something you **know** (password, PIN)\n" +
                 "• Something you **have** (phone, hardware key)\n" +
                 "• Something you **are** (fingerprint, face)\n\n" +
-                "Prefer TOTP apps or hardware keys over SMS — SMS can be intercepted via SIM swapping.",
+                "Prefer TOTP apps or hardware keys over SMS, SMS can be intercepted via SIM swapping.",
                 "meta:what_is_mfa");
         }
 
@@ -411,9 +427,9 @@ public class ChatController : ControllerBase
             return ConversationalResponse(
                 "**Ethical hacking** means using offensive security skills legally and with permission to strengthen defenses. 🤍🎩\n\n" +
                 "Types of hackers:\n" +
-                "• **White hat** — ethical, authorized\n" +
-                "• **Black hat** — malicious, illegal\n" +
-                "• **Gray hat** — somewhere in between (often unauthorized but not malicious)",
+                "• **White hat**, ethical, authorized\n" +
+                "• **Black hat**, malicious, illegal\n" +
+                "• **Gray hat**, somewhere in between (often unauthorized but not malicious)",
                 "meta:ethical_hacking");
         }
         if (System.Text.RegularExpressions.Regex.IsMatch(lower,
@@ -429,9 +445,9 @@ public class ChatController : ControllerBase
         {
             return ConversationalResponse(
                 "In security operations:\n\n" +
-                "• **Red Team** — simulates attackers; tries to break in.\n" +
-                "• **Blue Team** — defenders; monitors, detects, and responds.\n" +
-                "• **Purple Team** — a collaboration between the two to improve defenses using red-team findings. 🟣",
+                "• **Red Team**, simulates attackers; tries to break in.\n" +
+                "• **Blue Team**, defenders; monitors, detects, and responds.\n" +
+                "• **Purple Team**, a collaboration between the two to improve defenses using red-team findings. 🟣",
                 "meta:red_blue_team");
         }
 
@@ -440,7 +456,7 @@ public class ChatController : ControllerBase
             @"\b(what\s+is\s+least\s+privilege|principle\s+of\s+least\s+privilege|polp)\b"))
         {
             return ConversationalResponse(
-                "**Principle of Least Privilege (PoLP)** — every user, process, or system should have only the minimum permissions needed to do its job. 🔑\n\n" +
+                "**Principle of Least Privilege (PoLP)**, every user, process, or system should have only the minimum permissions needed to do its job. 🔑\n\n" +
                 "Limits blast radius when something is compromised. A web app shouldn't run as root; a DB user shouldn't have DROP permission on production.",
                 "meta:least_privilege");
         }
@@ -448,7 +464,7 @@ public class ChatController : ControllerBase
             @"\b(what\s+is\s+zero\s+trust|zero[\s\-]trust\s+(meaning|definition|explain|architecture))\b"))
         {
             return ConversationalResponse(
-                "**Zero Trust** is a security model that assumes no user or device should be trusted by default — " +
+                "**Zero Trust** is a security model that assumes no user or device should be trusted by default, " +
                 "every request is verified regardless of where it comes from. 🚫🤝\n\n" +
                 "Motto: *'never trust, always verify'*. Relies heavily on identity, device posture, and continuous authentication.",
                 "meta:zero_trust");
@@ -471,13 +487,13 @@ public class ChatController : ControllerBase
                 "🔹 **HTTPS everywhere** (HSTS, TLS 1.2/1.3)\n" +
                 "🔹 **Input validation & output encoding** (prevent XSS, SQLi)\n" +
                 "🔹 **Parameterized queries** for all DB access\n" +
-                "🔹 **Strong authentication** — hash passwords with bcrypt/Argon2, add MFA\n" +
-                "🔹 **Security headers** — CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy\n" +
-                "🔹 **Secure cookies** — HttpOnly, Secure, SameSite=Strict\n" +
+                "🔹 **Strong authentication**, hash passwords with bcrypt/Argon2, add MFA\n" +
+                "🔹 **Security headers**, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy\n" +
+                "🔹 **Secure cookies**, HttpOnly, Secure, SameSite=Strict\n" +
                 "🔹 **CSRF tokens** on state-changing requests\n" +
                 "🔹 **Keep dependencies patched** (use `npm audit`, `pip-audit`, Snyk, Dependabot)\n" +
                 "🔹 **Log & monitor** (no secrets in logs)\n" +
-                "🔹 **Regular pen tests & scans** — run Baseera on every deploy!\n\n" +
+                "🔹 **Regular pen tests & scans**, run Baseera on every deploy!\n\n" +
                 "Want details on any of these? Ask me 'What is CSP?' or 'How to fix SQL Injection?'",
                 "meta:how_to_secure_site");
         }
@@ -486,9 +502,9 @@ public class ChatController : ControllerBase
         {
             return ConversationalResponse(
                 "A strong password is:\n\n" +
-                "• **Long** — 14+ characters is the sweet spot\n" +
-                "• **Unique** — never reused across sites\n" +
-                "• **Random** — generated by a password manager (1Password, Bitwarden, KeePass)\n" +
+                "• **Long**, 14+ characters is the sweet spot\n" +
+                "• **Unique**, never reused across sites\n" +
+                "• **Random**, generated by a password manager (1Password, Bitwarden, KeePass)\n" +
                 "• **Protected by MFA** whenever possible\n\n" +
                 "Better than complexity rules is **length**. A passphrase of 5 random words beats `P@ssw0rd!` any day. 🔑",
                 "meta:strong_password");
@@ -499,11 +515,11 @@ public class ChatController : ControllerBase
             return ConversationalResponse(
                 "Practical defenses against phishing and account takeover:\n\n" +
                 "• Use **MFA** everywhere (prefer TOTP/hardware keys over SMS)\n" +
-                "• **Verify URLs** before entering credentials — hover links, check the domain\n" +
+                "• **Verify URLs** before entering credentials, hover links, check the domain\n" +
                 "• Never click **unsolicited attachments**; verify sender out-of-band\n" +
-                "• Use a **password manager** — it won't autofill on fake domains\n" +
+                "• Use a **password manager**, it won't autofill on fake domains\n" +
                 "• Keep OS and browser **patched**\n" +
-                "• Be suspicious of urgency ('act now!') — attackers exploit emotional pressure 🧠",
+                "• Be suspicious of urgency ('act now!'), attackers exploit emotional pressure 🧠",
                 "meta:avoid_phishing");
         }
         if (System.Text.RegularExpressions.Regex.IsMatch(lower,
@@ -524,9 +540,9 @@ public class ChatController : ControllerBase
         {
             return ConversationalResponse(
                 "If you think you might have been compromised:\n\n" +
-                "1. **Change passwords** (from a trusted device) — start with email, then everything else\n" +
+                "1. **Change passwords** (from a trusted device), start with email, then everything else\n" +
                 "2. **Enable MFA** on every important account\n" +
-                "3. **Check sessions** — log out of all devices in account settings\n" +
+                "3. **Check sessions**, log out of all devices in account settings\n" +
                 "4. **Scan devices** with an up-to-date antivirus/EDR\n" +
                 "5. **Check https://haveibeenpwned.com** to see if your email is in known breaches\n" +
                 "6. **Review bank/card activity** and freeze credit if needed\n\n" +
@@ -537,7 +553,7 @@ public class ChatController : ControllerBase
             @"\b(is\s+(http|plain\s+http|my\s+website|this\s+site)\s+(safe|secure))\b"))
         {
             return ConversationalResponse(
-                "Plain **HTTP** is not safe — data travels in plaintext and can be read or modified by anyone on the network. " +
+                "Plain **HTTP** is not safe, data travels in plaintext and can be read or modified by anyone on the network. " +
                 "Always use **HTTPS** with TLS 1.2 or 1.3. Modern browsers also warn users on HTTP sites. 🚨",
                 "meta:is_http_safe");
         }
@@ -582,7 +598,7 @@ public class ChatController : ControllerBase
             @"\b(i\s+don'?t\s+understand|i\s+dont\s+understand|i\s+don'?t\s+get\s+(it|that)|confused|i'?m\s+confused|im\s+confused|this\s+is\s+confusing|what\s+do\s+you\s+mean|what\s+did\s+you\s+mean|can\s+you\s+(explain|clarify|rephrase|simplify)|explain\s+(it\s+)?(again|more|better|simpler)|can\s+you\s+say\s+that\s+again|say\s+it\s+again|huh|pardon)\b"))
         {
             return ConversationalResponse(
-                "No problem — let me try again. 🙂 Could you tell me which part was unclear, " +
+                "No problem, let me try again. 🙂 Could you tell me which part was unclear, " +
                 "or just ask the question in a different way? For example, you can say:\n" +
                 "• 'Explain XSS in simple words'\n" +
                 "• 'What does that mean?'\n" +
@@ -631,7 +647,7 @@ public class ChatController : ControllerBase
         {
             return ConversationalResponse(
                 "I'm here to help you with cybersecurity topics! 😊 " +
-                "Let's keep it professional — feel free to ask me anything about security.",
+                "Let's keep it professional, feel free to ask me anything about security.",
                 "meta:profanity");
         }
 
@@ -913,9 +929,9 @@ public class ChatController : ControllerBase
                 "Disable debug mode in all production environments. Configure custom error pages. Remove debug endpoints."),
 
             // ── Specific security header queries (all map to Missing Security Headers) ──
-            ["missing csp"] = ("Missing CSP", "High",
-                "A missing Content-Security-Policy header leaves the page unprotected against XSS, data injection, and unauthorized resource loading. CSP tells the browser which script/style/resource sources are allowed to execute. Missing CSP is High severity because it directly enables XSS.",
-                "Add a strict Content-Security-Policy header to every response. Use nonces or hashes for inline scripts instead of 'unsafe-inline'. Enable CSP reporting to catch violations."),
+            ["missing csp"] = ("Missing CSP", "Medium",
+                "A missing Content-Security-Policy header leaves the page reliant on output encoding alone, every other XSS protection becomes the only line of defense. Treated as Medium (defence-in-depth gap, not a direct vulnerability). A WEAK CSP containing 'unsafe-inline' or wildcards is High since it directly enables XSS.",
+                "Add a Content-Security-Policy header (or meta tag) restricting script-src, style-src, and frame-ancestors. Start with report-only mode to discover violations, then enforce."),
             ["missing hsts"] = ("Missing Security Headers", "Medium",
                 "Missing Strict-Transport-Security (HSTS) lets attackers downgrade HTTPS to HTTP and intercept traffic on first visit or via stripping attacks.",
                 "Send 'Strict-Transport-Security: max-age=31536000; includeSubDomains; preload' on every HTTPS response. Submit to the HSTS preload list."),
@@ -973,7 +989,7 @@ public class ChatController : ControllerBase
                 "Reflected XSS occurs when a URL parameter or form input is echoed back into the page unsanitized, letting attackers craft a link that runs JavaScript in a victim's browser.",
                 "HTML-encode every value before inserting into the DOM. Use textContent instead of innerHTML. Never trust URL query or hash values as HTML."),
             ["stored xss"] = ("Cross-Site Scripting (XSS)", "High",
-                "Stored (persistent) XSS happens when untrusted input is saved to the database and later rendered into pages for other users — one injection then hits every visitor.",
+                "Stored (persistent) XSS happens when untrusted input is saved to the database and later rendered into pages for other users, one injection then hits every visitor.",
                 "HTML-encode output. Sanitize server-side with a vetted library. Use a strict CSP as defence in depth."),
             ["persistent xss"] = ("Cross-Site Scripting (XSS)", "High",
                 "Persistent XSS is stored input echoed into later page renders, affecting every viewer. It is more dangerous than reflected XSS because it needs no per-victim lure.",
@@ -991,12 +1007,12 @@ public class ChatController : ControllerBase
             // ── New scanner vuln types (mirror the Python engine) ──
             ["insecure forms"] = ("Insecure Forms (Password over HTTP)", "Critical",
                 "When a login, signup, or any form with a password field is served over plain HTTP, credentials travel in cleartext. Anyone on the same network can read the POST body and harvest passwords.",
-                "Serve the entire site over HTTPS. Redirect HTTP to HTTPS and enable HSTS. Ensure the form's action URL is also HTTPS — never mix an HTTPS page with an HTTP form action."),
+                "Serve the entire site over HTTPS. Redirect HTTP to HTTPS and enable HSTS. Ensure the form's action URL is also HTTPS, never mix an HTTPS page with an HTTP form action."),
             ["insecure form"] = ("Insecure Forms (Password over HTTP)", "Critical",
-                "Forms with password fields served over plain HTTP send credentials in cleartext — an attacker on the same network reads the POST body.",
+                "Forms with password fields served over plain HTTP send credentials in cleartext, an attacker on the same network reads the POST body.",
                 "Serve everything over HTTPS, redirect HTTP→HTTPS, enable HSTS, and ensure the form action URL is HTTPS."),
             ["password over http"] = ("Insecure Forms (Password over HTTP)", "Critical",
-                "Submitting a password over plain HTTP sends it in cleartext across the network — any on-path attacker captures it.",
+                "Submitting a password over plain HTTP sends it in cleartext across the network, any on-path attacker captures it.",
                 "Serve the entire site over HTTPS. Redirect HTTP→HTTPS, enable HSTS, and ensure the form action is HTTPS."),
             ["cleartext password"] = ("Insecure Forms (Password over HTTP)", "Critical",
                 "Cleartext password transmission lets anyone on the network path (Wi-Fi, ISP, on-path attacker) see the password.",
@@ -1006,7 +1022,7 @@ public class ChatController : ControllerBase
                 "Mixed content occurs when an HTTPS page loads sub-resources over plain HTTP. Active mixed content (JS/CSS) lets on-path attackers inject code; passive mixed content leaks browsing activity and breaks the padlock.",
                 "Update every resource URL to HTTPS. Add a Content-Security-Policy with 'upgrade-insecure-requests' or 'block-all-mixed-content'. Audit third-party scripts and iframes."),
             ["http on https"] = ("Mixed Content", "Medium",
-                "Loading HTTP resources on an HTTPS page is 'mixed content' — active types (JS/CSS) enable code injection via on-path attackers.",
+                "Loading HTTP resources on an HTTPS page is 'mixed content', active types (JS/CSS) enable code injection via on-path attackers.",
                 "Rewrite all URLs to HTTPS. Use CSP 'upgrade-insecure-requests' as a transitional measure."),
             ["upgrade insecure requests"] = ("Mixed Content", "Medium",
                 "The CSP 'upgrade-insecure-requests' directive automatically rewrites HTTP sub-resource URLs to HTTPS so a single mistake doesn't break the padlock.",
@@ -1014,23 +1030,13 @@ public class ChatController : ControllerBase
 
             ["missing sri"] = ("Missing Subresource Integrity (SRI)", "Medium",
                 "When a page loads a third-party script or stylesheet without an integrity= hash, the browser runs whatever bytes the CDN returns. If the CDN is breached or hijacked, every visitor silently runs the attacker's code.",
-                "Add 'integrity' (SHA-384 hash) and 'crossorigin=\"anonymous\"' to every cross-origin <script src> and <link rel=\"stylesheet\">. Pin library versions — SRI only works if the file doesn't change."),
+                "Add 'integrity' (SHA-384 hash) and 'crossorigin=\"anonymous\"' to every cross-origin <script src> and <link rel=\"stylesheet\">. Pin library versions, SRI only works if the file doesn't change."),
             ["sri"] = ("Missing Subresource Integrity (SRI)", "Medium",
-                "Subresource Integrity (SRI) verifies that a fetched script/stylesheet matches a cryptographic hash — defeats CDN compromise and supply-chain attacks.",
+                "Subresource Integrity (SRI) verifies that a fetched script/stylesheet matches a cryptographic hash, defeats CDN compromise and supply-chain attacks.",
                 "Add integrity and crossorigin attributes to every cross-origin <script> and <link>. Generate hashes with openssl dgst -sha384."),
             ["subresource integrity"] = ("Missing Subresource Integrity (SRI)", "Medium",
                 "Subresource Integrity verifies that a fetched script/stylesheet matches a cryptographic hash, defeating CDN compromise.",
                 "Add integrity and crossorigin attributes to every cross-origin <script src> and <link rel=\"stylesheet\">."),
-
-            ["deprecated html"] = ("Deprecated HTML Tags", "Low",
-                "Tags like <center>, <font>, <marquee>, <blink>, <applet>, <frameset> were removed from HTML5. Browsers still render most for compatibility, but their presence signals an outdated codebase often missing security patches.",
-                "Replace each deprecated tag with its modern equivalent (CSS, <strong>, <em>, CSS animations, <iframe>). Run W3C validator and a linter like htmlhint."),
-            ["deprecated tags"] = ("Deprecated HTML Tags", "Low",
-                "HTML tags removed in HTML5 (center, font, marquee, blink, frameset) still render but signal a stale codebase.",
-                "Replace with modern equivalents (CSS, semantic tags, CSS animations)."),
-            ["obsolete html"] = ("Deprecated HTML Tags", "Low",
-                "Obsolete HTML tags signal an unmaintained codebase likely missing security patches as well.",
-                "Audit with the W3C validator and htmlhint, replace deprecated tags with modern equivalents."),
 
             ["excessive trackers"] = ("Excessive Third-Party Trackers", "Low",
                 "Embedding many analytics/ad/session-replay scripts gives each one full page access: they can read forms, URLs, and cookies. More trackers = larger attack surface and a single compromised tracker becomes a skimmer.",
@@ -1067,33 +1073,33 @@ public class ChatController : ControllerBase
 
             ["insecure postmessage"] = ("Insecure PostMessage Communication", "High",
                 "postMessage event listeners that don't verify event.origin accept data from any window, letting malicious iframes/popups send payloads that the page blindly processes.",
-                "Always check event.origin against an allow-list inside message handlers. Never trust the payload. Specify targetOrigin on every postMessage call — never '*' for sensitive data."),
+                "Always check event.origin against an allow-list inside message handlers. Never trust the payload. Specify targetOrigin on every postMessage call, never '*' for sensitive data."),
             ["postmessage"] = ("Insecure PostMessage Communication", "High",
                 "postMessage without origin validation lets any window inject data into your handlers.",
-                "Validate event.origin against an allow-list. Specify targetOrigin on every postMessage — never '*' for sensitive data."),
+                "Validate event.origin against an allow-list. Specify targetOrigin on every postMessage, never '*' for sensitive data."),
 
             ["session token in url"] = ("Session Token in URL", "High",
-                "Session IDs or auth tokens in URL parameters leak into proxy logs, browser history, bookmarks, and Referer headers — every one is a credential-disclosure channel.",
+                "Session IDs or auth tokens in URL parameters leak into proxy logs, browser history, bookmarks, and Referer headers, every one is a credential-disclosure channel.",
                 "Move tokens into the Authorization header (Bearer) or HttpOnly Secure SameSite cookies. Never put secrets in query strings."),
             ["token in url"] = ("Session Token in URL", "High",
-                "Tokens in URLs are logged by proxies, stored in browser history, and sent as Referer — effectively broadcasting credentials.",
+                "Tokens in URLs are logged by proxies, stored in browser history, and sent as Referer, effectively broadcasting credentials.",
                 "Use the Authorization header or HttpOnly cookies. Rotate any token that ever appeared in a URL."),
             ["jsessionid"] = ("Session Token in URL", "High",
                 "jsessionid in the URL is a Java convention that leaks the session ID into logs, history, and Referer headers.",
                 "Disable URL session-ID rewriting in your servlet container and rely on Secure HttpOnly cookies."),
 
             ["insecure storage"] = ("Insecure Client-Side Storage", "High",
-                "localStorage and sessionStorage are readable by any JavaScript on the page — including every third-party script and XSS payload. Storing tokens, passwords, or PII there is a common high-impact finding.",
+                "localStorage and sessionStorage are readable by any JavaScript on the page, including every third-party script and XSS payload. Storing tokens, passwords, or PII there is a common high-impact finding.",
                 "Never store session tokens, passwords, credit cards, or PII in localStorage/sessionStorage. Use HttpOnly Secure SameSite cookies for session IDs. For short-lived tokens, keep them in memory."),
             ["localstorage"] = ("Insecure Client-Side Storage", "High",
                 "localStorage is readable by any JS on the page, so secrets stored there are exposed to every XSS payload and third-party script.",
                 "Keep session tokens in HttpOnly cookies. Don't store passwords/PII client-side."),
             ["sessionstorage"] = ("Insecure Client-Side Storage", "High",
-                "sessionStorage is readable by any JS on the page — same XSS exposure as localStorage.",
+                "sessionStorage is readable by any JS on the page, same XSS exposure as localStorage.",
                 "Prefer HttpOnly Secure SameSite cookies for session data. Avoid storing credentials client-side."),
 
             ["source map exposure"] = ("Source Map Exposure", "Medium",
-                "Publishing .map files to production reveals original source code, comments, API endpoints, and internal variable names — a massive reconnaissance gift.",
+                "Publishing .map files to production reveals original source code, comments, API endpoints, and internal variable names, a massive reconnaissance gift.",
                 "Don't ship source maps to production, or restrict access via web-server rules / auth. Upload maps to your error-reporting service (Sentry, etc.) privately."),
             ["source map"] = ("Source Map Exposure", "Medium",
                 "A publicly accessible .map file reveals original source code to attackers.",
@@ -1101,13 +1107,6 @@ public class ChatController : ControllerBase
             ["sourcemap"] = ("Source Map Exposure", "Medium",
                 "A public sourcemap reveals your original source, giving attackers a full codebase to audit.",
                 "Strip the //# sourceMappingURL comment in prod builds, or host maps on an auth-protected path."),
-
-            ["autocomplete"] = ("Sensitive Form Autocomplete", "Low",
-                "Browsers auto-fill fields based on autocomplete attributes. Allowing autocomplete on credit-card fields, or using 'on' instead of 'new-password' / 'current-password', can leak data to shared-device users or browser-profile sync. Modern guidance (NIST 800-63B) actually favors password-manager autofill, so this is treated as low-tier hygiene rather than a true vulnerability.",
-                "Set autocomplete=\"current-password\" on login forms and \"new-password\" on signup/reset. Set autocomplete=\"off\" on credit-card inputs to avoid browser-stored PAN."),
-            ["sensitive autocomplete"] = ("Sensitive Form Autocomplete", "Low",
-                "Misconfigured autocomplete attributes on sensitive fields (passwords, credit cards) can leak data via shared-device autofill or browser-profile sync. Treated as low-tier hygiene; modern guidance favors password-manager autofill.",
-                "Use autocomplete=\"current-password\"/\"new-password\" for passwords and \"off\" for credit cards."),
 
             ["version disclosure"] = ("Server / Technology Version Disclosure", "Low",
                 "Generator meta tags, Server/X-Powered-By headers, and banner comments reveal the exact framework + version. Attackers map the target to known CVEs and pick pre-built exploits.",
@@ -1130,28 +1129,118 @@ public class ChatController : ControllerBase
                 "Maintain an SBOM, automate vulnerability scanning, and upgrade to supported majors."),
 
             ["directory listing"] = ("Directory Listing Enabled", "Medium",
-                "When directory listing (autoindex) is enabled, any URL ending in '/' shows all files in that folder — often including backups, logs, and config fragments never meant to be public.",
+                "When directory listing (autoindex) is enabled, any URL ending in '/' shows all files in that folder, often including backups, logs, and config fragments never meant to be public.",
                 "Disable directory listing at the web server (Apache: 'Options -Indexes'; Nginx: 'autoindex off'). Always serve an explicit index file."),
             ["autoindex"] = ("Directory Listing Enabled", "Medium",
                 "autoindex (directory listing) exposes every file in a folder, usually revealing backups and hidden assets.",
                 "Set 'autoindex off' in Nginx or 'Options -Indexes' in Apache."),
             ["index of"] = ("Directory Listing Enabled", "Medium",
-                "'Index of /...' pages are the default auto-index view — they leak every file in the folder.",
+                "'Index of /...' pages are the default auto-index view, they leak every file in the folder.",
                 "Turn off directory indexing at the web server or reverse proxy level."),
 
             ["admin panel"] = ("Exposed Admin Panel", "High",
-                "A publicly reachable admin panel (/admin, /administrator, /admincp, /wp-admin) is a direct credential-attack target — brute-forcers and exploit kits hammer these paths automatically.",
+                "A publicly reachable admin panel (/admin, /administrator, /admincp, /wp-admin) is a direct credential-attack target, brute-forcers and exploit kits hammer these paths automatically.",
                 "Restrict admin paths to trusted IPs / VPN. Enforce MFA. Change default URLs if possible. Monitor failed login attempts and rate-limit aggressively."),
             ["swagger exposed"] = ("Exposed Swagger / API Docs", "Medium",
-                "Publicly exposed Swagger / API docs / GraphQL playgrounds hand attackers a complete API map — every endpoint, every parameter — without any reconnaissance.",
+                "Publicly exposed Swagger / API docs / GraphQL playgrounds hand attackers a complete API map, every endpoint, every parameter, without any reconnaissance.",
                 "Disable Swagger UI / GraphQL playground in production, or lock them behind auth and VPN. Never ship them on public endpoints."),
             ["graphql exposed"] = ("Exposed Swagger / API Docs", "Medium",
-                "A public /graphql endpoint with introspection on hands attackers your entire schema — every type, every field, every mutation.",
+                "A public /graphql endpoint with introspection on hands attackers your entire schema, every type, every field, every mutation.",
                 "Disable introspection in production. Require authentication on /graphql. Consider persisted queries."),
 
             ["directory listing enabled"] = ("Directory Listing Enabled", "Medium",
-                "Directory listing shows every file in a folder when no index file exists — commonly exposes backups, .git, or config remnants.",
+                "Directory listing shows every file in a folder when no index file exists, commonly exposes backups, .git, or config remnants.",
                 "Disable at the web server ('autoindex off' / 'Options -Indexes'). Audit what's in the folder regardless."),
+
+            // ── New scanner entries (Inline Event Handlers, WebSocket, Admin Endpoint, Cloud Storage) ──
+            ["inline event handlers"] = ("Inline Event Handlers", "Low",
+                "onclick / onerror / onload (and similar) attributes embed JS in HTML. Not a vulnerability on their own, but they defeat strict Content Security Policy: while inline handlers are present you cannot drop 'unsafe-inline' from script-src.",
+                "Move every handler to addEventListener in a separate script file. Then enable a strict CSP without 'unsafe-inline', that single change blocks most XSS variants by default."),
+            ["inline event handler"] = ("Inline Event Handlers", "Low",
+                "Inline event-handler attributes (onclick, onerror) are CSP-bypass surface and code-quality friction, not exploitable on their own.",
+                "Use addEventListener in external JS so CSP script-src can drop 'unsafe-inline'."),
+            ["onclick attribute"] = ("Inline Event Handlers", "Low",
+                "Inline onclick (and similar) attributes prevent strict CSP and complicate code review.",
+                "Migrate to addEventListener. Allow CSP to enforce 'no unsafe-inline'."),
+            ["insecure websocket"] = ("Insecure WebSocket (ws://) on HTTPS Page", "High",
+                "ws:// on an HTTPS page is unencrypted, an on-path attacker reads or injects messages. Modern browsers refuse the connection ('mixed content blocked'), silently breaking the feature.",
+                "Switch every WebSocket URL to wss:// with a valid TLS certificate. Keep ws:// only for localhost dev. Construct the URL with 'wss:' regardless of environment so the scheme can't drift."),
+            ["ws://"] = ("Insecure WebSocket (ws://) on HTTPS Page", "High",
+                "ws:// (insecure WebSocket) on HTTPS pages exposes traffic to network attackers; modern browsers block the connection entirely.",
+                "Use wss:// exclusively. Serve a valid certificate on the WebSocket endpoint."),
+            ["websocket"] = ("Insecure WebSocket (ws://) on HTTPS Page", "High",
+                "WebSocket security depends on the scheme: ws:// is unencrypted, wss:// uses TLS. On HTTPS pages only wss:// works.",
+                "Use wss:// exclusively. Pin certificates server-side if possible."),
+            ["mixed content websocket"] = ("Insecure WebSocket (ws://) on HTTPS Page", "High",
+                "An HTTPS page opening a ws:// WebSocket is mixed content, encrypted page, unencrypted side channel.",
+                "Switch to wss://. Browsers will refuse mixed-content WebSocket connections."),
+            ["admin endpoint exposure"] = ("Admin Endpoint Exposure", "High",
+                "Client-side JS that references /api/admin/, /api/internal/, /api/debug/ etc. hands attackers a target list. Server-side auth is still the primary control, but the leak makes reconnaissance trivial.",
+                "Strip admin/internal endpoint references from any code shipped to the browser. Split the build so admin routes get a separate bundle behind auth. Enforce authorization on every such route and consider blocking at edge/WAF outside the office IP."),
+            ["admin endpoint"] = ("Admin Endpoint Exposure", "High",
+                "Admin or internal API paths visible in browser-loaded JavaScript give attackers a recon shortcut.",
+                "Remove these paths from public bundles. Authorize them server-side; restrict by IP at edge if possible."),
+            ["internal api exposure"] = ("Admin Endpoint Exposure", "High",
+                "Internal API paths leaked in client code make them obvious targets even though server-side auth is the real control.",
+                "Don't ship internal endpoints to the browser. Bundle splitting + server-side authz + WAF rules."),
+            ["/api/admin"] = ("Admin Endpoint Exposure", "High",
+                "/api/admin paths referenced in client code expose admin surface to anyone reading the JS.",
+                "Move admin code to a separate bundle behind authentication. Enforce role-based authorization on every endpoint."),
+            ["cloud storage reference"] = ("Cloud Storage Reference", "Low",
+                "S3 / GCS / Azure Blob / R2 URLs in client HTML/JS are normal for public CDNs but become a red flag when the bucket name contains backup, private, internal, staging, dump, or secret, and when the bucket allows public listing.",
+                "Confirm the bucket policy isn't public-listable. AWS: enable 'Block Public Access' and use signed URLs for private content. GCS: 'Uniform bucket-level access', disable anonymous access. Rename suggestive bucket names to neutral strings."),
+            ["s3 bucket"] = ("Cloud Storage Reference", "Low",
+                "Public references to S3 buckets are normal for CDN use; they become a leak when buckets named 'backup' / 'private' / 'internal' are referenced, those should not be public.",
+                "Enable 'Block Public Access'. Use signed URLs for private objects. Rename suggestive buckets."),
+            ["public bucket"] = ("Cloud Storage Reference", "Low",
+                "Publicly listable cloud storage buckets have caused dozens of real-world data leaks (millions of records each).",
+                "Disable public listing. Audit bucket policies. Prefer signed URLs for private content."),
+
+            // Short forms users actually type. Without these, queries like
+            // "api", "keys", "admin", "cloud", "bucket", "s3" fall into the
+            // Levenshtein "did you mean" path and surface unrelated vulns
+            // (the original symptom: "api" -> LFI, "keys" -> XSS).
+            // Note: Contains() is a substring check, so single-letter keys
+            // would cause false positives. Keep these at >= 2 chars.
+            ["api"] = ("Exposed API Keys / Secrets", "Critical",
+                "Hard-coded or exposed API keys/secrets allow attackers to access third-party services, databases, or internal systems.",
+                "Store secrets in environment variables or a secrets manager. Rotate any exposed credentials immediately."),
+            ["key"] = ("Exposed API Keys / Secrets", "Critical",
+                "Hard-coded or exposed API keys/secrets allow attackers to access third-party services or internal systems.",
+                "Store secrets in environment variables or a secrets manager. Rotate any exposed credentials immediately."),
+            ["keys"] = ("Exposed API Keys / Secrets", "Critical",
+                "Hard-coded or exposed API keys/secrets allow attackers to access third-party services or internal systems.",
+                "Store secrets in environment variables or a secrets manager. Rotate any exposed credentials immediately."),
+            ["secret"] = ("Exposed API Keys / Secrets", "Critical",
+                "Hard-coded or exposed secrets allow attackers to access third-party services or internal systems.",
+                "Store secrets in environment variables or a secrets manager. Rotate any exposed credentials immediately."),
+            ["secrets"] = ("Exposed API Keys / Secrets", "Critical",
+                "Hard-coded or exposed secrets allow attackers to access third-party services or internal systems.",
+                "Store secrets in environment variables or a secrets manager. Rotate any exposed credentials immediately."),
+            ["token"] = ("Exposed API Keys / Secrets", "Critical",
+                "Exposed access tokens (JWT, OAuth, API tokens) allow attackers to impersonate users or services.",
+                "Store tokens in environment variables or a secrets manager. Rotate exposed tokens immediately."),
+            ["admin"] = ("Admin Endpoint Exposure", "High",
+                "Client-side JS that references /api/admin/, /api/internal/, /api/debug/ etc. hands attackers a target list. Server-side auth is still the primary control, but the leak makes reconnaissance trivial.",
+                "Strip admin/internal endpoint references from any code shipped to the browser. Enforce authorization on every such route and consider blocking at edge/WAF outside the office IP."),
+            ["cloud"] = ("Cloud Storage Reference", "Low",
+                "References to S3 / GCS / Azure Blob / R2 buckets in client-side code are normal for CDN use; they become a leak when bucket names hint at private data or when the bucket allows public listing.",
+                "Block public access at the account level. Use signed URLs for private content. Rename suggestive bucket names to neutral strings."),
+            ["bucket"] = ("Cloud Storage Reference", "Low",
+                "Public references to cloud buckets become a leak when buckets named 'backup' / 'private' / 'internal' are exposed.",
+                "Enable 'Block Public Access'. Use signed URLs for private objects. Audit and rename suggestive bucket names."),
+            ["s3"] = ("Cloud Storage Reference", "Low",
+                "S3 bucket references in client code are normal for CDN use; misconfigured public S3 has caused many real-world data leaks.",
+                "Enable 'Block Public Access' at the account level. Use signed URLs for private content."),
+            ["storage"] = ("Cloud Storage Reference", "Low",
+                "Cloud object storage misconfigurations (public listing, suggestive names) have caused dozens of real-world data leaks.",
+                "Disable anonymous access. Use signed URLs for private content. Audit bucket policies."),
+            ["leaked"] = ("Exposed API Keys / Secrets", "Critical",
+                "Leaked credentials or tokens allow attackers to access systems or services.",
+                "Rotate exposed credentials immediately. Store secrets in environment variables or a secrets manager."),
+            ["leak"] = ("Exposed API Keys / Secrets", "Critical",
+                "Credential or secret leaks allow attackers to access systems or services.",
+                "Rotate exposed credentials immediately. Store secrets in environment variables or a secrets manager."),
         };
 
         if (System.Text.RegularExpressions.Regex.IsMatch(lower,
@@ -1189,22 +1278,24 @@ public class ChatController : ControllerBase
                 "Insecure Forms (Password over HTTP)", "XSS (javascript: URLs)"
             },
             ["high"] = new[] {
-                "Missing CSP", "Weak CSP", "Sensitive Files Exposure",
+                "Weak CSP", "Sensitive Files Exposure",
                 "Insecure Client-Side Storage", "Vulnerable and Outdated Components",
                 "DOM-based XSS", "Insecure postMessage", "Session Token in URL",
                 "Reflected XSS", "iframe srcdoc XSS",
-                "External Form Action (with password)"
+                "External Form Action (with password)",
+                "Insecure WebSocket (ws://) on HTTPS Page",
+                "Admin Endpoint Exposure"
             },
             ["medium"] = new[] {
-                "XSS (eval/innerHTML code-smell)", "Mixed Content", "Clickjacking",
+                "Missing CSP", "XSS (eval/innerHTML code-smell)", "Mixed Content", "Clickjacking",
                 "Insecure Cookies", "Missing SRI", "CORS Misconfiguration",
                 "Debug Pages", "Open Redirect", "CSRF", "Missing HSTS",
                 "Source Map Exposure", "Directory Listing",
                 "External Form Action (no password)"
             },
             ["low"] = new[] {
-                "XSS (inline event handlers)", "Deprecated HTML", "Excessive Trackers",
-                "Sensitive Autocomplete", "Version Disclosure",
+                "Inline Event Handlers", "Excessive Trackers",
+                "Version Disclosure", "Cloud Storage Reference",
                 "Missing X-Content-Type-Options", "Missing Permissions-Policy",
                 "Missing Cross-Origin-Opener-Policy", "Missing Referrer-Policy"
             },
@@ -1277,25 +1368,46 @@ public class ChatController : ControllerBase
             lower.StartsWith("vulnerabilit"))
         {
             return ConversationalResponse(
-                "Supported vulnerability types (matching the extension scanner output):\n\n" +
-                "**Critical**\n" +
-                "- SQL Injection\n- Command Injection\n- Exposed API Keys / Secrets\n" +
-                "- Insecure Forms (Password over HTTP)\n- XSS via javascript: URLs\n\n" +
-                "**High**\n" +
-                "- Missing CSP\n- Weak CSP\n- Sensitive Files Exposure\n" +
-                "- Insecure Client-Side Storage\n- Vulnerable and Outdated Components\n" +
-                "- DOM-based XSS\n- Insecure postMessage\n- Session Token in URL\n" +
-                "- Reflected XSS\n- iframe srcdoc XSS\n- External Form Action (with password)\n\n" +
-                "**Medium**\n" +
-                "- XSS code-smell (eval/innerHTML/document.write)\n- Mixed Content\n" +
-                "- Clickjacking\n- Insecure Cookies\n- Missing SRI\n- CORS Misconfiguration\n" +
-                "- Debug Pages\n- Open Redirect\n- CSRF\n- Missing HSTS\n" +
-                "- Source Map Exposure\n- Directory Listing\n- External Form Action (no password)\n\n" +
-                "**Low**\n" +
-                "- XSS via inline event handlers\n- Deprecated HTML\n- Excessive Trackers\n" +
-                "- Sensitive Autocomplete\n- Version Disclosure\n" +
-                "- Missing X-Content-Type-Options\n- Missing Permissions-Policy\n" +
-                "- Missing Cross-Origin-Opener-Policy\n- Missing Referrer-Policy",
+                "Supported vulnerability types (31 scanners, matching the extension output):\n\n" +
+                "- SQL Injection (Critical)\n" +
+                "- Command Injection (Critical)\n" +
+                "- Exposed API Keys / Secrets (Critical)\n" +
+                "- Insecure Forms - Password over HTTP (Critical)\n" +
+                "- XSS via javascript: URLs (Critical)\n\n" +
+                "- Weak CSP (High)\n" +
+                "- Sensitive Files Exposure (High)\n" +
+                "- Insecure Client-Side Storage (High)\n" +
+                "- Vulnerable and Outdated Components (High)\n" +
+                "- DOM-based XSS (High)\n" +
+                "- Insecure postMessage (High)\n" +
+                "- Session Token in URL (High)\n" +
+                "- Reflected XSS - dangerous-context only (High)\n" +
+                "- iframe srcdoc XSS (High)\n" +
+                "- External Form Action with password (High)\n" +
+                "- Insecure WebSocket - ws:// on HTTPS Page (High)\n" +
+                "- Admin Endpoint Exposure (High)\n\n" +
+                "- Missing CSP (Medium)\n" +
+                "- XSS code-smell - eval/innerHTML/document.write (Medium)\n" +
+                "- Mixed Content (Medium)\n" +
+                "- Clickjacking (Medium)\n" +
+                "- Insecure Cookies (Medium)\n" +
+                "- Missing SRI (Medium)\n" +
+                "- CORS Misconfiguration (Medium)\n" +
+                "- Debug Pages (Medium)\n" +
+                "- Open Redirect (Medium)\n" +
+                "- CSRF (Medium)\n" +
+                "- Missing HSTS (Medium)\n" +
+                "- Source Map Exposure (Medium)\n" +
+                "- Directory Listing (Medium)\n" +
+                "- External Form Action - no password (Medium)\n\n" +
+                "- Inline Event Handlers (Low)\n" +
+                "- Excessive Trackers - 5+ scripts threshold (Low)\n" +
+                "- Version Disclosure (Low)\n" +
+                "- Cloud Storage Reference (Low)\n" +
+                "- Missing X-Content-Type-Options (Low)\n" +
+                "- Missing Permissions-Policy (Low)\n" +
+                "- Missing Cross-Origin-Opener-Policy (Low)\n" +
+                "- Missing Referrer-Policy (Low)",
                 "meta:list");
         }
 
