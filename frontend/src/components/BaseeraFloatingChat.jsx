@@ -64,7 +64,15 @@ const loadConversations = () => {
 };
 
 const saveConversations = (convs) => {
-  localStorage.setItem(WIDGET_STORAGE_KEY, JSON.stringify(convs));
+  // localStorage can throw: QuotaExceededError on full storage, SecurityError
+  // in Safari private mode. Swallow so a write failure doesn't crash the
+  // setState updater mid-send (which would leave the UI in an inconsistent
+  // state where the message appears but disappears on next render).
+  try {
+    localStorage.setItem(WIDGET_STORAGE_KEY, JSON.stringify(convs));
+  } catch {
+    /* in-memory state is still correct; persistence just won't survive reload */
+  }
 };
 
 const buildBotMessage = (payload) => {
@@ -78,7 +86,12 @@ const buildBotMessage = (payload) => {
 };
 
 const renderContent = (content) => {
-  return content.split('\n').map((line, i) => {
+  // Coerce to string. Legacy localStorage data from older versions could
+  // contain { content: undefined } and .split would throw, taking down the
+  // whole widget. React safely escapes string children, so this is also
+  // the XSS boundary: anything we render goes through React's text node
+  // escaping, never innerHTML.
+  return String(content ?? '').split('\n').map((line, i) => {
     const parts = line.split(/\*\*(.+?)\*\*/g);
     return (
       <p key={i}>
@@ -161,7 +174,14 @@ export default function BaseeraFloatingChat() {
   // Esc closes the panel when it's open. Standard floating-panel UX.
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      // Skip when Escape was already handled by a child (e.g. the
+      // rename input cancels its own edit and calls preventDefault).
+      // Otherwise renaming + pressing Escape would also close the panel.
+      if (e.defaultPrevented) return;
+      setOpen(false);
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
@@ -421,12 +441,20 @@ ${faviconHtml}
   const exportChatAsPDF = async () => {
     if (messages.length === 0) return;
     const html = await buildExportHtml({ forPrint: true });
-    const win = window.open('', '_blank');
+    // Use a blob: URL instead of document.write(). The blob URL opens in an
+    // opaque origin so the popup can't read our localStorage (JWT, chats),
+    // closing the same-origin XSS escalation path if a crafted bot reply
+    // ever slipped past the renderer escaping.
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank', 'noopener,noreferrer');
+    // Best-effort auto-print, only if the browser actually exposed the
+    // window handle (some block popups with noopener). Either way, the
+    // blob URL is revoked after a short grace period so it doesn't leak.
     if (win) {
-      win.document.write(html);
-      win.document.close();
-      setTimeout(() => { try { win.focus(); win.print(); } catch (_) {} }, 350);
+      setTimeout(() => { try { win.focus(); win.print(); } catch (_) {} }, 500);
     }
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
   };
 
   const sendMessage = async (text) => {
@@ -518,11 +546,18 @@ ${faviconHtml}
       // If the user closed the panel while we were awaiting the reply,
       // surface it as an unread badge on the FAB.
       if (!openRef.current) setUnreadCount((n) => n + 1);
-    } catch {
+    } catch (err) {
+      // Distinguish rate-limit from generic outage so the user knows to
+      // wait rather than thinking the AI is broken. 401 is handled by the
+      // axios interceptor (redirects to /login), so it never lands here.
+      const status = err?.response?.status;
+      const content = status === 429
+        ? "You're sending messages a bit fast. Please wait a moment and try again."
+        : 'Sorry, I could not reach the AI service right now. Please try again later.';
       appendBotMsg({
         id: generateId(),
         role: 'bot',
-        content: 'Sorry, I could not reach the AI service right now. Please try again later.',
+        content,
         timestamp: new Date().toISOString(),
       });
       if (!openRef.current) setUnreadCount((n) => n + 1);
@@ -602,8 +637,19 @@ ${faviconHtml}
                           onClick={(e) => e.stopPropagation()}
                           onChange={(e) => setEditTitle(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') { e.preventDefault(); saveRename(c.id); }
-                            else if (e.key === 'Escape') { e.preventDefault(); cancelRename(); }
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              saveRename(c.id);
+                            } else if (e.key === 'Escape') {
+                              // stopPropagation so Esc here only cancels the
+                              // rename and doesn't bubble up to the panel's
+                              // window-level Escape listener that would close
+                              // the whole widget.
+                              e.preventDefault();
+                              e.stopPropagation();
+                              cancelRename();
+                            }
                           }}
                           onBlur={() => saveRename(c.id)}
                         />
