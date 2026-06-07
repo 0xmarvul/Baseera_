@@ -232,9 +232,13 @@ line-height: 24px; /* 150% */
 }
 
 /* ====== INFO GRID ====== */
+/* Three cards now (Email, Country, Account Created) since Phone was
+   removed when the register form dropped optional fields. One row of
+   three on desktop reads better than 2x2 with a blank slot, and the
+   existing breakpoints below already collapse to one column on mobile. */
 .profile-info-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   padding: 32px;
 }
@@ -354,8 +358,10 @@ line-height: 24px; /* 150% */
     padding: 30px 15px;
   }
 
+  /* Tablet: 2 columns so the third card wraps onto its own row centered
+     rather than stretching uncomfortably wide. */
   .profile-info-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 16px;
   }
 }
