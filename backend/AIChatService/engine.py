@@ -52,7 +52,12 @@ VULNERABILITIES = {
         ],
         "keywords": ["xss", "cross site scripting", "cross-site scripting",
                      "script injection", "reflected xss", "stored xss",
-                     "persistent xss", "html injection"],
+                     "persistent xss", "html injection",
+                     # "css" maps to XSS because CSS injection is a real
+                     # client-side vector and users frequently type "css"
+                     # when they mean script injection. Preserving the
+                     # original behaviour user explicitly liked.
+                     "css", "css injection"],
     },
     "csrf": {
         "name": "Cross-Site Request Forgery (CSRF)",
@@ -222,7 +227,16 @@ VULNERABILITIES = {
                      "hardcoded credentials", "hardcoded secrets", "secret leak",
                      "token leak", "exposed token", "exposed credential", "exposed",
                      "jwt leak", "private key exposed", "stripe key leak",
-                     "aws key leak", "github token leak", "slack token leak"],
+                     "aws key leak", "github token leak", "slack token leak",
+                     # Short forms users actually type. Each one resolves to
+                     # exposed_secrets directly so the fuzzy matcher doesn't
+                     # wander off to LFI / XSS on 3-letter inputs.
+                     "api", "apis", "key", "keys", "secret", "secrets",
+                     "token", "tokens", "credential", "credentials",
+                     "leak", "leaked", "leaks",
+                     "env file", ".env", "env leak", "dotenv leak",
+                     "aws secret", "aws keys", "gcp key", "azure secret",
+                     "github secret", "ssh key leak", "private key"],
     },
     "insecure_cookies": {
         "name": "Insecure Cookies",
@@ -795,7 +809,13 @@ VULNERABILITIES = {
         "keywords": ["admin endpoint exposure", "admin endpoint", "admin api leak",
                      "internal api exposure", "/api/admin", "/api/internal",
                      "/api/debug", "exposed admin endpoint",
-                     "admin endpoint in client code"],
+                     "admin endpoint in client code",
+                     # Short / common forms users actually type.
+                     "admin", "admin panel", "admin page", "admin route",
+                     "admin url", "admin login", "wp-admin", "administrator",
+                     "internal api", "internal endpoint", "internal route",
+                     "management endpoint", "debug endpoint", "exposed admin",
+                     "leaked admin"],
     },
     "cloud_storage": {
         "name": "Cloud Storage Reference",
@@ -829,7 +849,13 @@ VULNERABILITIES = {
         "keywords": ["cloud storage", "cloud storage reference", "s3 bucket",
                      "s3 bucket exposure", "public s3", "gcs bucket",
                      "azure blob", "r2 storage", "public bucket",
-                     "bucket policy", "object storage leak"],
+                     "bucket policy", "object storage leak",
+                     # Short forms users actually type.
+                     "cloud", "bucket", "buckets", "s3", "s3 bucket exposed",
+                     "gcs", "blob",
+                     "storage", "object storage", "cloud bucket",
+                     "aws bucket", "google bucket", "azure bucket",
+                     "exposed bucket", "leaked bucket", "public storage"],
     },
 }
 
@@ -873,7 +899,12 @@ def fuzzy_match(user_input: str, threshold: int = 75) -> tuple:
     Returns (vuln_key, score). vuln_key is None if nothing scores above threshold.
     Score is always returned for "did you mean" suggestions.
     """
-    if len(user_input.strip()) < 3:
+    # Allow 2-char exact-match queries through (e.g. "s3") but still skip
+    # 1-char noise. Below, the short-query guard at len<=4 forces near-exact
+    # scoring, so 2-3 letter inputs can only resolve via the direct keyword
+    # path — never via wobbly partial_ratio against unrelated vulns.
+    stripped = user_input.strip()
+    if len(stripped) < 2:
         return None, 0
 
     text = user_input.lower()
@@ -905,8 +936,23 @@ def fuzzy_match(user_input: str, threshold: int = 75) -> tuple:
                     best_score = score
                     best_key = key
 
+    # Short-query guard. fuzz.partial_ratio is unreliable on inputs <= 4
+    # characters: "api" vs "lfi" / "rfi", "keys" vs "xss", "cloud" vs "csp" /
+    # "cors" — they share one or two letters and partial_ratio happily reports
+    # 60-80%, which then gets surfaced as a "Did you mean..." suggestion that
+    # is wildly off-topic. For short inputs we demand near-exact (>= 92) so
+    # short queries either hit a real keyword (above, via the exact + substring
+    # paths) or fall through to the polite "I don't understand" reply.
+    effective_search = cleaned or text
+    if len(effective_search) <= 4 and best_score < 92:
+        return None, best_score
+
     if best_score >= threshold:
         return best_key, best_score
+
+    # difflib is also noisy on short strings — same guard applies.
+    if len(effective_search) <= 4:
+        return None, best_score
 
     matches = difflib.get_close_matches(text, _ALL_KEYWORDS, n=1, cutoff=0.75)
     if matches:

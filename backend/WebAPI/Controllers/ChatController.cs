@@ -1184,6 +1184,52 @@ public class ChatController : ControllerBase
             ["public bucket"] = ("Cloud Storage Reference", "Low",
                 "Publicly listable cloud storage buckets have caused dozens of real-world data leaks (millions of records each).",
                 "Disable public listing. Audit bucket policies. Prefer signed URLs for private content."),
+
+            // Short forms users actually type. Without these, queries like
+            // "api", "keys", "admin", "cloud", "bucket", "s3" fall into the
+            // Levenshtein "did you mean" path and surface unrelated vulns
+            // (the original symptom: "api" -> LFI, "keys" -> XSS).
+            // Note: Contains() is a substring check, so single-letter keys
+            // would cause false positives. Keep these at >= 2 chars.
+            ["api"] = ("Exposed API Keys / Secrets", "Critical",
+                "Hard-coded or exposed API keys/secrets allow attackers to access third-party services, databases, or internal systems.",
+                "Store secrets in environment variables or a secrets manager. Rotate any exposed credentials immediately."),
+            ["key"] = ("Exposed API Keys / Secrets", "Critical",
+                "Hard-coded or exposed API keys/secrets allow attackers to access third-party services or internal systems.",
+                "Store secrets in environment variables or a secrets manager. Rotate any exposed credentials immediately."),
+            ["keys"] = ("Exposed API Keys / Secrets", "Critical",
+                "Hard-coded or exposed API keys/secrets allow attackers to access third-party services or internal systems.",
+                "Store secrets in environment variables or a secrets manager. Rotate any exposed credentials immediately."),
+            ["secret"] = ("Exposed API Keys / Secrets", "Critical",
+                "Hard-coded or exposed secrets allow attackers to access third-party services or internal systems.",
+                "Store secrets in environment variables or a secrets manager. Rotate any exposed credentials immediately."),
+            ["secrets"] = ("Exposed API Keys / Secrets", "Critical",
+                "Hard-coded or exposed secrets allow attackers to access third-party services or internal systems.",
+                "Store secrets in environment variables or a secrets manager. Rotate any exposed credentials immediately."),
+            ["token"] = ("Exposed API Keys / Secrets", "Critical",
+                "Exposed access tokens (JWT, OAuth, API tokens) allow attackers to impersonate users or services.",
+                "Store tokens in environment variables or a secrets manager. Rotate exposed tokens immediately."),
+            ["admin"] = ("Admin Endpoint Exposure", "High",
+                "Client-side JS that references /api/admin/, /api/internal/, /api/debug/ etc. hands attackers a target list. Server-side auth is still the primary control, but the leak makes reconnaissance trivial.",
+                "Strip admin/internal endpoint references from any code shipped to the browser. Enforce authorization on every such route and consider blocking at edge/WAF outside the office IP."),
+            ["cloud"] = ("Cloud Storage Reference", "Low",
+                "References to S3 / GCS / Azure Blob / R2 buckets in client-side code are normal for CDN use; they become a leak when bucket names hint at private data or when the bucket allows public listing.",
+                "Block public access at the account level. Use signed URLs for private content. Rename suggestive bucket names to neutral strings."),
+            ["bucket"] = ("Cloud Storage Reference", "Low",
+                "Public references to cloud buckets become a leak when buckets named 'backup' / 'private' / 'internal' are exposed.",
+                "Enable 'Block Public Access'. Use signed URLs for private objects. Audit and rename suggestive bucket names."),
+            ["s3"] = ("Cloud Storage Reference", "Low",
+                "S3 bucket references in client code are normal for CDN use; misconfigured public S3 has caused many real-world data leaks.",
+                "Enable 'Block Public Access' at the account level. Use signed URLs for private content."),
+            ["storage"] = ("Cloud Storage Reference", "Low",
+                "Cloud object storage misconfigurations (public listing, suggestive names) have caused dozens of real-world data leaks.",
+                "Disable anonymous access. Use signed URLs for private content. Audit bucket policies."),
+            ["leaked"] = ("Exposed API Keys / Secrets", "Critical",
+                "Leaked credentials or tokens allow attackers to access systems or services.",
+                "Rotate exposed credentials immediately. Store secrets in environment variables or a secrets manager."),
+            ["leak"] = ("Exposed API Keys / Secrets", "Critical",
+                "Credential or secret leaks allow attackers to access systems or services.",
+                "Rotate exposed credentials immediately. Store secrets in environment variables or a secrets manager."),
         };
 
         if (System.Text.RegularExpressions.Regex.IsMatch(lower,
