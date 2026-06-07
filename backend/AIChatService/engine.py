@@ -1639,10 +1639,23 @@ def _handle_meta(text: str) -> Optional[dict]:
         r"|\btell\s+me\s+(all\s+)?vulner",
         t,
     ) or re.match(r"^vulnerabilit", t):
-        vuln_list = "\n".join(
-            f"- {v['name']} ({v['severity']})"
-            for v in VULNERABILITIES.values()
-        )
+        # Each line carries its own (Severity) tag so a finding line is
+        # self-contained when copy-pasted. Blank line between tiers keeps the
+        # eye anchored without needing big bold headers.
+        tier_order = ["Critical", "High", "Medium", "Low"]
+        grouped = {tier: [] for tier in tier_order}
+        for v in VULNERABILITIES.values():
+            tier = v.get("severity", "Low")
+            if tier not in grouped:
+                grouped[tier] = []
+            grouped[tier].append(f"- {v['name']} ({tier})")
+
+        blocks = []
+        for tier in tier_order:
+            if grouped[tier]:
+                blocks.append("\n".join(grouped[tier]))
+        vuln_list = "\n\n".join(blocks)
+
         return _meta_response(
             f"Supported vulnerability types:\n{vuln_list}",
             "meta:list",

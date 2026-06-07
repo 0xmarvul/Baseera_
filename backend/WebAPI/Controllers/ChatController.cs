@@ -1312,25 +1312,45 @@ public class ChatController : ControllerBase
         {
             return ConversationalResponse(
                 "Supported vulnerability types (31 scanners, matching the extension output):\n\n" +
-                "**Critical**\n" +
-                "- SQL Injection\n- Command Injection\n- Exposed API Keys / Secrets\n" +
-                "- Insecure Forms (Password over HTTP)\n- XSS via javascript: URLs\n\n" +
-                "**High**\n" +
-                "- Weak CSP\n- Sensitive Files Exposure\n" +
-                "- Insecure Client-Side Storage\n- Vulnerable and Outdated Components\n" +
-                "- DOM-based XSS\n- Insecure postMessage\n- Session Token in URL\n" +
-                "- Reflected XSS (dangerous-context only)\n- iframe srcdoc XSS\n- External Form Action (with password)\n" +
-                "- Insecure WebSocket (ws://) on HTTPS Page\n- Admin Endpoint Exposure\n\n" +
-                "**Medium**\n" +
-                "- Missing CSP\n- XSS code-smell (eval/innerHTML/document.write)\n- Mixed Content\n" +
-                "- Clickjacking\n- Insecure Cookies\n- Missing SRI\n- CORS Misconfiguration\n" +
-                "- Debug Pages\n- Open Redirect\n- CSRF\n- Missing HSTS\n" +
-                "- Source Map Exposure\n- Directory Listing\n- External Form Action (no password)\n\n" +
-                "**Low**\n" +
-                "- Inline Event Handlers\n- Excessive Trackers (5+ scripts threshold)\n" +
-                "- Version Disclosure\n- Cloud Storage Reference\n" +
-                "- Missing X-Content-Type-Options\n- Missing Permissions-Policy\n" +
-                "- Missing Cross-Origin-Opener-Policy\n- Missing Referrer-Policy",
+                "- SQL Injection (Critical)\n" +
+                "- Command Injection (Critical)\n" +
+                "- Exposed API Keys / Secrets (Critical)\n" +
+                "- Insecure Forms - Password over HTTP (Critical)\n" +
+                "- XSS via javascript: URLs (Critical)\n\n" +
+                "- Weak CSP (High)\n" +
+                "- Sensitive Files Exposure (High)\n" +
+                "- Insecure Client-Side Storage (High)\n" +
+                "- Vulnerable and Outdated Components (High)\n" +
+                "- DOM-based XSS (High)\n" +
+                "- Insecure postMessage (High)\n" +
+                "- Session Token in URL (High)\n" +
+                "- Reflected XSS - dangerous-context only (High)\n" +
+                "- iframe srcdoc XSS (High)\n" +
+                "- External Form Action with password (High)\n" +
+                "- Insecure WebSocket - ws:// on HTTPS Page (High)\n" +
+                "- Admin Endpoint Exposure (High)\n\n" +
+                "- Missing CSP (Medium)\n" +
+                "- XSS code-smell - eval/innerHTML/document.write (Medium)\n" +
+                "- Mixed Content (Medium)\n" +
+                "- Clickjacking (Medium)\n" +
+                "- Insecure Cookies (Medium)\n" +
+                "- Missing SRI (Medium)\n" +
+                "- CORS Misconfiguration (Medium)\n" +
+                "- Debug Pages (Medium)\n" +
+                "- Open Redirect (Medium)\n" +
+                "- CSRF (Medium)\n" +
+                "- Missing HSTS (Medium)\n" +
+                "- Source Map Exposure (Medium)\n" +
+                "- Directory Listing (Medium)\n" +
+                "- External Form Action - no password (Medium)\n\n" +
+                "- Inline Event Handlers (Low)\n" +
+                "- Excessive Trackers - 5+ scripts threshold (Low)\n" +
+                "- Version Disclosure (Low)\n" +
+                "- Cloud Storage Reference (Low)\n" +
+                "- Missing X-Content-Type-Options (Low)\n" +
+                "- Missing Permissions-Policy (Low)\n" +
+                "- Missing Cross-Origin-Opener-Policy (Low)\n" +
+                "- Missing Referrer-Policy (Low)",
                 "meta:list");
         }
 
