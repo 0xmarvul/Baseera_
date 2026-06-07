@@ -390,9 +390,13 @@
 }
 
 .baseera-widget-empty-logo {
-  width: 160px !important;
-  height: 160px !important;
+  /* Medium size — bigger than the original 48px but not so big that the
+     PNG starts to look blurry from upscaling. */
+  width: 80px;
+  height: 80px;
   object-fit: contain;
+  /* Crisp-edges helps the small source PNG stay sharp at this size. */
+  image-rendering: -webkit-optimize-contrast;
 }
 
 /* ── Message rows ── */

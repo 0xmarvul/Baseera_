@@ -9,6 +9,7 @@ const PLACEHOLDER_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2
 function Profile() {
   const navigate = useNavigate();
   const [avatarImage, setAvatarImage] = useState(localStorage.getItem("userAvatar") || PLACEHOLDER_AVATAR);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [userData, setUserData] = useState({
     name: "User",
     username: "@user",
@@ -19,6 +20,28 @@ function Profile() {
     bio: "",
     avatar: localStorage.getItem("userAvatar") || PLACEHOLDER_AVATAR,
   });
+
+  // Close the avatar action menu when the user clicks outside it.
+  useEffect(() => {
+    if (!avatarMenuOpen) return;
+    const onClick = (e) => {
+      if (!e.target.closest?.('.avatar-action-wrapper')) setAvatarMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [avatarMenuOpen]);
+
+  // Resets the avatar both in the UI and on the server. The Profile page
+  // only ever stores avatars as data URLs (via canvas resize in
+  // handleImageUpload), so 'delete' is just clearing the URL on both sides.
+  const handleDeleteAvatar = () => {
+    if (!window.confirm('Delete your profile picture?')) return;
+    setAvatarMenuOpen(false);
+    setAvatarImage(PLACEHOLDER_AVATAR);
+    localStorage.removeItem('userAvatar');
+    setUserData(prev => ({ ...prev, avatar: PLACEHOLDER_AVATAR }));
+    authApi.updateProfile({ profileImageUrl: '' }).catch(() => {});
+  };
 
   useEffect(() => {
     // Fetch profile from API
@@ -118,23 +141,41 @@ function Profile() {
                 alt={userData.name}
                 className="profile-avatar"
               />
-              <input 
-                type="file" 
-                id="avatar-upload" 
-                accept="image/*" 
-                onChange={handleImageUpload}
+              <input
+                type="file"
+                id="avatar-upload"
+                accept="image/*"
+                onChange={(e) => { setAvatarMenuOpen(false); handleImageUpload(e); }}
                 style={{display: 'none'}}
               />
-              <label 
-                htmlFor="avatar-upload" 
-                className="avatar-upload-btn"
-                title="Change profile picture"
-              >
-                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 4.16669V15.8334" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M4.16699 10H15.8337" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </label>
+              <div className="avatar-action-wrapper">
+                <button
+                  type="button"
+                  className="avatar-upload-btn"
+                  title="Profile picture options"
+                  onClick={() => setAvatarMenuOpen(v => !v)}
+                >
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 4.16669V15.8334" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M4.16699 10H15.8337" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                {avatarMenuOpen && (
+                  <div className="avatar-action-menu">
+                    <label htmlFor="avatar-upload" className="avatar-action-item">
+                      <i className="fa-solid fa-camera" /> Change Profile Picture
+                    </label>
+                    <button
+                      type="button"
+                      className="avatar-action-item danger"
+                      onClick={handleDeleteAvatar}
+                      disabled={!localStorage.getItem('userAvatar')}
+                    >
+                      <i className="fa-solid fa-trash" /> Delete Profile Picture
+                    </button>
+                  </div>
+                )}
+              </div>
     
             </div>
           </div>
