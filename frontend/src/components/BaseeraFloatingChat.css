@@ -391,30 +391,6 @@
   opacity: 0.5;
 }
 
-/* Gradient-square logo badge — matches the navbar treatment so the
-   welcome state feels branded, not faded. */
-.baseera-widget-empty-badge {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #00d9a5 0%, #00b4d8 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow:
-    0 12px 28px -10px rgba(0, 217, 165, 0.45),
-    0 4px 10px -4px rgba(0, 184, 219, 0.35);
-  margin-bottom: 4px;
-}
-.baseera-widget-empty-badge img {
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
-  /* Force white so the colored logo PNG reads as a clean white mark on
-     the teal gradient — same trick the navbar uses. */
-  filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0,0,0,0.25));
-}
-
 /* ── Message rows ── */
 .baseera-widget-msg {
   display: flex;
