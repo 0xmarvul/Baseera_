@@ -68,6 +68,25 @@ align-items: stretch;
 margin-top: 0;
 /* gap: 37px; */
 }
+
+/* Two-column row inside the register form. Used to pair fields like
+   First Name + Last Name on a single line so the form is shorter and
+   easier to scan. Collapses to a single column under 560px so mobile
+   layout stays readable. */
+.register-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.register-form-col {
+    min-width: 0; /* prevents grid blowout when an input has long content */
+}
+@media (max-width: 560px) {
+    .register-form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+}
 .register-form-title{
     color: #90A1B9;
 font-family: Arimo;
