@@ -100,8 +100,12 @@ public class UserService : IUserService
             user.DateOfBirth = null;
         else if (dto.DateOfBirth.HasValue)
             user.DateOfBirth = dto.DateOfBirth;
-        if (dto.Country != null)
-            user.Country = string.IsNullOrWhiteSpace(dto.Country) ? null : dto.Country.Trim();
+        // Country is required (see UpdateProfileValidator). A whitespace-only
+        // or empty payload is rejected before we get here, but defense in
+        // depth: if anything slips through, leave the existing value alone
+        // rather than null it out.
+        if (!string.IsNullOrWhiteSpace(dto.Country))
+            user.Country = dto.Country.Trim();
         if (dto.Bio != null)
             user.Bio = string.IsNullOrWhiteSpace(dto.Bio) ? null : dto.Bio.Trim();
         if (dto.ProfileImageUrl != null)

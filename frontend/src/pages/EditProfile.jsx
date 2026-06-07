@@ -98,15 +98,21 @@ function EditProfile() {
       return;
     }
 
+    const countryTrimmed = formData.country.trim();
+    if (!countryTrimmed) {
+      setSaveError("Country is required.");
+      return;
+    }
+
     // Phone, gender, dateOfBirth were removed from the form. Backend keeps
     // the DTO columns nullable so old data isn't wiped server-side; we just
-    // stop sending those fields. Country is the only optional field left.
+    // stop sending those fields. Country is required.
     const payload = {
       username: usernameTrimmed,
       email: emailTrimmed,
       firstName,
       lastName,
-      country: formData.country || "",
+      country: countryTrimmed,
       bio: formData.bio || "",
     };
 
@@ -270,7 +276,7 @@ function EditProfile() {
             </div>
 
             <div className="form-group">
-              <label>Country</label>
+              <label>Country <span className="required">*</span></label>
               <div className="input-wrapper">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <circle cx="8" cy="8" r="6" stroke="#90A1B9" strokeWidth="1.33333"/>
@@ -278,11 +284,14 @@ function EditProfile() {
                   <path d="M8 2C9.5 3.5 10.5 5.5 10.5 8C10.5 10.5 9.5 12.5 8 14C6.5 12.5 5.5 10.5 5.5 8C5.5 5.5 6.5 3.5 8 2Z" stroke="#90A1B9" strokeWidth="1.33333"/>
                 </svg>
                 {/* Same fixed ISO 3166-1 list as Register so the country
-                    string we store stays consistent across signup + edit. */}
+                    string we store stays consistent across signup + edit.
+                    Required: a user can't unset their country once it's set,
+                    which matches Register's NotEmpty rule on the backend. */}
                 <select
                   name="country"
                   value={formData.country}
                   onChange={handleChange}
+                  required
                 >
                   <option value="" disabled>Select your country</option>
                   {COUNTRIES.map((c) => (
