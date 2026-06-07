@@ -173,9 +173,9 @@
   bottom: 96px;
   right: 24px;
   z-index: 9999;
-  width: 380px;
+  width: 455px;
   max-width: calc(100vw - 32px);
-  height: 520px;
+  height: 595px;
   max-height: calc(100vh - 120px);
   background: #0f1724;
   border: 1px solid #1e2d3d;
