@@ -406,7 +406,9 @@ ${faviconHtml}
           <div className="baseera-widget-messages">
             {messages.length === 0 && !isTyping && (
               <div className="baseera-widget-empty">
-                <img src={baseeraLogo} alt="Baseera" className="baseera-widget-empty-logo" />
+                <div className="baseera-widget-empty-badge">
+                  <img src={baseeraLogo} alt="Baseera" />
+                </div>
                 <span>Ask Baseera about web vulnerabilities, fixes, and security best practices.</span>
               </div>
             )}
