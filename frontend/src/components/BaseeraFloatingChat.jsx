@@ -122,6 +122,11 @@ export default function BaseeraFloatingChat() {
   const openRef = useRef(open);
   useEffect(() => { openRef.current = open; }, [open]);
 
+  // Derived state. Must come before the scroll-to-bottom effect below
+  // because that effect references `messages` in its dep array.
+  const activeConv = conversations.find((c) => c.id === activeId) || null;
+  const messages = activeConv ? activeConv.messages : [];
+
   useEffect(() => {
     if (open) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -168,9 +173,6 @@ export default function BaseeraFloatingChat() {
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
   }, [showThreadList]);
-
-  const activeConv = conversations.find((c) => c.id === activeId) || null;
-  const messages = activeConv ? activeConv.messages : [];
 
   const updateConversations = (updated) => {
     setConversations(updated);
