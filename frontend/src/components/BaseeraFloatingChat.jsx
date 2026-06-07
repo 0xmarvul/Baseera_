@@ -15,13 +15,6 @@ const buildGreeting = () => {
   return `👋 Hey there! I'm Baseera AI, your security assistant. Ask me about any vulnerability and I'll explain what it is and how to fix it.`;
 };
 
-// Clickable suggestion chips shown alongside the empty-state greeting.
-const SUGGESTION_CHIPS = [
-  'What is XSS?',
-  'How to fix SQL Injection?',
-  'Show critical vulnerabilities',
-];
-
 const WIDGET_STORAGE_KEY = 'baseera_widget_conversations';
 const WIDGET_CONV_ID = 'widget_conv';
 
@@ -429,37 +422,21 @@ ${faviconHtml}
 
           {/* Messages */}
           <div className="baseera-widget-messages">
-            {messages.length === 0 && !isTyping && (
-              <>
-                {/* Transient welcome bubble. Not persisted, not exported,
-                    not counted in messages.length. Disappears as soon as the
-                    user sends their first message. */}
-                <div className="baseera-widget-msg bot baseera-widget-greeting">
-                  <div className="baseera-widget-avatar">
-                    <img src={baseeraLogo} alt="Baseera" />
-                  </div>
-                  <div>
-                    <div className="baseera-widget-bubble">
-                      <p>{buildGreeting()}</p>
-                    </div>
-                  </div>
+            {/* Persistent welcome bubble. Always visible at the top of the
+                conversation, even after the user starts chatting. Not pushed
+                into messages[] so it isn't persisted to localStorage or
+                included in exports. Bottom suggestion chips already cover
+                quick-prompt UX, so no chips here. */}
+            <div className="baseera-widget-msg bot baseera-widget-greeting">
+              <div className="baseera-widget-avatar">
+                <img src={baseeraLogo} alt="Baseera" />
+              </div>
+              <div>
+                <div className="baseera-widget-bubble">
+                  <p>{buildGreeting()}</p>
                 </div>
-
-                <div className="baseera-widget-chips">
-                  {SUGGESTION_CHIPS.map((q) => (
-                    <button
-                      key={q}
-                      type="button"
-                      className="baseera-widget-chip"
-                      onClick={() => sendMessage(q)}
-                      disabled={isTyping}
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
+              </div>
+            </div>
 
             {messages.map((msg) => (
               <div key={msg.id} className={`baseera-widget-msg ${msg.role}`}>

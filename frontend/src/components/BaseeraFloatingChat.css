@@ -413,42 +413,6 @@
   margin-bottom: 4px;
 }
 
-/* Quick-prompt suggestion chips shown under the welcome greeting. */
-.baseera-widget-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 4px 8px 0 44px; /* 44px aligns under the bot bubble (avatar+gap) */
-  margin-top: 6px;
-}
-
-.baseera-widget-chip {
-  background: rgba(0, 217, 165, 0.08);
-  border: 1px solid rgba(0, 217, 165, 0.30);
-  color: #00d9a5;
-  font-family: inherit;
-  font-size: 11.5px;
-  font-weight: 500;
-  padding: 6px 10px;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.1s;
-  white-space: nowrap;
-}
-
-.baseera-widget-chip:hover:not([disabled]) {
-  background: rgba(0, 217, 165, 0.18);
-  border-color: rgba(0, 217, 165, 0.55);
-}
-
-.baseera-widget-chip:active:not([disabled]) {
-  transform: scale(0.97);
-}
-
-.baseera-widget-chip[disabled] {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
 
 /* ── Message rows ── */
 .baseera-widget-msg {

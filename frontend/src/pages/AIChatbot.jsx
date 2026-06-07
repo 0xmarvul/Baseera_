@@ -14,14 +14,6 @@ const SUGGESTED_PROMPTS = [
   'List all vulnerabilities',
 ];
 
-// Chips shown next to the empty-state greeting. Kept short on purpose so
-// they fit on one row inside the chat column.
-const GREETING_CHIPS = [
-  'What is XSS?',
-  'How to fix SQL Injection?',
-  'Show critical vulnerabilities',
-];
-
 // Personalised welcome bubble. Falls back to a neutral greeting when the
 // stored username is empty or the generic 'user' placeholder.
 const buildGreeting = () => {
@@ -666,37 +658,21 @@ ${faviconHtml}
 
           {/* Messages */}
           <div className="chat-messages">
-            {messages.length === 0 && !isTyping && (
-              <>
-                {/* Transient welcome bubble. Not persisted, not exported,
-                    not part of messages[]. Disappears the moment the user
-                    sends their first message. */}
-                <div className="chat-message bot chat-greeting">
-                  <div className="message-avatar">
-                    <img src={baseeraLogo} alt="Baseera" className="bot-icon-img" />
-                  </div>
-                  <div className="message-content">
-                    <div className="message-bubble">
-                      <p>{buildGreeting()}</p>
-                    </div>
-                  </div>
+            {/* Persistent welcome bubble. Always rendered at the top of
+                the conversation, even after the user starts chatting. Not
+                pushed into messages[] so it isn't persisted to localStorage
+                or included in exports. Bottom SUGGESTED_PROMPTS already
+                covers quick-prompt UX, so no chips here. */}
+            <div className="chat-message bot chat-greeting">
+              <div className="message-avatar">
+                <img src={baseeraLogo} alt="Baseera" className="bot-icon-img" />
+              </div>
+              <div className="message-content">
+                <div className="message-bubble">
+                  <p>{buildGreeting()}</p>
                 </div>
-
-                <div className="chat-greeting-chips">
-                  {GREETING_CHIPS.map((q) => (
-                    <button
-                      key={q}
-                      type="button"
-                      className="chat-greeting-chip"
-                      onClick={() => sendMessage(q)}
-                      disabled={isTyping}
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
+              </div>
+            </div>
 
             {messages.map((msg) => (
               <div key={msg.id} className={`chat-message ${msg.role}`}>
