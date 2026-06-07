@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Profile from "./Profile";
 import "../delete.css";
 import { authApi } from "../api/authApi";
+import { clearUserSession } from "../utils/session";
 
 function Delete() {
   const navigate = useNavigate();
@@ -14,11 +15,11 @@ function Delete() {
     setDeleteError("");
     try {
       await authApi.deleteAccount();
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("baseeraUserName");
-      localStorage.removeItem("baseeraUserData");
-      localStorage.removeItem("userAvatar");
-      navigate("/login");
+      clearUserSession();
+      // Full reload so app-level components (floating chat widget, etc.)
+      // re-init from a clean localStorage and don't keep the just-deleted
+      // user's chat history in React memory.
+      window.location.href = "/login";
     } catch (err) {
       setDeleteError(err?.response?.data?.message || "Failed to delete account. Please try again.");
       setDeleting(false);

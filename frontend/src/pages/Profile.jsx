@@ -3,6 +3,7 @@ import LandingNavbar from "../components/LandingNavbar";
 import "../profile.css";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../api/authApi";
+import { clearUserSession } from "../utils/session";
 
 const PLACEHOLDER_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2390a1b9'%3E%3Cpath d='M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z'/%3E%3C/svg%3E";
 
@@ -266,13 +267,14 @@ function Profile() {
             <button
               className="profile-btn profile-btn-secondary"
               onClick={() => {
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('baseeraUserName');
-                localStorage.removeItem('baseeraUserData');
-                localStorage.removeItem('userAvatar');
+                clearUserSession();
                 // Notify extension about logout
                 window.postMessage({ type: 'BASEERA_AUTH_LOGOUT' }, '*');
-                navigate('/login');
+                // Full reload (not SPA navigation) so app-level components
+                // like the floating chat widget reinitialise from a clean
+                // localStorage and don't keep the previous user's state
+                // in React memory.
+                window.location.href = '/login';
               }}
             >
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">

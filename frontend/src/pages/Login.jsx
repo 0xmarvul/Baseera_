@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../api/authApi';
 import icon7 from "../assets/lock.png";
 import Navbar from "../components/Navbar";
+import { clearUserSession } from "../utils/session";
 
 function Login(){
     const [showPassword, setShowPassword] = useState(false);
@@ -40,6 +41,13 @@ function Login(){
             const response = await authApi.login({ email, password });
 
             if (response.success) {
+
+                // Defensive wipe: if a previous user logged out (or didn't),
+                // their per-user keys (chat history, avatar, profile cache)
+                // could still be in localStorage on this device. Clear them
+                // before we plant the new user's keys so chats can't leak
+                // across identities on a shared browser.
+                clearUserSession();
 
                 // ✅ Save token
                 const token = response.data;

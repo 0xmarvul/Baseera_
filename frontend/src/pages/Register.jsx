@@ -10,6 +10,7 @@ import Navbar from "../components/Navbar";
 import PasswordChecklist from "../components/PasswordChecklist";
 import { isPasswordValid, PASSWORD_ERROR_MESSAGE } from "../utils/passwordPolicy";
 import { COUNTRIES } from "../utils/countries";
+import { clearUserSession } from "../utils/session";
 
 
 
@@ -69,6 +70,11 @@ function Register(){
             });
 
             if (response.success) {
+                // Wipe any leftover per-user data from a previous account
+                // on this browser (chat history, avatar, profile cache).
+                // Otherwise a new signup on a shared device would inherit
+                // the previous user's chats.
+                clearUserSession();
                 setSuccess("Account created successfully! Please check your email to verify your account.");
                 setTimeout(() => {
                     navigate("/account-verification", { state: { email } });
