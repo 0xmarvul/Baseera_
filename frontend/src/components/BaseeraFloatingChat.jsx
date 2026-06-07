@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import apiClient from '../api/axios.config';
 import baseeraLogo from '../assets/logo.png';
-// High-res 128px version of the logo for the welcome card. The plain
-// logo.png is 25x25 which goes blurry past ~30px; the 128px asset stays
-// crisp anywhere between 32px and ~128px.
-import baseeraLogoLg from '../assets/logo-128.png';
+// Vector logo for the welcome card so it's pixel-sharp at any size.
+// The PNG variants (25x25 and 128x128) stay imported for small fixed-size
+// places (avatars, header badges) where the raster source is fine.
+import baseeraLogoLg from '../assets/logo.svg';
 import './BaseeraFloatingChat.css';
 
 const WIDGET_STORAGE_KEY = 'baseera_widget_conversations';

@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import LandingNavbar from '../components/LandingNavbar';
 import apiClient from '../api/axios.config';
 import baseeraLogo from '../assets/logo.png';
-// High-res 128px logo for the welcome card — see note in BaseeraFloatingChat.
-import baseeraLogoLg from '../assets/logo-128.png';
+// Vector logo for the welcome card — see note in BaseeraFloatingChat.
+import baseeraLogoLg from '../assets/logo.svg';
 import './AIChatbot.css';
 
 const MAX_INPUT_HEIGHT = 120;
