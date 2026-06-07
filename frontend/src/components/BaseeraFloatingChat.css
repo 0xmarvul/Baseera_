@@ -417,12 +417,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.baseera-widget-threadlist-rename,
 .baseera-widget-threadlist-delete {
   background: transparent;
   border: none;
   cursor: pointer;
   color: #64748b;
-  font-size: 12px;
+  font-size: 11px;
   width: 22px;
   height: 22px;
   border-radius: 4px;
@@ -432,9 +433,32 @@
   flex-shrink: 0;
   transition: color 0.15s, background 0.15s;
 }
+.baseera-widget-threadlist-rename:hover {
+  color: #00d9a5;
+  background: rgba(0, 217, 165, 0.15);
+}
 .baseera-widget-threadlist-delete:hover {
   color: #ef4444;
   background: rgba(239, 68, 68, 0.15);
+}
+
+/* Inline rename input. Stretches to fill the row so the user can see
+   the whole title while editing; teal underline ties it to the brand. */
+.baseera-widget-threadlist-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #00d9a5;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 2px 0;
+  outline: none;
+}
+.baseera-widget-threadlist-item.is-editing {
+  background: rgba(0, 217, 165, 0.08);
+  cursor: default;
 }
 
 .baseera-widget-export-menu {

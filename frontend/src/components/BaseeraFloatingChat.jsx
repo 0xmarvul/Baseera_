@@ -112,6 +112,11 @@ export default function BaseeraFloatingChat() {
   const [conversations, setConversations] = useState(initialConvsRef.current);
   const [activeId, setActiveId] = useState(() => initialConvsRef.current[0]?.id ?? null);
   const [showThreadList, setShowThreadList] = useState(false);
+  // Inline rename state for the dropdown. editingId === null means no row
+  // is in edit mode. Same pattern as the /ai-chatbot page so the UX feels
+  // consistent across both chats.
+  const [editingId, setEditingId] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -223,6 +228,28 @@ export default function BaseeraFloatingChat() {
     updateConversations(updated);
     if (activeId === id) setActiveId(updated[0]?.id ?? null);
   };
+
+  const startRename = (conv, e) => {
+    e?.stopPropagation();
+    setEditingId(conv.id);
+    setEditTitle(conv.title);
+  };
+
+  const saveRename = (id) => {
+    const trimmed = editTitle.trim();
+    // Empty title is a cancel: don't blank-out a thread's name.
+    if (!trimmed) {
+      setEditingId(null);
+      return;
+    }
+    const updated = conversations.map((c) =>
+      c.id === id ? { ...c, title: trimmed } : c
+    );
+    updateConversations(updated);
+    setEditingId(null);
+  };
+
+  const cancelRename = () => setEditingId(null);
 
   // Shared branded chat export template — same shape as the AIChatbot page.
   // Navy bg + teal->cyan hero + Inter font + glass message bubbles. forPrint
@@ -562,19 +589,47 @@ ${faviconHtml}
                   {conversations.map((c) => (
                     <div
                       key={c.id}
-                      className={`baseera-widget-threadlist-item${c.id === activeId ? ' is-active' : ''}`}
-                      onClick={() => switchThread(c.id)}
+                      className={`baseera-widget-threadlist-item${c.id === activeId ? ' is-active' : ''}${editingId === c.id ? ' is-editing' : ''}`}
+                      onClick={() => editingId !== c.id && switchThread(c.id)}
                       role="menuitem"
                     >
-                      <div className="baseera-widget-threadlist-title">{c.title}</div>
-                      <button
-                        className="baseera-widget-threadlist-delete"
-                        onClick={(e) => deleteThread(c.id, e)}
-                        aria-label="Delete this chat"
-                        title="Delete this chat"
-                      >
-                        <i className="fa-solid fa-xmark" />
-                      </button>
+                      {editingId === c.id ? (
+                        <input
+                          className="baseera-widget-threadlist-input"
+                          value={editTitle}
+                          autoFocus
+                          maxLength={60}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') { e.preventDefault(); saveRename(c.id); }
+                            else if (e.key === 'Escape') { e.preventDefault(); cancelRename(); }
+                          }}
+                          onBlur={() => saveRename(c.id)}
+                        />
+                      ) : (
+                        <div className="baseera-widget-threadlist-title">{c.title}</div>
+                      )}
+                      {editingId !== c.id && (
+                        <>
+                          <button
+                            className="baseera-widget-threadlist-rename"
+                            onClick={(e) => startRename(c, e)}
+                            aria-label="Rename this chat"
+                            title="Rename"
+                          >
+                            <i className="fa-solid fa-pen" />
+                          </button>
+                          <button
+                            className="baseera-widget-threadlist-delete"
+                            onClick={(e) => deleteThread(c.id, e)}
+                            aria-label="Delete this chat"
+                            title="Delete this chat"
+                          >
+                            <i className="fa-solid fa-xmark" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
