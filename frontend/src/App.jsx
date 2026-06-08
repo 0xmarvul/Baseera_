@@ -1,5 +1,7 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom'
+import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import './App.css'
 
 import Navbar from './components/Navbar'
@@ -107,6 +109,13 @@ function App() {
   return (
     <Router>
       <AppContent />
+      {/* Vercel free analytics: anonymous pageview + speed (Core Web Vitals)
+          metrics. No cookies, no PII, no tracking pixels. Both are no-ops
+          when running locally - they only send data from the live Vercel
+          deployment. Enable in Vercel project: Analytics + Speed Insights
+          tabs (flip the toggle in each). */}
+      <Analytics />
+      <SpeedInsights />
     </Router>
   );
 }
