@@ -438,6 +438,28 @@ function Bugs() {
     }
   };
 
+  // Delete a single scan + its vulnerabilities. Backend cascade-deletes
+  // dependents (Vulnerabilities, Reports for this scan) via EF; we just
+  // need to refresh local state. stopPropagation on the button click
+  // prevents the scan card's expand toggle from firing.
+  const handleDeleteScan = async (scanId, e) => {
+    e?.stopPropagation();
+    if (!window.confirm('Delete this scan? This cannot be undone.')) return;
+    try {
+      await apiClient.delete(`/scans/${scanId}`);
+      setScans((prev) => prev.filter((s) => s.id !== scanId));
+      setScanVulnerabilities((prev) => {
+        const next = { ...prev };
+        delete next[scanId];
+        return next;
+      });
+      if (expandedScanId === scanId) setExpandedScanId(null);
+    } catch (err) {
+      console.error('Failed to delete scan:', err);
+      alert('Failed to delete this scan. Please try again.');
+    }
+  };
+
   return (
     <>
       <LandingNavbar />
@@ -850,9 +872,22 @@ function Bugs() {
                   <span className="severity-badge severity-low">Low: {scan.lowCount}</span>
                 )}
               </div>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{transform: expandedScanId === scan.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease', flexShrink: 0}}>
-                <path d="M4 6L8 10L12 6" stroke="#90A1B9" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              <div style={{display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0}}>
+                <button
+                  type="button"
+                  onClick={(e) => handleDeleteScan(scan.id, e)}
+                  className="scan-delete-btn"
+                  title="Delete this scan"
+                  aria-label="Delete this scan"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 3.5h10M5.5 3.5V2.5a1 1 0 011-1h1a1 1 0 011 1v1M3 3.5L3.5 12a1 1 0 001 1h5a1 1 0 001-1L11 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{transform: expandedScanId === scan.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease'}}>
+                  <path d="M4 6L8 10L12 6" stroke="#90A1B9" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
             </div>
             <h3 className="vulnerability-title" style={{wordBreak: 'break-all'}}>{scan.targetURL}</h3>
             <div className="vulnerability-footer">

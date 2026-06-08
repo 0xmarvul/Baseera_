@@ -1782,6 +1782,28 @@ line-height: 24px; /* 150% */
   transition: color 0.15s ease;
 }
 
+/* Per-scan trash button. Subtle by default so it doesn't dominate the
+   row; turns red on hover to signal destructive action. */
+.scan-delete-btn {
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #94A3B8;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.scan-delete-btn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
 /* ====== EXPANDED VULNERABILITY DETAILS ====== */
 .scan-vulns-expanded {
   border-top: 1px solid rgba(49, 65, 88, 0.5);
