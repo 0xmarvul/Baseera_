@@ -5,6 +5,7 @@ import "../index.css";
 import "../bugs.css";
 import icon3 from "../assets/calander.png";
 import apiClient from "../api/axios.config";
+import { showToast } from "../components/Toast";
 
 function Bugs() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -430,9 +431,9 @@ function Bugs() {
       setScans([]);
       setScanVulnerabilities({});
       setExpandedScanId(null);
+      showToast('All scan history cleared');
     } catch (err) {
-      console.error('Failed to clear all scans:', err);
-      alert('Failed to clear data. Please try again.');
+      showToast('Failed to clear data. Please try again.', { type: 'error' });
     } finally {
       setClearLoading(false);
     }
@@ -454,9 +455,9 @@ function Bugs() {
         return next;
       });
       if (expandedScanId === scanId) setExpandedScanId(null);
+      showToast('Scan deleted');
     } catch (err) {
-      console.error('Failed to delete scan:', err);
-      alert('Failed to delete this scan. Please try again.');
+      showToast('Failed to delete this scan. Please try again.', { type: 'error' });
     }
   };
 

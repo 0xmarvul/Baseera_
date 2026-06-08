@@ -26,6 +26,7 @@ import VerifyEmail from './pages/VerifyEmail';
 import AIChatbot from './pages/AIChatbot';
 import NotFound from './pages/NotFound';
 import BaseeraFloatingChat from './components/BaseeraFloatingChat';
+import { ToastHost } from './components/Toast';
 
 
 function HomeRedirect() {
@@ -113,6 +114,7 @@ function App() {
   return (
     <Router>
       <AppContent />
+      <ToastHost />
       {/* Vercel free analytics: anonymous pageview + speed (Core Web Vitals)
           metrics. No cookies, no PII, no tracking pixels. Both are no-ops
           when running locally - they only send data from the live Vercel

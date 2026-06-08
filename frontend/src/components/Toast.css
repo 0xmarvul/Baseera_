@@ -1,0 +1,78 @@
+/* Toast notification system. Mounted at App level via <ToastHost />.
+   Fires via window.dispatchEvent('baseera-toast'). See Toast.jsx for API. */
+
+.baseera-toast-host {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 10000;
+  pointer-events: none;
+}
+
+.baseera-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  background: #0d2137;
+  border: 1px solid #1e3a5f;
+  border-radius: 10px;
+  color: #e2e8f0;
+  font-family: 'Inter', 'Arimo', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 12px 32px -10px rgba(0, 0, 0, 0.6);
+  pointer-events: auto;
+  animation: baseera-toast-in 0.25s ease-out;
+  max-width: min(420px, calc(100vw - 32px));
+}
+
+.baseera-toast-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.baseera-toast-success {
+  border-color: rgba(0, 217, 165, 0.45);
+}
+.baseera-toast-success .baseera-toast-icon {
+  background: rgba(0, 217, 165, 0.18);
+  color: #00d9a5;
+}
+
+.baseera-toast-error {
+  border-color: rgba(239, 68, 68, 0.55);
+}
+.baseera-toast-error .baseera-toast-icon {
+  background: rgba(239, 68, 68, 0.18);
+  color: #ef4444;
+}
+
+.baseera-toast-info {
+  border-color: rgba(0, 184, 219, 0.45);
+}
+.baseera-toast-info .baseera-toast-icon {
+  background: rgba(0, 184, 219, 0.18);
+  color: #00b8db;
+}
+
+.baseera-toast-message {
+  flex: 1;
+  word-break: break-word;
+}
+
+@keyframes baseera-toast-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
