@@ -28,7 +28,7 @@
     <h1>Privacy Policy — Baseera Security Scanner</h1>
     <p class="meta">
       <strong>Effective Date:</strong> 22 April 2026 ·
-      <strong>Last Updated:</strong> 8 June 2026 ·
+      <strong>Last Updated:</strong> 9 June 2026 ·
       <strong>Contact:</strong> <a href="mailto:0xbaseera@gmail.com">0xbaseera@gmail.com</a>
     </p>
 
@@ -89,7 +89,13 @@
     </ul>
 
     <h2>5. Third-Party Services</h2>
-    <p>The Extension does <strong>not</strong> include third-party analytics, advertising, crash reporting, or tracking SDKs. The only network destination the Extension contacts is the Baseera backend URL you have configured (and optionally <code>fonts.googleapis.com</code> to load the popup font — no personally identifiable information is sent in those requests).</p>
+    <p>The <strong>Extension</strong> does not include third-party analytics, advertising, crash reporting, or tracking SDKs. The only network destinations the Extension contacts are:</p>
+    <ul>
+      <li>The Baseera backend at <code>baseera-api.runasp.net</code> (only when you are signed in and use account features like Save Scan or the AI chat).</li>
+      <li>The Baseera AI service at <code>0xmarvul-baseera-ai.hf.space</code> (only when you send a question to the AI assistant).</li>
+    </ul>
+
+    <p>The <strong>Baseera website</strong> at <code>baseera-three.vercel.app</code> (separate from the Extension itself) uses Vercel Analytics and Vercel Speed Insights to measure site performance and aggregate visitor counts. These are cookieless, do not use fingerprinting, do not track individual users across sessions, and do not collect personally identifiable information. We use them only to understand site traffic and Core Web Vitals so we can improve the experience. The Extension itself does not call Vercel Analytics.</p>
 
     <h2>6. Permissions Explained</h2>
     <table>
