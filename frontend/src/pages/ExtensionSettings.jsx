@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import { clearUserSession } from "../utils/session";
 import "../index.css";
 import "../login.css";
 
 function ExtensionSettings() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [email, setEmail] = useState("");
-  const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -26,12 +25,16 @@ function ExtensionSettings() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("baseeraUserName");
-    localStorage.removeItem("baseeraUserData");
-    localStorage.removeItem("userAvatar");
+    // Use the shared session clear so chat history + every per-user key
+    // gets wiped, matching the rest of the app. The old hand-rolled
+    // removeItem list was missing baseera_widget_conversations,
+    // baseera_widget_open, and baseera_conversations - which leaked
+    // chat history to the next user on a shared browser.
+    clearUserSession();
     window.postMessage({ type: "BASEERA_AUTH_LOGOUT" }, "*");
-    navigate("/login");
+    // Full reload (not SPA navigation) so app-level components like the
+    // floating chat widget reinitialise from a clean localStorage.
+    window.location.href = "/login";
   };
 
   return (

@@ -80,7 +80,11 @@ function AppContent() {
               <ChangePassword />
             </ProtectedRoute>
           } />
-        <Route path="/extension-settings" element={<ExtensionSettings />} />
+        <Route path="/extension-settings" element={
+            <ProtectedRoute>
+              <ExtensionSettings />
+            </ProtectedRoute>
+          } />
         <Route path="/account-verification" element={<AccountVerification />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/ai-chatbot" element={
