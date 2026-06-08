@@ -15,14 +15,6 @@ import {
   Database,
   KeyRound,
   Network,
-  Bug,
-  EyeOff,
-  Shield,
-  Fingerprint,
-  Search,
-  ListChecks,
-  Laptop,
-  Gift,
   ArrowRight,
 } from "lucide-react";
 
@@ -208,7 +200,7 @@ function Home() {
         <div className="security-solutions-cards">
           <div className="security-solution-card reveal reveal-delay-1">
             <div className="security-icon network">
-              <Bug size={32} strokeWidth={1.8} className="lucide-accent" />
+              <Network size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
             <h3 className="text-sec3">Injection &amp; XSS</h3>
             <p className="par-sec3">
@@ -219,7 +211,7 @@ function Home() {
 
           <div className="security-solution-card reveal reveal-delay-2">
             <div className="security-icon data">
-              <EyeOff size={32} strokeWidth={1.8} className="lucide-accent" />
+              <Database size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
             <h3 className="text-sec3">Exposed Secrets</h3>
             <p className="par-sec3">
@@ -230,7 +222,7 @@ function Home() {
 
           <div className="security-solution-card reveal reveal-delay-3">
             <div className="security-icon monitoring">
-              <Shield size={32} strokeWidth={1.8} className="lucide-accent" />
+              <Activity size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
             <h3 className="text-sec3">Headers &amp; CSP</h3>
             <p className="par-sec3">
@@ -241,7 +233,7 @@ function Home() {
 
           <div className="security-solution-card reveal reveal-delay-4">
             <div className="security-icon access">
-              <Fingerprint size={32} strokeWidth={1.8} className="lucide-accent" />
+              <KeyRound size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
             <h3 className="text-sec3">Auth &amp; Sessions</h3>
             <p className="par-sec3">
@@ -392,7 +384,7 @@ function Home() {
          <div className="security-solutions-cards">
           <div className="security-solution-card reveal reveal-delay-1">
             <div className="security-icon network">
-              <Search size={32} strokeWidth={1.8} className="lucide-accent" />
+              <Network size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
             <h3 className="text-sec3">31</h3>
             <p className="par-sec3">
@@ -402,7 +394,7 @@ function Home() {
 
           <div className="security-solution-card reveal reveal-delay-2">
             <div className="security-icon data">
-              <ListChecks size={32} strokeWidth={1.8} className="lucide-accent" />
+              <KeyRound size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
             <h3 className="text-sec3">4</h3>
             <p className="par-sec3">
@@ -412,7 +404,7 @@ function Home() {
 
           <div className="security-solution-card reveal reveal-delay-3">
             <div className="security-icon monitoring">
-              <Laptop size={32} strokeWidth={1.8} className="lucide-accent" />
+              <Zap size={32} strokeWidth={2} className="lucide-accent" />
             </div>
             <h3 className="text-sec3"> 100% </h3>
             <p className="par-sec3">Client-Side &amp; Passive</p>
@@ -420,7 +412,7 @@ function Home() {
 
           <div className="security-solution-card reveal reveal-delay-4">
             <div className="security-icon access">
-              <Gift size={32} strokeWidth={1.8} className="lucide-accent" />
+              <Activity size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
             <h3 className="text-sec3">Free</h3>
             <p className="par-sec3">Forever, No Sign-up Required</p>
