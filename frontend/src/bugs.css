@@ -1877,6 +1877,38 @@ line-height: 24px; /* 150% */
   word-break: break-word;
 }
 
+/* "Ask Baseera how to fix this" CTA per vulnerability. Uses the brand
+   teal-to-cyan gradient on hover so it feels like an action button,
+   muted at rest so it doesn't compete with the severity badge or the
+   recommendation row above it. */
+.vuln-ask-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 8px 14px;
+  background: rgba(0, 217, 165, 0.10);
+  border: 1px solid rgba(0, 217, 165, 0.35);
+  color: #00D492;
+  font-family: Arimo, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+}
+.vuln-ask-btn:hover {
+  background: linear-gradient(135deg, rgba(0, 188, 125, 0.25) 0%, rgba(0, 184, 219, 0.25) 100%);
+  border-color: rgba(0, 217, 165, 0.65);
+  color: #ffffff;
+}
+.vuln-ask-btn:active {
+  transform: scale(0.98);
+}
+.vuln-ask-icon {
+  font-size: 14px;
+}
+
 .vuln-detail-text strong {
   color: #e2e8f0;
   font-weight: 400;

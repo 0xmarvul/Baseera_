@@ -171,6 +171,30 @@ export default function BaseeraFloatingChat() {
     }
   }, [open]);
 
+  // Cross-component ask channel. Any page can dispatch:
+  //   window.dispatchEvent(new CustomEvent('baseera-ask', { detail: { question: '...' } }))
+  // and the widget will pop open and send that question to the AI.
+  // Used by the per-vulnerability "Ask Baseera how to fix this" buttons on
+  // the Bugs page so users can jump from a finding to the AI explanation
+  // in one click. Listener stays mounted for the widget's whole lifetime
+  // so it works even when the panel is currently closed.
+  const askChannelRef = useRef(null);
+  useEffect(() => {
+    const onAsk = (e) => {
+      const q = e?.detail?.question;
+      if (!q || typeof q !== 'string') return;
+      setOpen(true);
+      // Defer one frame so setOpen flushes and the widget remounts before
+      // we trigger a send. The ref points at the LATEST sendMessage so we
+      // don't capture a stale closure across re-renders.
+      requestAnimationFrame(() => {
+        askChannelRef.current?.(q);
+      });
+    };
+    window.addEventListener('baseera-ask', onAsk);
+    return () => window.removeEventListener('baseera-ask', onAsk);
+  }, []);
+
   // Esc closes the panel when it's open. Standard floating-panel UX.
   useEffect(() => {
     if (!open) return;
@@ -565,6 +589,11 @@ ${faviconHtml}
       setIsTyping(false);
     }
   };
+
+  // Expose the latest sendMessage to the cross-component ask-channel
+  // listener. Updated every render so the listener never holds a stale
+  // closure (otherwise it would call a sendMessage tied to old state).
+  useEffect(() => { askChannelRef.current = sendMessage; });
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {

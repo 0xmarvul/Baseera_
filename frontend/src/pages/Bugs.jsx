@@ -948,6 +948,24 @@ function Bugs() {
                           <span className="vuln-detail-text">Detected: {new Date(vuln.detectedAt).toLocaleDateString()}</span>
                         </div>
                       )}
+                      {vuln.type && (
+                        <button
+                          type="button"
+                          className="vuln-ask-btn"
+                          onClick={() => {
+                            // Fire the global ask-channel event. The floating
+                            // chat widget listens at window level, opens itself,
+                            // and sends this question to the AI.
+                            window.dispatchEvent(new CustomEvent('baseera-ask', {
+                              detail: { question: `How do I fix ${vuln.type}?` }
+                            }));
+                          }}
+                          title="Ask Baseera AI how to fix this"
+                        >
+                          <span className="vuln-ask-icon">💬</span>
+                          Ask Baseera how to fix this
+                        </button>
+                      )}
                     </div>
                   );
                 })
