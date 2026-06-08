@@ -719,9 +719,14 @@ function Bugs() {
               {(() => {
                 const cutoff = new Date();
                 cutoff.setDate(cutoff.getDate() - timelineRange);
+                // Bug fix: was hard-capped at .slice(0, 10), so picking
+                // "Last 90 Days" still only ever showed 10 scans even
+                // when the user had 30+ in that window. Defeats the
+                // filter. Lifted to 100 to keep render fast for outliers
+                // without truncating the typical user's view.
                 const timelineScans = scans
                   .filter(scan => scan.createdAt && new Date(scan.createdAt) >= cutoff)
-                  .slice(0, 10);
+                  .slice(0, 100);
                 return timelineScans.map((scan, idx) => {
                 const severity = scan.criticalCount > 0 ? 'Critical' : scan.highCount > 0 ? 'High' : scan.mediumCount > 0 ? 'Medium' : 'Low';
                 const badgeClass = severity === 'Critical' ? 'Badge' : severity === 'High' ? 'Badge-1' : 'Badge-2';
