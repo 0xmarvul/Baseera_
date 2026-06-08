@@ -156,7 +156,25 @@ public static class ServiceExtensions
         {
             options.AddPolicy("BaseeraCors", builder =>
             {
-                builder.WithOrigins(allowedOrigins)
+                builder.SetIsOriginAllowed(origin =>
+                       {
+                           // Exact-match the configured allowlist (Vercel URL etc).
+                           if (allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
+                               return true;
+
+                           // Allow every Chrome / Firefox / Edge extension origin.
+                           // Extension IDs are random per install and we want our own
+                           // extension + future user-installed forks to work without
+                           // re-deploying. The scanner endpoints they call are already
+                           // protected by JWT auth or X-Scanner-Api-Key, so opening
+                           // the extension origin to CORS doesn't bypass auth.
+                           if (origin.StartsWith("chrome-extension://", StringComparison.OrdinalIgnoreCase))
+                               return true;
+                           if (origin.StartsWith("moz-extension://", StringComparison.OrdinalIgnoreCase))
+                               return true;
+
+                           return false;
+                       })
                        .AllowAnyMethod()
                        .AllowAnyHeader()
                        .AllowCredentials();

@@ -4,10 +4,14 @@
 // (right-click the extension icon → "Options").
 
 const BASEERA_DEFAULTS = {
-  // .NET Web API base (must end without trailing slash; "/api" is appended in calls)
-  apiBaseUrl: "http://localhost:5000/api",
-  // Public-facing React web app (used for login redirect + dashboard links)
-  appBaseUrl: "http://localhost:5173"
+  // .NET Web API base (must end without trailing slash; "/api" is appended in calls).
+  // Production: hosted on MonsterASP. Local development: override via the
+  // extension's Options page (right-click icon -> Options) and set
+  // http://localhost:5000/api.
+  apiBaseUrl: "https://baseera-api.runasp.net/api",
+  // Public-facing React web app (used for login redirect + dashboard links).
+  // Production: Vercel.
+  appBaseUrl: "https://baseera-three.vercel.app"
 };
 
 // Async helper used by popup/background/content to read the effective config.
