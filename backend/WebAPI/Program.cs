@@ -148,7 +148,9 @@ app.UseAuthorization();
 // Public health endpoint. Hosting platforms (Monster, Render, Railway,
 // UptimeRobot) ping this to know the service is alive. Returns 200 OK
 // with a tiny JSON body. No auth, no rate limit, intentionally cheap.
-app.MapGet("/health", () => Results.Ok(new
+// MapMethods so HEAD and GET both work: most uptime monitors default to
+// HEAD (it's cheaper) and a GET-only endpoint returns 405 to them.
+app.MapMethods("/health", new[] { "GET", "HEAD" }, () => Results.Ok(new
 {
     status = "ok",
     timestamp = DateTime.UtcNow,
