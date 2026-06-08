@@ -1,5 +1,10 @@
 // Baseera Security Scanner - Background Service Worker
 
+// Production default. Mirrors BASEERA_DEFAULTS.appBaseUrl in config.js so
+// fresh installs talk to the deployed Vercel app, not a hypothetical
+// localhost. Users can still override via the Options page.
+const DEFAULT_APP_BASE_URL = 'https://baseera-three.vercel.app';
+
 chrome.runtime.onInstalled.addListener(() => {
   // First-run hook reserved for migrations / welcome page.
 });
@@ -7,7 +12,7 @@ chrome.runtime.onInstalled.addListener(() => {
 async function getAppBaseUrl() {
   return new Promise((resolve) => {
     chrome.storage.local.get(['baseeraAppBaseUrl'], (r) => {
-      resolve(r.baseeraAppBaseUrl || 'http://localhost:5173');
+      resolve(r.baseeraAppBaseUrl || DEFAULT_APP_BASE_URL);
     });
   });
 }

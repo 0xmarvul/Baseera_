@@ -21,28 +21,37 @@
     }
   });
 
-  // Listen for auth updates from the Baseera website
-  window.addEventListener('message', (event) => {
-    if (event.source !== window) return;
-
-    if (event.data?.type === 'BASEERA_AUTH_UPDATE') {
-      safeSendMessage({
-        type: 'SAVE_AUTH',
-        token: event.data.token,
-        userName: event.data.email || event.data.userName
-      });
-    }
-
-    if (event.data?.type === 'BASEERA_AUTH_LOGOUT') {
-      safeSendMessage({ type: 'CLEAR_AUTH' });
-    }
-  });
-
-  // Check if current page is a configured Baseera website origin
+  // Check if current page is a configured Baseera website origin.
+  // Production default mirrors BASEERA_DEFAULTS.appBaseUrl in config.js so
+  // the content script behaves correctly before the saved override loads.
   function isBaseeraOrigin(savedAppUrl) {
-    const candidates = [savedAppUrl, 'http://localhost:5173', 'https://localhost'].filter(Boolean);
+    const candidates = [savedAppUrl, 'https://baseera-three.vercel.app'].filter(Boolean);
     return candidates.some(o => window.location.href.startsWith(o));
   }
+
+  // Listen for auth updates from the Baseera website.
+  // Gated by origin: a postMessage from a random attacker page must NOT be
+  // able to push a forged auth token into the extension. Only the configured
+  // Baseera app URL can use this channel.
+  chrome.storage?.local?.get(['baseeraAppBaseUrl'], (r) => {
+    if (!isBaseeraOrigin(r.baseeraAppBaseUrl)) return;
+
+    window.addEventListener('message', (event) => {
+      if (event.source !== window) return;
+
+      if (event.data?.type === 'BASEERA_AUTH_UPDATE') {
+        safeSendMessage({
+          type: 'SAVE_AUTH',
+          token: event.data.token,
+          userName: event.data.email || event.data.userName
+        });
+      }
+
+      if (event.data?.type === 'BASEERA_AUTH_LOGOUT') {
+        safeSendMessage({ type: 'CLEAR_AUTH' });
+      }
+    });
+  });
 
   // On page load, sync current auth state from localStorage to extension storage
   (function syncOnLoad() {

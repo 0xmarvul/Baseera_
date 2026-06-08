@@ -13,20 +13,22 @@
     </header>
 
     <p class="intro">
-      Configure the Baseera backend URLs. Leave blank to use the defaults
-      (which point at <code>localhost</code> for local development).
+      Configure the Baseera backend URLs. Leave blank to use the production
+      defaults (<code>baseera-api.runasp.net</code> and
+      <code>baseera-three.vercel.app</code>). Override these only if you're
+      running Baseera locally for development.
     </p>
 
     <form id="config-form" class="form">
       <label class="field">
         <span class="label">API base URL</span>
-        <input type="url" id="api-url" placeholder="https://api.baseera.example.com/api" autocomplete="off" />
+        <input type="url" id="api-url" placeholder="https://baseera-api.runasp.net/api" autocomplete="off" />
         <span class="hint">Your .NET Web API root, including <code>/api</code>. Must use HTTPS in production.</span>
       </label>
 
       <label class="field">
         <span class="label">Web app base URL</span>
-        <input type="url" id="app-url" placeholder="https://baseera.example.com" autocomplete="off" />
+        <input type="url" id="app-url" placeholder="https://baseera-three.vercel.app" autocomplete="off" />
         <span class="hint">Where users log in and view their dashboard. No trailing slash.</span>
       </label>
 

@@ -33,10 +33,7 @@
   }],
   "externally_connectable": {
     "matches": [
-      "http://localhost:*/*",
-      "https://localhost/*",
-      "https://baseera-three.vercel.app/*",
-      "https://*.vercel.app/*"
+      "https://baseera-three.vercel.app/*"
     ]
   }
 }

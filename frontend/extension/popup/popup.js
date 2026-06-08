@@ -1,8 +1,9 @@
 // Baseera Security Scanner - Popup Script
 // API/App URLs are loaded from chrome.storage at startup (configurable via Options page).
-// Defaults defined in ../config.js point at localhost for local development.
-let API_BASE_URL = 'http://localhost:5000/api';
-let APP_BASE_URL = 'http://localhost:5173';
+// Initial values mirror BASEERA_DEFAULTS in ../config.js so any code running
+// before getBaseeraConfig() resolves still uses production URLs, not localhost.
+let API_BASE_URL = 'https://baseera-api.runasp.net/api';
+let APP_BASE_URL = 'https://baseera-three.vercel.app';
 
 let scanResults = null;
 let currentURL = '';
@@ -160,7 +161,6 @@ async function runScan() {
 
     scanResults = results[0]?.result || { vulnerabilities: [], riskScore: 0 };
   } catch (err) {
-    console.error('Scan error:', err);
     if (scanCancelled) return;
     scanResults = { vulnerabilities: [], riskScore: 0, error: err.message };
   }
@@ -294,7 +294,7 @@ async function autoSaveResults() {
       })
     });
   } catch (err) {
-    console.error('Auto-save error:', err);
+    // Silent fail. Auto-save is best-effort; user can manually save later.
   }
 }
 
