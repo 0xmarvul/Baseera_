@@ -14,10 +14,10 @@ import {
   Download,
   Info,
   Zap,
-  Activity,
-  Database,
-  KeyRound,
-  Network,
+  Bug,
+  EyeOff,
+  Shield,
+  Fingerprint,
   ArrowRight,
 } from "lucide-react";
 
@@ -206,7 +206,7 @@ function Landing() {
         <div className="security-solutions-cards">
           <div className="security-solution-card reveal reveal-delay-1">
             <div className="security-icon network">
-              <Network size={32} strokeWidth={1.8} className="lucide-accent" />
+              <Bug size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
             <h3 className="text-sec3">Injection &amp; XSS</h3>
             <p className="par-sec3">
@@ -217,7 +217,7 @@ function Landing() {
 
           <div className="security-solution-card reveal reveal-delay-2">
             <div className="security-icon data">
-              <Database size={32} strokeWidth={1.8} className="lucide-accent" />
+              <EyeOff size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
             <h3 className="text-sec3">Exposed Secrets</h3>
             <p className="par-sec3">
@@ -228,7 +228,7 @@ function Landing() {
 
           <div className="security-solution-card reveal reveal-delay-3">
             <div className="security-icon monitoring">
-              <Activity size={32} strokeWidth={1.8} className="lucide-accent" />
+              <Shield size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
             <h3 className="text-sec3">Headers &amp; CSP</h3>
             <p className="par-sec3">
@@ -239,7 +239,7 @@ function Landing() {
 
           <div className="security-solution-card reveal reveal-delay-4">
             <div className="security-icon access">
-              <KeyRound size={32} strokeWidth={1.8} className="lucide-accent" />
+              <Fingerprint size={32} strokeWidth={1.8} className="lucide-accent" />
             </div>
             <h3 className="text-sec3">Auth &amp; Sessions</h3>
             <p className="par-sec3">
