@@ -854,9 +854,25 @@ function Bugs() {
       {loading && (
         <div style={{textAlign: 'center', padding: '40px', color: '#64748b'}}>Loading scans...</div>
       )}
-      {!loading && filteredScans.length === 0 && (
+      {!loading && filteredScans.length === 0 && scans.length === 0 && (
+        <div className="bugs-empty-state">
+          <div className="bugs-empty-icon" aria-hidden="true">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+          </div>
+          <h3 className="bugs-empty-title">No scans yet</h3>
+          <p className="bugs-empty-subtext">
+            Install the Baseera Chrome Extension to detect vulnerabilities on
+            any website with one click. Once you scan a page, your findings
+            will show up here with severity ratings and fix recommendations.
+          </p>
+        </div>
+      )}
+      {!loading && filteredScans.length === 0 && scans.length > 0 && (
         <div style={{textAlign: 'center', padding: '40px', color: '#64748b', width: '100%'}}>
-          {scans.length === 0 ? 'No scans found. Use the Chrome Extension to scan pages!' : 'No scans match your search.'}
+          No scans match your search.
         </div>
       )}
       {!loading && filteredScans.map((scan, idx) => (
