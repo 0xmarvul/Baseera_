@@ -43,7 +43,11 @@ function EditProfile() {
             const parsed = JSON.parse(storedUserData);
             setFormData(prev => ({
               ...prev,
-              fullName: `${parsed.fullName || ''} ${parsed.lastName || ''}`.trim() || prev.fullName,
+              // parsed.fullName is already the joined "First Last" string
+              // (set that way by Login.jsx + EditProfile.jsx save handlers).
+              // Joining it with parsed.lastName again produced bugs like
+              // "Mark Johnson Johnson" in the offline fallback path.
+              fullName: parsed.fullName || prev.fullName,
               username: parsed.username || prev.username,
               email: parsed.email || prev.email,
               country: parsed.country || prev.country,

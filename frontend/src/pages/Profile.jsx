@@ -75,7 +75,9 @@ function Profile() {
             const parsed = JSON.parse(storedUserData);
             setUserData(prev => ({
               ...prev,
-              name: `${parsed.fullName || ''} ${parsed.lastName || ''}`.trim() || prev.name,
+              // parsed.fullName is already "First Last" joined - don't
+              // append parsed.lastName again or we get "Mark Johnson Johnson".
+              name: parsed.fullName || prev.name,
               username: "@" + (parsed.username || "user"),
               email: parsed.email || prev.email,
             }));
