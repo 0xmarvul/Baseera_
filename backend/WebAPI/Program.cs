@@ -102,6 +102,25 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
+// Apply any pending EF migrations on startup. Lets MonsterASP host the API
+// without us needing remote DB access from a dev machine: the very first
+// boot creates the schema, every subsequent boot is a no-op. Wrapped so a
+// DB-down moment at startup doesn't kill the process before health checks
+// can report it.
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<Infrastructure.Data.SecurityScannerDbContext>();
+        db.Database.Migrate();
+        Log.Information("Database migrations applied successfully");
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Failed to apply database migrations on startup. Continuing - the /health endpoint stays up so the platform can report the failure.");
+    }
+}
+
 // Middleware
 app.UseMiddleware<ErrorHandlingMiddleware>();
 
