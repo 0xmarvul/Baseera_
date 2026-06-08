@@ -7,11 +7,36 @@ import { clearUserSession } from "../utils/session";
 
 const PLACEHOLDER_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2390a1b9'%3E%3Cpath d='M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z'/%3E%3C/svg%3E";
 
+// Read whatever we already cached from the last login as the starting
+// state for the Profile page. Without this, the page rendered "User /
+// @user / blank email" for 3-5 seconds while the backend cold-started
+// on MonsterASP's free tier. Now the user sees their real name + email
+// the moment the page mounts; the API call still runs and updates state
+// silently if the server returns fresher data.
+const readCachedUserData = () => {
+  try {
+    const raw = localStorage.getItem("baseeraUserData");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return {
+      name: parsed.fullName || "User",
+      username: "@" + (parsed.username || "user"),
+      email: parsed.email || "",
+      country: parsed.country || "",
+      accountCreated: "",
+      bio: parsed.bio || "",
+      avatar: localStorage.getItem("userAvatar") || PLACEHOLDER_AVATAR,
+    };
+  } catch {
+    return null;
+  }
+};
+
 function Profile() {
   const navigate = useNavigate();
   const [avatarImage, setAvatarImage] = useState(localStorage.getItem("userAvatar") || PLACEHOLDER_AVATAR);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
-  const [userData, setUserData] = useState({
+  const [userData, setUserData] = useState(() => readCachedUserData() || {
     name: "User",
     username: "@user",
     email: "",
