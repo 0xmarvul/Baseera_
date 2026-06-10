@@ -524,7 +524,27 @@ function runPageScanners(pageUrl) {
 
   // 14. Sensitive File Paths + admin/debug surfaces (links, scripts, iframes, comments, and the page URL itself)
   try {
-    const patterns = /\/(\.git(\/|$)|\.svn\/|\.hg\/|\.env(\.|$|\/)|\.htaccess|\.htpasswd|\.DS_Store|\.idea\/|\.vscode\/|\.aws\/|\.npmrc|\.bak|\.old|\.orig|\.swp|id_rsa|id_dsa|Thumbs\.db|wp-admin|wp-config|phpmyadmin|phpinfo\.php|server-status|server-info|web\.config|composer\.lock|package-lock\.json|database\.sql|config\.(php|json|yml|yaml|inc\.php)|admin(istrator)?(\/|$|\?|\.php)|admin[-_]?(panel|cp|console)(\/|$|\?)|swagger(-ui)?(\/|$|\?)|api-docs(\/|$|\?)|openapi(\.json|\.yaml|\/|$)|graphql(\/|$|\?)|graphiql(\/|$|\?)|actuator(\/|$|\?)|jolokia(\/|$|\?)|console(\/|$|\?)|(private|internal|intranet)(\/|$|\?)|(backup|backups|bak|old|archive)(\/|$|\?|\.)|cgi-bin\/|\/bin(\/|$)|\/ws(\/|$)|\/sbin(\/|$)|\/etc(\/|$)|\/proc(\/|$)|\/tmp(\/|$)|\.svn\/wc\.db|\.git\/HEAD|\.git\/config|\.git\/index|core\.dump|crash\.log|dump\.sql|dump\.tar|robots\.txt\?|sitemap\.xml\?|wp-content\/(uploads|debug\.log)|node_modules\/|vendor\/|tests?\/|spec\/|fixtures?\/)/i;
+    // Pattern list groups (kept readable, joined with | for the regex engine):
+    //   VCS metadata        - .git/, .svn/, .hg/, .gitignore, .gitattributes,
+    //                         .gitmodules, .dockerignore
+    //   Env / token rc      - .env, .htaccess, .htpasswd, .npmrc, .yarnrc, .aws/
+    //   Container / infra   - Dockerfile, docker-compose.y(a)ml, Procfile,
+    //                         terraform.tfstate, .terraform/
+    //   TLS material        - *.pem, *.key, *.crt, *.p12, *.pfx, id_rsa, id_dsa
+    //   OS / IDE junk       - .DS_Store, Thumbs.db, .idea/, .vscode/
+    //   Backup / dump       - .bak, .old, .orig, .swp, core.dump, crash.log,
+    //                         dump.sql, dump.tar, *backup*.(zip|tar|sql|gz)
+    //   Build / lock files  - web.config, composer.lock, package-lock.json,
+    //                         Gemfile.lock, Pipfile.lock, yarn.lock,
+    //                         config.{php,json,yml,yaml,inc.php}
+    //   Admin / debug paths - wp-admin, wp-config, phpmyadmin, phpinfo.php,
+    //                         server-status, server-info, administrator,
+    //                         admin-panel/cp/console
+    //   API discovery       - swagger(-ui), api-docs, openapi.*, graphql,
+    //                         graphiql, actuator, jolokia
+    //   System paths        - cgi-bin, /bin, /sbin, /etc, /proc, /tmp
+    //   Catch-all           - private/, internal/, intranet/, (backup|archive)/
+    const patterns = /\/(\.git(\/|$)|\.gitignore|\.gitattributes|\.gitmodules|\.dockerignore|\.svn\/|\.hg\/|\.env(\.|$|\/)|\.htaccess|\.htpasswd|\.DS_Store|\.idea\/|\.vscode\/|\.aws\/|\.npmrc|\.yarnrc|\.terraform\/|Dockerfile($|\?)|docker-compose\.(yml|yaml)|Procfile($|\?)|terraform\.tfstate|\.bak|\.old|\.orig|\.swp|id_rsa|id_dsa|.+\.(pem|key|crt|p12|pfx)($|\?)|Thumbs\.db|wp-admin|wp-config|phpmyadmin|phpinfo\.php|server-status|server-info|web\.config|composer\.lock|package-lock\.json|Gemfile\.lock|Pipfile\.lock|yarn\.lock|database\.sql|config\.(php|json|yml|yaml|inc\.php)|admin(istrator)?(\/|$|\?|\.php)|admin[-_]?(panel|cp|console)(\/|$|\?)|swagger(-ui)?(\/|$|\?)|api-docs(\/|$|\?)|openapi(\.json|\.yaml|\/|$)|graphql(\/|$|\?)|graphiql(\/|$|\?)|actuator(\/|$|\?)|jolokia(\/|$|\?)|console(\/|$|\?)|(private|internal|intranet)(\/|$|\?)|(backup|backups|bak|old|archive)(\/|$|\?|\.)|.*(backup|dump)\.(zip|tar|tar\.gz|tgz|sql|gz)($|\?)|cgi-bin\/|\/bin(\/|$)|\/ws(\/|$)|\/sbin(\/|$)|\/etc(\/|$)|\/proc(\/|$)|\/tmp(\/|$)|\.svn\/wc\.db|\.git\/HEAD|\.git\/config|\.git\/index|core\.dump|crash\.log|dump\.sql|dump\.tar|robots\.txt\?|sitemap\.xml\?|wp-content\/(uploads|debug\.log)|node_modules\/|vendor\/|tests?\/|spec\/|fixtures?\/)/i;
     const urls = new Set();
     if (pageUrl) urls.add(pageUrl);
     document.querySelectorAll('a[href], link[href], script[src], img[src], iframe[src], source[src]').forEach(el => {
