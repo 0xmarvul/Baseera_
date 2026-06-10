@@ -342,12 +342,36 @@ function runPageScanners(pageUrl) {
         .map(el => el.getAttribute('src') || '')
         .join('\n');
       const dangerousContext = inlineScripts + '\n' + handlerText + '\n' + jsHrefs + '\n' + srcAttrs;
+      // High-confidence: URL param value lands inside an executable
+      // context. This IS active XSS surface, flag at High.
       for (const v of values) {
         if (dangerousContext.indexOf(v) !== -1) {
           addVuln('Reflected XSS', 'High', 'URL parameter value lands inside a dangerous context (inline script / event handler / javascript: URL / src attribute) without encoding.', pageUrl, 'HTML-encode user input before inserting into the DOM. Never echo URL parameters into <script> blocks, event-handler attributes, or src attributes without strict sanitisation.');
           break;
         }
       }
+      // Lower-confidence: URL param value appears in the rendered body
+      // text. Could be a legitimate echo (search results header) OR an
+      // XSS sink waiting for an attacker payload. PortSwigger's "Reflected
+      // XSS into HTML context with nothing encoded" lab matches exactly
+      // this pattern. Flag at Medium so users investigate but the page
+      // doesn't get spammed with high-severity alerts on every search
+      // results page they visit.
+      try {
+        const bodyText = document.body?.innerText || '';
+        for (const v of values) {
+          if (v.length >= 8 && bodyText.indexOf(v) !== -1) {
+            addVuln(
+              'Reflected Input in Page',
+              'Medium',
+              'A URL parameter value is reflected into the page body. If the page does not HTML-encode this value, an attacker can inject script tags via a crafted URL (classic reflected XSS).',
+              pageUrl,
+              'Confirm the value is HTML-encoded before insertion. Test by replacing the parameter with <script>alert(1)</script> in a safe environment - if it executes, you have reflected XSS. Use textContent or a templating library that auto-escapes.'
+            );
+            break;
+          }
+        }
+      } catch (e) {}
     }
   } catch (e) {}
 

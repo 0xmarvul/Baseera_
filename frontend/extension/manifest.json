@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Baseera Security Scanner",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Passive web security scanner — detects XSS, SQL injection, leaked API keys, missing headers, and 24 more vulnerabilities.",
   "author": "Marwan Khodair",
   "homepage_url": "https://0xmarvul.github.io/Baseera/",
