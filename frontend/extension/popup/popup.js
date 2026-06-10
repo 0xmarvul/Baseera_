@@ -309,15 +309,30 @@ function runPageScanners(pageUrl) {
   // 1. XSS - dangerous patterns, javascript: URL, iframe srcdoc, reflected-parameter
   try {
     const scripts = document.querySelectorAll('script:not([src])');
-    const dangerousPatterns = /eval\s*\(|innerHTML\s*=|document\.write\s*\(|javascript:/i;
+    // Expanded patterns:
+    //   eval(...), Function(...)                - dynamic code execution
+    //   innerHTML = ..., outerHTML = ...        - HTML sink (incl. template literals)
+    //   insertAdjacentHTML(...)                 - modern HTML sink, same risk as innerHTML
+    //   document.write(...)                     - legacy HTML sink
+    //   dangerouslySetInnerHTML                 - React's escape hatch, almost always smelly
+    //   javascript:                             - URI scheme that executes code
+    //   .html(...) / .append(...) / .prepend(...) - jQuery HTML sinks (when html-coerced)
+    const dangerousPatterns = /\beval\s*\(|\bFunction\s*\(\s*["'`]|innerHTML\s*=|outerHTML\s*=|insertAdjacentHTML\s*\(|document\.write\s*\(|dangerouslySetInnerHTML|javascript:|(?:\$|jQuery)\([^)]*\)\.(?:html|append|prepend|after|before|replaceWith)\s*\(/i;
     scripts.forEach(s => {
       if (dangerousPatterns.test(s.textContent)) {
-        addVuln('XSS', 'Medium', 'Potentially unsafe inline JavaScript patterns detected (eval/innerHTML/document.write). This is a code-smell, not a confirmed XSS — review manually.', pageUrl, 'Avoid eval(), use textContent instead of innerHTML, and remove document.write().');
+        addVuln('XSS', 'Medium', 'Potentially unsafe inline JavaScript patterns detected (eval/innerHTML/insertAdjacentHTML/document.write/dangerouslySetInnerHTML/jQuery .html()). This is a code-smell, not a confirmed XSS - review manually.', pageUrl, 'Avoid eval() and Function(). Use textContent instead of innerHTML. Replace jQuery .html(x) with .text(x). For React, escape user input rather than using dangerouslySetInnerHTML.');
       }
     });
     const jsUrls = document.querySelectorAll('a[href^="javascript:" i], form[action^="javascript:" i]');
     if (jsUrls.length > 0) {
       addVuln('XSS', 'Critical', `Found ${jsUrls.length} element(s) using javascript: URLs (href/action).`, pageUrl, 'Avoid javascript: URLs. Bind click/submit handlers via addEventListener.');
+    }
+    // data:text/html URLs in src attributes are an HTML injection vector
+    // very similar to iframe srcdoc - the data: payload renders as HTML
+    // inside the embedding context.
+    const dataHtmlSrcs = document.querySelectorAll('iframe[src^="data:text/html" i], embed[src^="data:text/html" i], object[data^="data:text/html" i]');
+    if (dataHtmlSrcs.length > 0) {
+      addVuln('XSS', 'High', `Found ${dataHtmlSrcs.length} element(s) loading data:text/html URLs. The data: payload is rendered as HTML in the embedding context, same risk as srcdoc.`, pageUrl, 'Avoid data:text/html in iframe/embed/object src. Serve the embedded content from a real same-origin URL or use sandbox attributes.');
     }
     if (document.querySelectorAll('iframe[srcdoc]').length > 0) {
       addVuln('XSS', 'High', 'iframe with srcdoc attribute detected (inline HTML injection surface).', pageUrl, 'Avoid srcdoc with untrusted content; sandbox iframes with restrictive attributes.');
@@ -341,7 +356,13 @@ function runPageScanners(pageUrl) {
       const srcAttrs = Array.from(document.querySelectorAll('img[src], iframe[src], script[src]'))
         .map(el => el.getAttribute('src') || '')
         .join('\n');
-      const dangerousContext = inlineScripts + '\n' + handlerText + '\n' + jsHrefs + '\n' + srcAttrs;
+      // Canonical link tag attribute also accepts unencoded reflection
+      // and is then used by search-engine crawlers + bots; URL params
+      // landing here are a real SEO + open-redirect surface.
+      const canonicalHrefs = Array.from(document.querySelectorAll('link[rel*="canonical" i][href], link[rel*="alternate" i][href]'))
+        .map(el => el.getAttribute('href') || '')
+        .join('\n');
+      const dangerousContext = inlineScripts + '\n' + handlerText + '\n' + jsHrefs + '\n' + srcAttrs + '\n' + canonicalHrefs;
       // High-confidence: URL param value lands inside an executable
       // context. This IS active XSS surface, flag at High.
       for (const v of values) {
@@ -653,32 +674,129 @@ function runPageScanners(pageUrl) {
   } catch (e) {}
 
   // 22. DOM-based XSS Sinks (source → sink in inline scripts)
+  //
+  // Sources are values an attacker can influence via the URL or referrer
+  // headers: location.hash, location.search, location.href, document.URL,
+  // document.referrer, window.name, plus the hashchange event itself
+  // (which exposes location.hash without an obvious `location.` reference
+  // in the handler body).
+  //
+  // Sinks are grouped so the SAME source can taint multiple sink kinds
+  // and the user gets the most accurate finding instead of "DOM XSS"
+  // for everything:
+  //   - HTML sinks       -> DOM-based XSS  (Critical/High)
+  //   - Code-exec sinks  -> DOM-based XSS
+  //   - jQuery sinks     -> DOM-based XSS  (huge legacy footprint)
+  //   - Navigation sinks -> DOM-based XSS (renamed Open Redirect inside
+  //                                        the description so users see why)
+  //   - Cookie sinks     -> DOM-based XSS (renamed Cookie Manipulation
+  //                                        inside the description)
   try {
-    const sourceRe = /\b(location\.(hash|search|href)|document\.(URL|documentURI|referrer)|window\.name)\b/;
-    const sinkRe = /\b(innerHTML|outerHTML)\s*=|document\.write\s*\(|\beval\s*\(|setTimeout\s*\(\s*["'`]|setInterval\s*\(\s*["'`]|\bFunction\s*\(/;
     const scripts = document.querySelectorAll('script:not([src])');
-    let hits = 0;
+
+    // Combined source pattern. hashchange listeners are an implicit source -
+    // even if the handler body doesn't say `location.hash`, the lab pattern
+    // is: addEventListener('hashchange', fn) where fn writes location.hash
+    // into a sink. We treat the listener registration itself as a "source
+    // is present" signal.
+    const sourceRe = /\b(location\.(hash|search|href|pathname)|document\.(URL|documentURI|referrer|baseURI)|window\.name)\b|addEventListener\s*\(\s*["'`]hashchange["'`]/;
+
+    // HTML sinks: anything that renders a string as HTML.
+    const htmlSinkRe = /\b(innerHTML|outerHTML)\s*=|insertAdjacentHTML\s*\(|document\.write(?:ln)?\s*\(|dangerouslySetInnerHTML/;
+
+    // Code-exec sinks: anything that runs a string as JavaScript.
+    const codeSinkRe = /\beval\s*\(|setTimeout\s*\(\s*["'`]|setInterval\s*\(\s*["'`]|\bFunction\s*\(\s*["'`]/;
+
+    // jQuery DOM-XSS sinks. Covers .html(), .append(), .prepend(), .after(),
+    // .before(), .replaceWith(), .attr('href'|'src', ...), .prop('href', ...).
+    // The selector-itself pattern $(`...${x}...`) is the PortSwigger
+    // hashchange lab - we catch that too with a template literal inside $().
+    const jquerySinkRe = /(?:\$|jQuery)\s*\(\s*[`][^`]*\$\{|(?:\$|jQuery)\([^)]*\)\.(?:html|append|prepend|after|before|replaceWith)\s*\(|(?:\$|jQuery)\([^)]*\)\.(?:attr|prop)\s*\(\s*["'`](?:href|src|action|formaction)["'`]/;
+
+    // Navigation sinks - DOM-based open redirect. The attacker controls
+    // where the browser goes next.
+    const navSinkRe = /\blocation\s*=|\blocation\.(href|assign|replace)\s*=|\blocation\.(assign|replace)\s*\(|\bwindow\.location\s*=|\bwindow\.open\s*\(/;
+
+    // Cookie sinks - attacker can set arbitrary cookies via URL params.
+    const cookieSinkRe = /\bdocument\.cookie\s*=/;
+
+    let htmlHits = 0, codeHits = 0, jqueryHits = 0, navHits = 0, cookieHits = 0;
+
     scripts.forEach(s => {
       const code = s.textContent || '';
-      if (sourceRe.test(code) && sinkRe.test(code)) hits++;
+      if (!sourceRe.test(code)) return;
+      if (htmlSinkRe.test(code))   htmlHits++;
+      if (codeSinkRe.test(code))   codeHits++;
+      if (jquerySinkRe.test(code)) jqueryHits++;
+      if (navSinkRe.test(code))    navHits++;
+      if (cookieSinkRe.test(code)) cookieHits++;
     });
-    if (hits > 0) {
-      addVuln('DOM-based XSS', 'High', `${hits} inline script(s) pipe an untrusted source (location/referrer/window.name) into a dangerous sink.`, pageUrl, 'Treat location.*, document.referrer, and window.name as untrusted. Sanitize before rendering; prefer textContent and safe DOM APIs.');
+
+    if (htmlHits > 0 || codeHits > 0 || jqueryHits > 0) {
+      const total = htmlHits + codeHits + jqueryHits;
+      const sinkTypes = [
+        htmlHits   > 0 ? 'HTML sinks (innerHTML/document.write/insertAdjacentHTML/dangerouslySetInnerHTML)' : null,
+        codeHits   > 0 ? 'code-exec sinks (eval/Function/string setTimeout)' : null,
+        jqueryHits > 0 ? 'jQuery sinks (.html/.append/.attr(href)/$(template))' : null,
+      ].filter(Boolean).join(', ');
+      addVuln('DOM-based XSS', 'High', `${total} inline script(s) pipe an untrusted source (location.*, document.referrer, window.name, or a hashchange event) into ${sinkTypes}. An attacker controlling the URL can inject HTML or JavaScript.`, pageUrl, 'Treat location.*, document.referrer, hashchange events, and window.name as untrusted. Use textContent instead of innerHTML; never pass user input to eval/Function/setTimeout-string/setInterval-string; for jQuery, replace .html(x) with .text(x). Sanitize via DOMPurify if HTML rendering is unavoidable.');
+    }
+
+    if (navHits > 0) {
+      addVuln('DOM-based XSS', 'High', `${navHits} inline script(s) assign an untrusted URL source (location.*, document.referrer, or window.name) into a navigation sink (location, window.location, window.open). This is a DOM-based open-redirect surface and may also enable javascript:-URL XSS.`, pageUrl, 'Validate redirect targets against an allow-list before assigning to location/window.open. Reject any value starting with "javascript:", "data:", or that does not match a known same-origin path.');
+    }
+
+    if (cookieHits > 0) {
+      addVuln('DOM-based XSS', 'High', `${cookieHits} inline script(s) write a value derived from location/referrer/window.name into document.cookie. An attacker controlling the URL can set arbitrary cookies, including overriding session cookies (cookie manipulation / fixation).`, pageUrl, 'Never derive cookie values from URL fragments or query parameters. Set cookies server-side with HttpOnly + Secure + SameSite, and use a fixed allow-list of cookie names that client code is permitted to write.');
     }
   } catch (e) {}
 
   // 23. Insecure postMessage (listener without origin check)
+  //
+  // The base case is "page registers a message listener without checking
+  // event.origin". On top of that we now flag two specific exploitable
+  // chains - PortSwigger's "DOM XSS via web messages" and "via web messages
+  // + JSON.parse" labs - where the message data flows straight into a
+  // dangerous sink. Both still report under "Insecure postMessage" so the
+  // Bugs page stays tidy, but the description tells the user the chain.
   try {
     const listenerRe = /addEventListener\s*\(\s*["'`]message["'`]/;
-    const originRe = /\b(e|ev|evt|event|msg)\.origin\b/;
+    const originRe   = /\b(e|ev|evt|event|msg)\.origin\b/;
+    // Sinks downstream of the message event:
+    //   HTML  = innerHTML / outerHTML / document.write / insertAdjacentHTML
+    //   Nav   = location = / location.href = / window.open(
+    //   Code  = eval / Function / string-setTimeout / setInterval
+    const sinkRe = /\b(innerHTML|outerHTML)\s*=|document\.write\s*\(|insertAdjacentHTML\s*\(|\blocation\s*=|\blocation\.(href|assign|replace)\s*=|\bwindow\.open\s*\(|\beval\s*\(|\bFunction\s*\(\s*["'`]|setTimeout\s*\(\s*["'`]|setInterval\s*\(\s*["'`]/;
+    // JSON.parse on the message data is a strong signal of the
+    // "messages + JSON.parse" pattern even when the sink is in a
+    // helper function we can't follow.
+    const jsonParseRe = /JSON\.parse\s*\(\s*(?:e|ev|evt|event|msg)\.data\b/;
+
     const scripts = document.querySelectorAll('script:not([src])');
-    let hits = 0;
+    let noOriginHits = 0;
+    let sinkChainHits = 0;
+    let jsonParseHits = 0;
+
     scripts.forEach(s => {
       const code = s.textContent || '';
-      if (listenerRe.test(code) && !originRe.test(code)) hits++;
+      if (!listenerRe.test(code)) return;
+      const hasOriginCheck = originRe.test(code);
+      if (!hasOriginCheck) noOriginHits++;
+      // Sink chain is interesting EVEN when origin is checked - origin
+      // checks can be weak (startsWith / includes / regex bypass), so
+      // having a dangerous sink downstream is worth surfacing on its own.
+      if (sinkRe.test(code))      sinkChainHits++;
+      if (jsonParseRe.test(code)) jsonParseHits++;
     });
-    if (hits > 0) {
-      addVuln('Insecure postMessage', 'High', `${hits} 'message' event listener(s) do not verify event.origin.`, pageUrl, 'Always validate event.origin against an allow-list inside message handlers; never trust the payload blindly.');
+
+    if (noOriginHits > 0) {
+      addVuln('Insecure postMessage', 'High', `${noOriginHits} 'message' event listener(s) do not verify event.origin. Any iframe (including attacker-controlled ones) can deliver crafted payloads.`, pageUrl, 'Always validate event.origin against an allow-list inside message handlers; never trust the payload blindly.');
+    }
+    if (sinkChainHits > 0) {
+      addVuln('Insecure postMessage', 'High', `${sinkChainHits} 'message' event listener(s) feed event.data into a dangerous sink (innerHTML / document.write / location / eval / window.open / setTimeout-string). This is the PortSwigger "DOM XSS via web messages" pattern - an attacker who can postMessage to this window can inject HTML, navigate the user, or execute code.`, pageUrl, 'Never write event.data into HTML / location / eval sinks without strict validation. Validate event.origin AND sanitize the payload (treat it as untrusted user input). For HTML rendering, use textContent or a sanitiser like DOMPurify.');
+    }
+    if (jsonParseHits > 0) {
+      addVuln('Insecure postMessage', 'High', `${jsonParseHits} 'message' event listener(s) call JSON.parse(event.data) and then use the result. The PortSwigger "DOM XSS via web messages + JSON.parse" pattern: parsed properties are dispatched to sinks (e.g. innerHTML = parsed.html) - an attacker postMessage'ing a crafted JSON object controls those properties.`, pageUrl, 'Validate event.origin BEFORE JSON.parse, then validate every property of the parsed object against an expected shape. Never trust property names or values to be safe just because the JSON parsed successfully.');
     }
   } catch (e) {}
 
