@@ -1846,6 +1846,7 @@ line-height: 24px; /* 150% */
 .bugs-empty-cta:hover {
   transform: translateY(-1px);
   box-shadow: 0 14px 28px -10px rgba(0, 217, 165, 0.7);
+  text-decoration: none;
 }
 .bugs-empty-cta:active {
   transform: translateY(0);
