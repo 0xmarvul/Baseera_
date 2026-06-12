@@ -3,6 +3,7 @@ import "../index.css";
 import "../landing-modern.css";
 import { useScrollReveal, useCountUp } from "../hooks/useScrollReveal";
 import { Link } from 'react-router-dom'
+import { WEBSTORE_LINK_PROPS } from "../utils/extensionLink";
 
 import {
   ShieldCheck,
@@ -115,10 +116,10 @@ function Home() {
               </div>
 
               <div className="Download-Extension">
-                <button className="btn-download">
+                <a className="btn-download" {...WEBSTORE_LINK_PROPS}>
                   <Download size={18} strokeWidth={2.2} />
-                  <span>Download Extension</span>
-                </button>
+                  <span>Get the Extension</span>
+                </a>
               </div>
 
               <div className="footer-text">

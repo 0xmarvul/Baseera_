@@ -6,6 +6,7 @@ import "../bugs.css";
 import icon3 from "../assets/calander.png";
 import apiClient from "../api/axios.config";
 import { showToast } from "../components/Toast";
+import { WEBSTORE_LINK_PROPS } from "../utils/extensionLink";
 
 function Bugs() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -868,6 +869,9 @@ function Bugs() {
             any website with one click. Once you scan a page, your findings
             will show up here with severity ratings and fix recommendations.
           </p>
+          <a className="bugs-empty-cta" {...WEBSTORE_LINK_PROPS}>
+            Get the Extension
+          </a>
         </div>
       )}
       {!loading && filteredScans.length === 0 && scans.length > 0 && (
