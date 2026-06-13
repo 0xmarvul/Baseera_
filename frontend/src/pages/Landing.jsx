@@ -131,7 +131,7 @@ function Landing() {
               <div className="footer-text">
                 <h6>
                   <Info size={16} strokeWidth={2.2} className="lucide-muted" />
-                  Works on Chrome, Edge, and other Chromium browsers
+                  Works on Chrome and Brave
                 </h6>
               </div>
             </div>
