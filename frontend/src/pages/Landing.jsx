@@ -124,7 +124,7 @@ function Landing() {
               <div className="Download-Extension">
                 <a className="btn-download" {...WEBSTORE_LINK_PROPS}>
                   <Download size={18} strokeWidth={2.2} />
-                  <span>Get the Extension</span>
+                  <span>Download Extension</span>
                 </a>
               </div>
 
