@@ -1,3 +1,9 @@
+# Presentation files (graduation submission - kept locally only)
+*.pptx
+*.pptm
+*.ppt
+*.keynote
+
 # .NET build output
 backend/**/bin/
 backend/**/obj/

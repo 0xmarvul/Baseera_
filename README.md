@@ -11,7 +11,7 @@
 <p align="center">
   <a href="https://0xmarvul.github.io/Baseera/privacy-policy.html">Privacy Policy</a>
   ·
-  <a href="docs/CHROME_WEBSTORE_SUBMISSION.md">Chrome Web Store</a>
+  <a href="https://chromewebstore.google.com/search/Baseera%20Security%20Scanner">Chrome Web Store</a>
   ·
   <a href="mailto:0xbaseera@gmail.com">Contact</a>
 </p>
