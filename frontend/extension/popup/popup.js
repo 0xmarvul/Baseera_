@@ -234,32 +234,37 @@ function displayResults(results) {
   document.getElementById('count-medium').textContent = medium;
   document.getElementById('count-low').textContent = low;
 
-  // Build results center content
+  // Real risk score (0-100), computed by the page scanners from the actual
+  // findings. Rendered as a ring, matching the website dashboard + landing.
+  const rs = Math.max(0, Math.min(100, results.riskScore || 0));
+  const clean = vulns.length === 0;
+  const C = 213.6; // 2*pi*34
+  const off = C * (1 - rs / 100);
+  const [col, label] = clean ? ['#00D9A5', 'No risk detected']
+    : rs >= 70 ? ['#FF5C6B', 'Critical risk']
+    : rs >= 40 ? ['#FF9840', 'High risk']
+    : rs >= 20 ? ['#FFD60A', 'Elevated risk']
+    : ['#00D4FF', 'Low risk'];
+
+  const ring = `
+    <div class="risk-ring">
+      <svg width="104" height="104" viewBox="0 0 104 104">
+        <circle cx="52" cy="52" r="34" fill="none" stroke="#16273f" stroke-width="8"/>
+        <circle cx="52" cy="52" r="34" fill="none" stroke="${col}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${off}" transform="rotate(-90 52 52)"/>
+      </svg>
+      <div class="risk-ring-v"><b style="color:${col}">${rs}</b><span>/ 100 risk</span></div>
+    </div>`;
+
   const resultsCenter = document.getElementById('results-center');
-  if (vulns.length === 0) {
-    resultsCenter.innerHTML = `
-      <div class="result-icon">
-        <svg width="52" height="52" viewBox="0 0 24 24" fill="none">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#00BC7D" stroke-width="1.5" fill="rgba(0,188,125,0.08)"/>
-          <path d="M9 12l2 2 4-4" stroke="#00BC7D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <p class="result-main-title">Scan Completed</p>
-      <p class="result-main-subtitle--safe">No security issues found!</p>
-    `;
+  resultsCenter.innerHTML = `
+    ${ring}
+    <p class="result-main-title">${clean ? 'All clear' : 'Scan Completed'}</p>
+    <p class="${clean ? 'result-main-subtitle--safe' : 'result-main-subtitle'}" style="color:${col}">${label}</p>
+  `;
+
+  if (clean) {
     document.getElementById('vuln-summary-card').style.display = 'none';
   } else {
-    resultsCenter.innerHTML = `
-      <div class="result-icon">
-        <svg width="52" height="52" viewBox="0 0 24 24" fill="none">
-          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="#f59e0b" stroke-width="1.5" fill="rgba(245,158,11,0.1)"/>
-          <line x1="12" y1="9" x2="12" y2="13" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
-          <line x1="12" y1="17" x2="12.01" y2="17" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </div>
-      <p class="result-main-title">Scan Completed</p>
-      <p class="result-main-subtitle">Some security concerns found</p>
-    `;
     document.getElementById('vuln-summary-card').style.display = 'block';
     autoSaveResults();
   }

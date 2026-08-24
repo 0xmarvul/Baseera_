@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 import { clearUserSession } from '../utils/session';
+import { WEBSTORE_LINK_PROPS } from '../utils/extensionLink';
 import '../dashboard.css';
 
 const NAV = [
@@ -45,10 +46,10 @@ export default function DashboardLayout({ children, badge }) {
           );
         })}
         <div className="spacer"></div>
-        <div className="ext-status">
-          <span className="dot"></span>
-          <div><div className="es-t">Extension connected</div><div className="es-s">Baseera v1.0.1</div></div>
-        </div>
+        <a className="ext-cta" {...WEBSTORE_LINK_PROPS}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+          <div><div className="es-t">Scan a page</div><div className="es-s">Get the Baseera extension</div></div>
+        </a>
         <div className="user">
           <div className="avatar">{avatar ? <img src={avatar} alt={name} /> : initial}</div>
           <div>

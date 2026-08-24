@@ -88,13 +88,13 @@ export default function MarketingPage({ authed = false }) {
               <div className="chat-online"><span className="pip" style={{ width: '5px', height: '5px', boxShadow: 'none' }}></span>Online</div>
             </div>
             <div className="chat-body">
-              <div className="bubble user">What does "Reflected XSS on /profile?name=" actually mean?</div>
-              <div className="bubble ai"><strong>Reflected XSS</strong> means the page echoes back whatever you put in the <code>?name=</code> parameter without sanitizing it. A crafted link like <code>/profile?name=&lt;script&gt;steal()&lt;/script&gt;</code> runs in the victim's browser.<br /><br /><strong>Fix:</strong> Encode all user input before inserting into HTML. In React this is automatic with JSX, but audit any <code>dangerouslySetInnerHTML</code> calls.</div>
-              <div className="bubble user">How serious is this?</div>
-              <div className="bubble ai"><strong>High severity.</strong> It can lead to session hijacking, credential theft, and malware distribution, all without the victim doing anything except clicking a link.</div>
+              <div className="bubble user">What is SQL Injection?</div>
+              <div className="bubble ai"><strong>SQL Injection</strong> (Severity: Critical)<br /><br />SQL Injection occurs when an attacker inserts or manipulates SQL queries via user-supplied input, allowing them to read, modify, or delete database data.<br /><br /><strong>Fix:</strong> Use parameterized queries / prepared statements. Apply input validation and least-privilege DB accounts. Use an ORM and avoid dynamic SQL concatenation.</div>
+              <div className="bubble user">Tell me about CSRF</div>
+              <div className="bubble ai"><strong>Cross-Site Request Forgery (CSRF)</strong> (Severity: Medium)<br /><br />CSRF tricks authenticated users into submitting unwanted requests, allowing attackers to perform actions on their behalf.<br /><br /><strong>Fix:</strong> Use CSRF tokens on all state-changing forms. Validate the Origin/Referer header. Use the SameSite=Strict or SameSite=Lax cookie attribute.</div>
             </div>
             <div className="chat-input-row">
-              <span className="chat-placeholder">Ask about any finding…</span>
+              <span className="chat-placeholder">Ask about any vulnerability…</span>
               <button className="chat-send" aria-label="send"><svg viewBox="0 0 24 24" fill="none" stroke="#04121A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z" /></svg></button>
             </div>
           </div>
