@@ -1,0 +1,48 @@
+/* Admin panel (inside the dashboard shell). Reuses .card / .search / .fpill /
+   .topbar from dashboard.css; these are the admin-specific bits. */
+.admin .atiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px}
+.admin .atile{background:linear-gradient(180deg,var(--s1),#0a1424);border:1px solid var(--line);border-radius:14px;padding:20px}
+.admin .atile .tl{font-family:var(--fm);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--t2);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.admin .atile .tl svg{width:14px;height:14px;color:var(--teal)}
+.admin .atile .num{font-family:var(--fd);font-size:34px;font-weight:700;letter-spacing:-1px;line-height:1}
+.admin .atile .sub{font-family:var(--fm);font-size:11px;color:var(--t3);margin-top:7px}
+
+.admin .asev-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.admin .asev{border-radius:12px;padding:16px;border:1px solid transparent;position:relative;overflow:hidden}
+.admin .asev::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.admin .asev.c{background:rgba(255,92,107,.07);border-color:rgba(255,92,107,.2)}.admin .asev.c::before{background:var(--crit)}
+.admin .asev.h{background:rgba(255,152,64,.07);border-color:rgba(255,152,64,.2)}.admin .asev.h::before{background:var(--high)}
+.admin .asev.m{background:rgba(255,214,10,.06);border-color:rgba(255,214,10,.18)}.admin .asev.m::before{background:var(--med)}
+.admin .asev.l{background:rgba(0,212,255,.06);border-color:rgba(0,212,255,.18)}.admin .asev.l::before{background:var(--low)}
+.admin .asev .lbl{font-family:var(--fm);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--t2);margin-bottom:8px}
+.admin .asev .n{font-family:var(--fd);font-size:30px;font-weight:700;letter-spacing:-1px}
+.admin .asev.c .n{color:var(--crit)}.admin .asev.h .n{color:var(--high)}.admin .asev.m .n{color:var(--med)}.admin .asev.l .n{color:var(--low)}
+
+.admin .tbl-wrap{overflow-x:auto}
+.admin table{width:100%;border-collapse:collapse;min-width:860px}
+.admin thead th{font-family:var(--fm);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);text-align:left;padding:0 14px 12px;border-bottom:1px solid var(--line);font-weight:500}
+.admin tbody td{padding:13px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.admin .u-cell{display:flex;align-items:center;gap:10px}
+.admin .u-av{width:32px;height:32px;border-radius:50%;background:var(--s3);border:1px solid var(--line);display:grid;place-items:center;font-family:var(--fd);font-weight:700;font-size:12px;color:var(--teal);flex-shrink:0;text-transform:uppercase}
+.admin .u-name{font-weight:600}
+.admin .u-mono{font-family:var(--fm);font-size:12px;color:var(--t2)}
+.admin .arole{font-family:var(--fm);font-size:10px;padding:2px 8px;border-radius:20px;background:rgba(143,161,184,.1);color:var(--t2);border:1px solid rgba(143,161,184,.2)}
+.admin .arole.admin{background:rgba(155,111,255,.12);color:var(--violet);border-color:rgba(155,111,255,.3)}
+.admin .apill{display:inline-flex;align-items:center;gap:6px;font-family:var(--fm);font-size:11px;padding:4px 10px;border-radius:20px;cursor:pointer;border:1px solid transparent}
+.admin .apill .d{width:6px;height:6px;border-radius:50%}
+.admin .apill.yes{background:rgba(0,217,165,.1);color:var(--teal);border-color:rgba(0,217,165,.25)}.admin .apill.yes .d{background:var(--teal)}
+.admin .apill.no{background:rgba(255,152,64,.1);color:var(--high);border-color:rgba(255,152,64,.25)}.admin .apill.no .d{background:var(--high)}
+.admin .apill.active{background:rgba(0,217,165,.1);color:var(--teal);border-color:rgba(0,217,165,.25)}.admin .apill.active .d{background:var(--teal)}
+.admin .apill.inactive{background:rgba(90,110,134,.12);color:var(--t3);border-color:rgba(90,110,134,.25)}.admin .apill.inactive .d{background:var(--t3)}
+.admin .aacts{display:flex;gap:6px;justify-content:flex-end;position:relative}
+.admin .aact{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--s1);color:var(--t2);display:grid;place-items:center;cursor:pointer}
+.admin .aact:hover{color:var(--t1);border-color:rgba(255,255,255,.2)}
+.admin .aact svg{width:15px;height:15px}
+.admin .amenu{position:absolute;right:0;top:calc(100% + 6px);background:var(--s2);border:1px solid var(--line);border-radius:11px;padding:6px;box-shadow:0 20px 50px -16px rgba(0,0,0,.7);z-index:40;min-width:200px}
+.admin .amenu button{display:flex;align-items:center;gap:9px;width:100%;background:none;border:none;color:var(--t1);font-size:13px;padding:9px 11px;border-radius:8px;cursor:pointer;font-family:var(--fb);text-align:left}
+.admin .amenu button:hover{background:rgba(255,255,255,.05)}
+.admin .amenu button.danger{color:var(--crit)}
+.admin .amenu button svg{width:14px;height:14px}
+.admin .amenu .sep{height:1px;background:var(--line);margin:5px 0}
+.admin .aloading{color:var(--t3);font-family:var(--fm);font-size:13px;padding:24px 4px}
+@media(max-width:1000px){.admin .atiles,.admin .asev-grid{grid-template-columns:1fr 1fr}}

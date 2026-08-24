@@ -24,6 +24,7 @@ import AccountVerification from './pages/AccountVerification';
 import VerifyEmail from './pages/VerifyEmail';
 import ConfirmEmailChange from './pages/ConfirmEmailChange';
 import AIChatbot from './pages/AIChatbot';
+import Admin from './pages/Admin';
 import NotFound from './pages/NotFound';
 import { ToastHost } from './components/Toast';
 
@@ -101,6 +102,11 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        <Route path="/admin" element={
+            <ProtectedRoute>
+              <Admin />
+            </ProtectedRoute>
+          } />
 
         {/* Catch-all: any unknown route renders the branded 404 page. */}
         <Route path="*" element={<NotFound />} />

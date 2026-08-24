@@ -44,6 +44,7 @@ public static class ServiceExtensions
         services.AddScoped<IScansService, ScansService>();
         services.AddScoped<IReportsService, ReportsService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
 
         return services;

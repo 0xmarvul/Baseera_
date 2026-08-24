@@ -39,6 +39,7 @@ function Login() {
                             username,
                             email: profileRes.data.email,
                             fullName: `${profileRes.data.firstName || ''} ${profileRes.data.lastName || ''}`.trim() || username,
+                            role: profileRes.data.role || 'User',
                         }));
                         if (profileRes.data.profileImageUrl) {
                             localStorage.setItem("userAvatar", profileRes.data.profileImageUrl);

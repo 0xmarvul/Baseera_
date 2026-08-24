@@ -17,6 +17,7 @@ export default function DashboardLayout({ children, badge }) {
   const navigate = useNavigate();
   const name = localStorage.getItem('baseeraUserName') || 'User';
   const initial = name.charAt(0) || 'U';
+  const isAdmin = (() => { try { return JSON.parse(localStorage.getItem('baseeraUserData') || '{}').role === 'Admin'; } catch { return false; } })();
   const [avatar, setAvatar] = useState(localStorage.getItem('userAvatar') || null);
 
   // Keep the sidebar avatar in sync when it changes on the Profile page
@@ -45,6 +46,12 @@ export default function DashboardLayout({ children, badge }) {
             </Link>
           );
         })}
+        {isAdmin && (
+          <Link to="/admin" className={`nav-item ${pathname === '/admin' ? 'active' : ''}`}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 4v5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V7z" /><path d="M9 12l2 2 4-4" /></svg>
+            Admin
+          </Link>
+        )}
         <div className="spacer"></div>
         <a className="ext-cta" {...WEBSTORE_LINK_PROPS}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>

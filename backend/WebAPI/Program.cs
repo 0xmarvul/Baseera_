@@ -114,6 +114,22 @@ using (var scope = app.Services.CreateScope())
         var db = scope.ServiceProvider.GetRequiredService<Infrastructure.Data.SecurityScannerDbContext>();
         db.Database.Migrate();
         Log.Information("Database migrations applied successfully");
+
+        // Promote the configured admin email to the Admin role on every boot.
+        // Set env var Admin__Email=you@example.com on the host. Idempotent, and
+        // there is no public endpoint to grant admin — only this server-side config.
+        var adminEmail = app.Configuration["Admin:Email"];
+        if (!string.IsNullOrWhiteSpace(adminEmail))
+        {
+            var userRepo = scope.ServiceProvider.GetRequiredService<Core.Interfaces.IUserRepository>();
+            var adminUser = userRepo.GetByEmailAsync(adminEmail.Trim()).GetAwaiter().GetResult();
+            if (adminUser != null && adminUser.Role != "Admin")
+            {
+                adminUser.Role = "Admin";
+                userRepo.UpdateAsync(adminUser).GetAwaiter().GetResult();
+                Log.Information("Promoted {Email} to Admin role", adminEmail);
+            }
+        }
     }
     catch (Exception ex)
     {
