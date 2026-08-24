@@ -25,7 +25,7 @@ public static class EmailTemplate
 
     private const string LogoUrl = "https://0xmarvul.github.io/Baseera/assets/logo.png";
     private const string PrivacyUrl = "https://0xmarvul.github.io/Baseera/privacy-policy.html";
-    private const string SupportEmail = "0xbaseera@gmail.com";
+    private const string SupportEmail = "baseera.security@gmail.com";
 
     private const string FontStack =
         "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";

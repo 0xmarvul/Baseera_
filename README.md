@@ -13,7 +13,7 @@
   ·
   <a href="https://chromewebstore.google.com/search/Baseera%20Security%20Scanner">Chrome Web Store</a>
   ·
-  <a href="mailto:0xbaseera@gmail.com">Contact</a>
+  <a href="mailto:baseera.security@gmail.com">Contact</a>
 </p>
 
 ---

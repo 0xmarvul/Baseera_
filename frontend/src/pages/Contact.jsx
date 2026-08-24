@@ -74,7 +74,7 @@ function Contact() {
           <div>
             <div className="info-card">
               <div className="ii"><i className="fa-solid fa-envelope"></i></div>
-              <div><h3>Email</h3><p>0xbaseera@gmail.com</p></div>
+              <div><h3>Email</h3><p>baseera.security@gmail.com</p></div>
             </div>
             <div className="info-card">
               <div className="ii"><i className="fa-solid fa-location-dot"></i></div>

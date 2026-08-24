@@ -30,7 +30,7 @@ export default function MarketingFooter() {
         <div>
           <h6>Contact</h6>
           <ul>
-            <li><a href="mailto:0xbaseera@gmail.com">0xbaseera@gmail.com</a></li>
+            <li><a href="mailto:baseera.security@gmail.com">baseera.security@gmail.com</a></li>
             <li>Cairo, Egypt</li>
           </ul>
         </div>

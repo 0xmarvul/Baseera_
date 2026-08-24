@@ -32,7 +32,7 @@ public class SmtpEmailSender : IEmailSender
             Credentials = new NetworkCredential(_user, _appPassword)
         };
 
-        // Use MailAddress with display name so inboxes show "Baseera <0xbaseera@gmail.com>"
+        // Use MailAddress with display name so inboxes show "Baseera <baseera.security@gmail.com>"
         // instead of the bare email address.
         var fromAddress = new MailAddress(_from, _fromName);
         using var message = new MailMessage

@@ -59,7 +59,7 @@ public class ContactController : ControllerBase
 <p><strong>Message:</strong></p>
 <p>{System.Net.WebUtility.HtmlEncode(dto.Message).Replace("\n", "<br/>")}</p>";
 
-            await _emailSender.SendAsync("0xbaseera@gmail.com", $"[Contact] {dto.Subject}", htmlBody, ct);
+            await _emailSender.SendAsync("baseera.security@gmail.com", $"[Contact] {dto.Subject}", htmlBody, ct);
 
             return Ok(new ResponseDto<string>
             {
