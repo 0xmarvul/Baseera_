@@ -12,4 +12,12 @@ public class AdminUserDto
     public bool IsEmailVerified { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
+
+    // Per-user scan activity, aggregated from their scans.
+    public int ScanCount { get; set; }
+    public int TotalFindings { get; set; }
+    public int Critical { get; set; }
+    public int High { get; set; }
+    public int Medium { get; set; }
+    public int Low { get; set; }
 }

@@ -53,7 +53,31 @@ public class AdminService : IAdminService
     public async Task<List<AdminUserDto>> GetUsersAsync()
     {
         var users = await _userRepository.GetAllAsync();
-        return users.OrderByDescending(u => u.CreatedAt).Select(Map).ToList();
+        var scans = await _scanRepository.GetAllAsync();
+        var byUser = scans.GroupBy(s => s.UserId).ToDictionary(g => g.Key, g => new
+        {
+            ScanCount = g.Count(),
+            Total = g.Sum(s => s.TotalVulns),
+            Crit = g.Sum(s => s.CriticalCount),
+            High = g.Sum(s => s.HighCount),
+            Med = g.Sum(s => s.MediumCount),
+            Low = g.Sum(s => s.LowCount),
+        });
+
+        return users.OrderByDescending(u => u.CreatedAt).Select(u =>
+        {
+            var dto = Map(u);
+            if (byUser.TryGetValue(u.Id, out var agg))
+            {
+                dto.ScanCount = agg.ScanCount;
+                dto.TotalFindings = agg.Total;
+                dto.Critical = agg.Crit;
+                dto.High = agg.High;
+                dto.Medium = agg.Med;
+                dto.Low = agg.Low;
+            }
+            return dto;
+        }).ToList();
     }
 
     public async Task<AdminUserDto> UpdateUserAsync(int id, AdminUpdateUserDto dto)
@@ -99,7 +123,16 @@ public class AdminService : IAdminService
 
         user.UpdatedAt = DateTime.UtcNow;
         await _userRepository.UpdateAsync(user);
-        return Map(user);
+
+        var result = Map(user);
+        var userScans = (await _scanRepository.GetByUserIdAsync(user.Id)).ToList();
+        result.ScanCount = userScans.Count;
+        result.TotalFindings = userScans.Sum(s => s.TotalVulns);
+        result.Critical = userScans.Sum(s => s.CriticalCount);
+        result.High = userScans.Sum(s => s.HighCount);
+        result.Medium = userScans.Sum(s => s.MediumCount);
+        result.Low = userScans.Sum(s => s.LowCount);
+        return result;
     }
 
     public async Task ResetUserPasswordAsync(int id, CancellationToken ct = default)

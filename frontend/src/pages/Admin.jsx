@@ -117,7 +117,7 @@ function Admin() {
               </div>
               <div className="tbl-wrap">
                 <table>
-                  <thead><tr><th>User</th><th>Username</th><th>Email</th><th>Country</th><th>Role</th><th>Verified</th><th>Status</th><th style={{ textAlign: 'right' }}>Actions</th></tr></thead>
+                  <thead><tr><th>User</th><th>Username</th><th>Email</th><th>Country</th><th>Findings</th><th>Role</th><th>Verified</th><th>Status</th><th style={{ textAlign: 'right' }}>Actions</th></tr></thead>
                   <tbody>
                     {shown.map((u) => (
                       <tr key={u.id}>
@@ -125,6 +125,17 @@ function Admin() {
                         <td className="u-mono">@{u.username}</td>
                         <td className="u-mono">{u.email}</td>
                         <td className="u-country">{u.country || '—'}</td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontFamily: 'var(--fd)', fontWeight: 700, color: 'var(--accent)' }}>{u.totalFindings || 0}</span>
+                            <div className="scan-mini">
+                              {u.critical > 0 && <span className="mchip c">{u.critical}C</span>}
+                              {u.high > 0 && <span className="mchip h">{u.high}H</span>}
+                              {u.medium > 0 && <span className="mchip m">{u.medium}M</span>}
+                              {u.low > 0 && <span className="mchip l">{u.low}L</span>}
+                            </div>
+                          </div>
+                        </td>
                         <td><span className={`arole ${u.role === 'Admin' ? 'admin' : ''}`}>{u.role}</span></td>
                         <td><span className={`apill ${u.isEmailVerified ? 'yes' : 'no'}`} onClick={() => patch(u.id, { isEmailVerified: !u.isEmailVerified })}><span className="d"></span>{u.isEmailVerified ? 'Verified' : 'Pending'}</span></td>
                         <td><span className={`apill ${u.isActive ? 'active' : 'inactive'}`} onClick={() => patch(u.id, { isActive: !u.isActive })}><span className="d"></span>{u.isActive ? 'Active' : 'Inactive'}</span></td>
@@ -146,7 +157,7 @@ function Admin() {
                         </td>
                       </tr>
                     ))}
-                    {shown.length === 0 && <tr><td colSpan="8" style={{ color: 'var(--t3)', fontFamily: 'var(--fm)', fontSize: 13 }}>No users match your filters.</td></tr>}
+                    {shown.length === 0 && <tr><td colSpan="9" style={{ color: 'var(--t3)', fontFamily: 'var(--fm)', fontSize: 13 }}>No users match your filters.</td></tr>}
                   </tbody>
                 </table>
               </div>
