@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Logo from './Logo';
-import { clearUserSession } from '../utils/session';
+import { clearUserSession, isAdmin as checkAdmin } from '../utils/session';
 import { WEBSTORE_LINK_PROPS } from '../utils/extensionLink';
 import '../dashboard.css';
 
@@ -17,7 +17,7 @@ export default function DashboardLayout({ children, badge }) {
   const navigate = useNavigate();
   const name = localStorage.getItem('baseeraUserName') || 'User';
   const initial = name.charAt(0) || 'U';
-  const isAdmin = (() => { try { return JSON.parse(localStorage.getItem('baseeraUserData') || '{}').role === 'Admin'; } catch { return false; } })();
+  const isAdmin = checkAdmin();
   const [avatar, setAvatar] = useState(localStorage.getItem('userAvatar') || null);
 
   // Keep the sidebar avatar in sync when it changes on the Profile page

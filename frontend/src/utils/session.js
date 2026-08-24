@@ -24,3 +24,16 @@ export const clearUserSession = () => {
     try { localStorage.removeItem(key); } catch { /* private mode */ }
   }
 };
+
+// Reads the role straight from the JWT (the source of truth the backend
+// signs), so it is correct even if the cached profile predates a promotion.
+export const getCurrentRole = () => {
+  try {
+    const t = localStorage.getItem('authToken');
+    if (!t) return 'User';
+    const payload = JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || payload.role || 'User';
+  } catch { return 'User'; }
+};
+
+export const isAdmin = () => getCurrentRole() === 'Admin';

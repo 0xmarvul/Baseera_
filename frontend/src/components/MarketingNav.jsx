@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Logo from './Logo';
 import { WEBSTORE_LINK_PROPS } from '../utils/extensionLink';
+import { isAdmin as checkAdmin } from '../utils/session';
 
 /**
  * Top navigation for the public / marketing pages (Home, About, Contact,
@@ -17,7 +18,7 @@ export default function MarketingNav() {
   useEffect(() => {
     setIsAuthed(!!localStorage.getItem('authToken'));
     setName(localStorage.getItem('baseeraUserName') || '');
-    try { setIsAdmin(JSON.parse(localStorage.getItem('baseeraUserData') || '{}').role === 'Admin'); } catch { setIsAdmin(false); }
+    setIsAdmin(checkAdmin());
   }, []);
 
   return (
@@ -32,8 +33,9 @@ export default function MarketingNav() {
         <li><Link to="/about">About</Link></li>
         <li><Link to="/contact">Contact</Link></li>
         <li><a {...WEBSTORE_LINK_PROPS}>Extension</a></li>
-        {isAuthed && <li><Link to="/bugs">Dashboard</Link></li>}
-        {isAuthed && isAdmin && <li><Link to="/admin" style={{ color: 'var(--violet)' }}>Admin</Link></li>}
+        {isAuthed && (isAdmin
+          ? <li><Link to="/admin" style={{ color: 'var(--violet)' }}>Admin</Link></li>
+          : <li><Link to="/bugs">Dashboard</Link></li>)}
       </ul>
 
       <div className="mnav-actions">
