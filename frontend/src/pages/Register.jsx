@@ -1,24 +1,14 @@
 import React, { useState } from "react";
-import "../index.css";
-import "../components/Navbar"
-import "../about.css";
-import "../contact.css";
-import "../register.css";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from '../api/authApi';
-import Navbar from "../components/Navbar";
+import MarketingNav from "../components/MarketingNav";
+import Logo from "../components/Logo";
 import PasswordChecklist from "../components/PasswordChecklist";
 import { isPasswordValid, PASSWORD_ERROR_MESSAGE } from "../utils/passwordPolicy";
 import { COUNTRIES } from "../utils/countries";
 import { clearUserSession } from "../utils/session";
 
-
-
-import icon1 from "../assets/logo.png";
-
-
-
-function Register(){
+function Register() {
     const navigate = useNavigate();
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
@@ -29,7 +19,6 @@ function Register(){
     const handleSubmit = async (event) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
-
         const firstName = (formData.get("fullName") || "").toString().trim();
         const lastName = (formData.get("lastName") || "").toString().trim();
         const username = (formData.get("username") || "").toString().trim();
@@ -37,48 +26,18 @@ function Register(){
         const password = (formData.get("password") || "").toString().trim();
         const country = (formData.get("country") || "").toString().trim();
 
-        setError("");
-        setSuccess("");
-        setLoading(true);
+        setError(""); setSuccess(""); setLoading(true);
 
-        if (!firstName || !lastName || !username || !email || !password || !country) {
-            setError("Please fill all fields");
-            setLoading(false);
-            return;
-        }
-
-        if (!email.includes("@")) {
-            setError("Invalid email address");
-            setLoading(false);
-            return;
-        }
-
-        if (!isPasswordValid(password)) {
-            setError(PASSWORD_ERROR_MESSAGE);
-            setLoading(false);
-            return;
-        }
+        if (!firstName || !lastName || !username || !email || !password || !country) { setError("Please fill all fields"); setLoading(false); return; }
+        if (!email.includes("@")) { setError("Invalid email address"); setLoading(false); return; }
+        if (!isPasswordValid(password)) { setError(PASSWORD_ERROR_MESSAGE); setLoading(false); return; }
 
         try {
-            const response = await authApi.register({
-                email,
-                username,
-                firstName,
-                lastName,
-                password,
-                country
-            });
-
+            const response = await authApi.register({ email, username, firstName, lastName, password, country });
             if (response.success) {
-                // Wipe any leftover per-user data from a previous account
-                // on this browser (chat history, avatar, profile cache).
-                // Otherwise a new signup on a shared device would inherit
-                // the previous user's chats.
                 clearUserSession();
-                setSuccess("Account created successfully! Please check your email to verify your account.");
-                setTimeout(() => {
-                    navigate("/account-verification", { state: { email } });
-                }, 1500);
+                setSuccess("Account created. Check your email to verify your account.");
+                setTimeout(() => navigate("/account-verification", { state: { email } }), 1500);
             } else {
                 setError(response.message || "Registration failed");
             }
@@ -90,146 +49,77 @@ function Register(){
         }
     };
 
-    return(
+    return (
         <>
-           <Navbar/>
-        <section className="register-container">
-            <div className="register-box">
-          <div className="logo-icon">
-                                <img src={icon1} alt="login icon" width={30} height={30} />
-                                <h2 className="logo-title">Baseera</h2>
-            </div>
-              <div className="register-info">
-                    <div className="register-title">
-                        <h1 className="create">Create Your Account</h1>
-                        <p className="register-description">
-                            Join Baseera to secure your digital presence
-                        </p>
-                </div>
-                </div>
-                    {error && <div className="form-error-msg">{error}</div>}
-                    {success && <div className="form-success-msg">{success}</div>}
-                <form className="register-form" onSubmit={handleSubmit}>
-                    {/* Row 1: First / Last name */}
-                    <div className="register-form-row">
-                        <div className="register-form-col">
-                            <h5 className="register-form-title">First Name</h5>
-                            <div className="register-input-wrapper">
-                                <i className="fa-solid fa-user register-input-icon"></i>
-                                <input className="register-form-input" name="fullName" type="text" placeholder="Mark" disabled={loading} required autoComplete="given-name" />
-                            </div>
-                        </div>
-                        <div className="register-form-col">
-                            <h5 className="register-form-title">Last Name</h5>
-                            <div className="register-input-wrapper">
-                                <i className="fa-solid fa-user register-input-icon"></i>
-                                <input className="register-form-input" name="lastName" type="text" placeholder="Johnson" disabled={loading} required autoComplete="family-name" />
-                            </div>
-                        </div>
-                    </div>
+            <MarketingNav />
+            <section className="auth-wrap">
+                <div className="auth-card wide">
+                    <div className="auth-badge"><Logo size={30} pupil="#0c1526" /></div>
+                    <h1 className="auth-title">Create your account</h1>
+                    <p className="auth-sub">Join Baseera to track and fix what you find</p>
 
-                    {/* Row 2: Email / Username */}
-                    <div className="register-form-row">
-                        <div className="register-form-col">
-                            <h5 className="register-form-title">Email Address</h5>
-                            <div className="register-input-wrapper">
-                                <i className="fa-solid fa-envelope register-input-icon"></i>
-                                {/* autoComplete="email username" pairs the
-                                    password manager's saved identifier with
-                                    the email field (since login uses email,
-                                    not the @handle). Without this, browsers
-                                    pick the closest text field to password
-                                    — the username — and store the wrong
-                                    identifier, then mis-autofill on login. */}
-                                <input className="register-form-input" name="email" type="email" placeholder="Mark.johnson@baseera.security" disabled={loading} required autoComplete="email username" />
+                    {error && <div className="b-error">{error}</div>}
+                    {success && <div className="b-success">{success}</div>}
+
+                    <form onSubmit={handleSubmit}>
+                        <div className="b-row2">
+                            <div className="b-field">
+                                <label className="b-label">First name</label>
+                                <div className="b-input-wrap"><i className="fa-solid fa-user ico-l"></i>
+                                    <input className="b-input has-l" name="fullName" type="text" placeholder="Mark" disabled={loading} required autoComplete="given-name" /></div>
+                            </div>
+                            <div className="b-field">
+                                <label className="b-label">Last name</label>
+                                <div className="b-input-wrap"><i className="fa-solid fa-user ico-l"></i>
+                                    <input className="b-input has-l" name="lastName" type="text" placeholder="Johnson" disabled={loading} required autoComplete="family-name" /></div>
                             </div>
                         </div>
-                        <div className="register-form-col">
-                            <h5 className="register-form-title">Username</h5>
-                            <div className="register-input-wrapper">
-                                <i className="fa-solid fa-at register-input-icon"></i>
-                                {/* autoComplete="nickname" tells the browser
-                                    this is a display handle, not a login
-                                    identifier — so it pairs the password
-                                    with the email field above instead of
-                                    this one. "off" alone is ignored by
-                                    Chrome on signup-shaped forms. */}
-                                <input className="register-form-input" name="username" type="text" placeholder="Markjohnson" disabled={loading} required autoComplete="nickname" />
+
+                        <div className="b-row2">
+                            <div className="b-field">
+                                <label className="b-label">Email address</label>
+                                <div className="b-input-wrap"><i className="fa-solid fa-envelope ico-l"></i>
+                                    <input className="b-input has-l" name="email" type="email" placeholder="you@example.com" disabled={loading} required autoComplete="email username" /></div>
+                            </div>
+                            <div className="b-field">
+                                <label className="b-label">Username</label>
+                                <div className="b-input-wrap"><i className="fa-solid fa-at ico-l"></i>
+                                    <input className="b-input has-l" name="username" type="text" placeholder="markjohnson" disabled={loading} required autoComplete="nickname" /></div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Row 3: Password (full width so the checklist below has
-                        room). Swapped position with Country per design, but the
-                        widths stay the same as the original layout. */}
-                    <h5 className="register-form-title">Password</h5>
-                    <div className="register-input-wrapper">
-                        <i className="fa-solid fa-lock register-input-icon"></i>
-                        <input
-                            className="register-form-input has-right-icon"
-                            name="password"
-                            type={showPassword ? "text" : "password"}
-                            placeholder=" ********"
-                            disabled={loading}
-                            value={passwordValue}
-                            onChange={(e) => setPasswordValue(e.target.value)}
-                            required
-                            autoComplete="new-password"
-                        />
-                        <i
-                            className={showPassword ? "fa-solid fa-eye-slash register-input-icon-right" : "fa-solid fa-eye register-input-icon-right"}
-                            onClick={() => setShowPassword((prev) => !prev)}
-                            role="button"
-                            aria-label={showPassword ? "Hide password" : "Show password"}
-                            tabIndex={0}
-                            onKeyDown={(event) => {
-                                if (event.key === "Enter" || event.key === " ") {
-                                    event.preventDefault();
-                                    setShowPassword((prev) => !prev);
-                                }
-                            }}
-                        ></i>
-                    </div>
-                    <PasswordChecklist password={passwordValue} />
+                        <div className="b-field">
+                            <label className="b-label">Password</label>
+                            <div className="b-input-wrap"><i className="fa-solid fa-lock ico-l"></i>
+                                <input className="b-input has-l has-r" name="password" type={showPassword ? "text" : "password"} placeholder="Create a strong password"
+                                    disabled={loading} value={passwordValue} onChange={(e) => setPasswordValue(e.target.value)} required autoComplete="new-password" />
+                                <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'} ico-r`} role="button" tabIndex={0}
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                    onClick={() => setShowPassword((p) => !p)}
+                                    onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setShowPassword((p) => !p); } }}></i>
+                            </div>
+                            <PasswordChecklist password={passwordValue} />
+                        </div>
 
-                    {/* Row 4: Country (half-width left, spacer right). Fixed
-                        select list so we capture clean names, not free-text. */}
-                    <div className="register-form-row">
-                        <div className="register-form-col">
-                            <h5 className="register-form-title">Country</h5>
-                            <div className="register-input-wrapper">
-                                <i className="fa-solid fa-globe register-input-icon"></i>
-                                <select className="register-form-input" name="country" disabled={loading} required defaultValue="">
+                        <div className="b-field">
+                            <label className="b-label">Country</label>
+                            <div className="b-input-wrap"><i className="fa-solid fa-globe ico-l"></i>
+                                <select className="b-input has-l" name="country" disabled={loading} required defaultValue="">
                                     <option value="" disabled>Select your country</option>
-                                    {COUNTRIES.map((c) => (
-                                        <option key={c} value={c}>{c}</option>
-                                    ))}
+                                    {COUNTRIES.map((c) => (<option key={c} value={c}>{c}</option>))}
                                 </select>
                             </div>
                         </div>
-                        <div className="register-form-col" aria-hidden="true" />
-                    </div>
 
-                            <div className="btn">
-                                <button type="submit" disabled={loading}>
-                                    {loading ? "Creating Account..." : "Create Account"}
-                                </button>
-                                </div>
-
+                        <button className="b-btn b-btn--primary b-btn--block b-btn--lg" type="submit" disabled={loading}>
+                            {loading ? "Creating account…" : "Create account"}
+                        </button>
                     </form>
-                    <div className="login-2">
-                        <p className="login-p"> Already have an account?</p>
-                        <Link className="link" to="/Login">
-                    Login Here.
-                    </Link>
-                    </div>
-        </div>
-        
-    </section>
-    
-        </>            
-    );
 
+                    <p className="auth-alt">Already have an account? <Link className="b-link" to="/login">Sign in</Link></p>
+                </div>
+            </section>
+        </>
+    );
 }
 export default Register;
-

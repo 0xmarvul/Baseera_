@@ -70,5 +70,17 @@ export const authApi = {
   // POST /api/auth/resend-verification
   resendVerification: async (email) => {
     return apiClient.post('/auth/resend-verification', { email });
+  },
+
+  // POST /api/users/request-email-change (authenticated)
+  // Stores the new email as pending and emails a confirmation link to it.
+  // The account email only changes once that link is confirmed.
+  requestEmailChange: async (newEmail) => {
+    return apiClient.post('/users/request-email-change', { newEmail });
+  },
+
+  // POST /api/auth/confirm-email-change
+  confirmEmailChange: async (token) => {
+    return apiClient.post('/auth/confirm-email-change', { token });
   }
 };

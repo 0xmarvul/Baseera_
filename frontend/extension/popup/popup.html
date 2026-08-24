@@ -11,7 +11,13 @@
     <!-- Header -->
     <div class="popup-header">
       <div class="header-brand">
-        <img src="../icons/logo.png" alt="Baseera" class="brand-logo" />
+        <svg class="brand-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Baseera">
+          <defs><linearGradient id="bLogo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#00E6B0"/><stop offset="1" stop-color="#00B4D8"/></linearGradient></defs>
+          <path d="M11 50 Q50 19 89 50 Q50 81 11 50 Z" fill="none" stroke="url(#bLogo)" stroke-width="6" stroke-linejoin="round"/>
+          <circle cx="50" cy="50" r="15" fill="url(#bLogo)"/>
+          <circle cx="50" cy="50" r="6.5" fill="#0a1526"/>
+          <circle cx="45.5" cy="45.5" r="3" fill="#EAF1FA" opacity="0.85"/>
+        </svg>
         <span class="brand-name">Baseera</span>
       </div>
       <div class="header-right">
@@ -49,8 +55,8 @@
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="url(#shieldGrad)" stroke-width="1.5" fill="rgba(0,188,125,0.08)"/>
             <defs>
               <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#00BC7D"/>
-                <stop offset="100%" style="stop-color:#00B8DB"/>
+                <stop offset="0%" style="stop-color:#00E6B0"/>
+                <stop offset="100%" style="stop-color:#00B4D8"/>
               </linearGradient>
             </defs>
           </svg>
@@ -88,8 +94,8 @@
             <circle cx="12" cy="12" r="2" fill="url(#scanGrad)"/>
             <defs>
               <linearGradient id="scanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#00BC7D"/>
-                <stop offset="100%" style="stop-color:#00B8DB"/>
+                <stop offset="0%" style="stop-color:#00E6B0"/>
+                <stop offset="100%" style="stop-color:#00B4D8"/>
               </linearGradient>
             </defs>
           </svg>
@@ -166,7 +172,7 @@
     <!-- Footer -->
     <div class="popup-footer">
       <a href="#" id="open-app-link" class="footer-dashboard-link">Open Dashboard</a>
-      <div class="footer-brand-text">Designed for Chrome, Firefox, Edge &amp; Safari</div>
+      <div class="footer-brand-text">100% client-side · nothing leaves your browser</div>
     </div>
   </div>
 

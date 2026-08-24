@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using Application.Validators;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -372,6 +373,81 @@ public class AuthService : IAuthService
             .Replace('+', '-')
             .Replace('/', '_')
             .TrimEnd('=');
+    }
+
+    // ── Verified email change ──────────────────────────────────────────
+    // Step 1: user (authenticated) requests a new email. We validate it,
+    // stash it as PendingEmail with a hashed token, and email a confirmation
+    // link to the NEW address. The account's real Email is not touched yet.
+    public async Task RequestEmailChangeAsync(int userId, string newEmail, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(newEmail))
+            throw new InvalidOperationException("Please enter a new email address.");
+        newEmail = newEmail.Trim();
+        if (!Regex.IsMatch(newEmail, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+            throw new InvalidOperationException("Please enter a valid email address.");
+
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+            throw new InvalidOperationException("User not found.");
+        if (string.Equals(newEmail, user.Email, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("That is already your email address.");
+
+        var existing = await _userRepository.GetByEmailAsync(newEmail);
+        if (existing != null && existing.Id != userId)
+            throw new InvalidOperationException("That email address is already in use.");
+
+        var rawToken = GenerateSecureToken();
+        var now = DateTime.UtcNow;
+        user.PendingEmail = newEmail;
+        user.EmailChangeTokenHash = Sha256Hex(rawToken);
+        user.EmailChangeTokenExpiresAtUtc = now.AddHours(24);
+        user.UpdatedAt = now;
+        await _userRepository.UpdateAsync(user);
+
+        var frontendBase = _configuration["Frontend:BaseUrl"] ?? "http://localhost:5173";
+        var link = $"{frontendBase}/confirm-email-change?token={Uri.EscapeDataString(rawToken)}";
+        var htmlBody = EmailTemplate.Build(
+            heading: "Confirm your new email",
+            greetingName: user.FirstName,
+            body: $"You asked to change your Baseera email to {newEmail}. Confirm below to make the change. Until you confirm, your current email stays active.",
+            buttonLabel: "Confirm new email",
+            buttonUrl: link,
+            footnote: "This link expires in 24 hours. If you did not request this, you can ignore this email and your address will not change."
+        );
+
+        // Fire-and-forget SMTP, same pattern as verification/reset emails.
+        SendEmailInBackground(newEmail, "Confirm your new email – Baseera", htmlBody, "email-change");
+    }
+
+    // Step 2: the confirmation link is opened. If the token is valid and not
+    // expired, swap the account's email to the pending one and clear the
+    // pending state. An expired/invalid token is a no-op error.
+    public async Task ConfirmEmailChangeAsync(string token, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            throw new UnauthorizedAccessException("This confirmation link is invalid.");
+
+        var tokenHash = Sha256Hex(token.Trim());
+        var user = await _userRepository.GetByEmailChangeTokenHashAsync(tokenHash);
+        if (user == null
+            || string.IsNullOrEmpty(user.PendingEmail)
+            || user.EmailChangeTokenExpiresAtUtc == null
+            || user.EmailChangeTokenExpiresAtUtc < DateTime.UtcNow)
+            throw new UnauthorizedAccessException("This confirmation link is invalid or has expired.");
+
+        // Re-check the target address is still free (someone could have taken it).
+        var existing = await _userRepository.GetByEmailAsync(user.PendingEmail);
+        if (existing != null && existing.Id != user.Id)
+            throw new InvalidOperationException("That email address is now in use by another account.");
+
+        user.Email = user.PendingEmail;
+        user.IsEmailVerified = true;
+        user.PendingEmail = null;
+        user.EmailChangeTokenHash = null;
+        user.EmailChangeTokenExpiresAtUtc = null;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _userRepository.UpdateAsync(user);
     }
 
     private static string Sha256Hex(string input)

@@ -34,6 +34,7 @@ public class UserService : IUserService
             Country = user.Country,
             Bio = user.Bio,
             ProfileImageUrl = user.ProfileImageUrl,
+            PendingEmail = user.PendingEmail,
             CreatedAt = user.CreatedAt
         };
     }
@@ -60,21 +61,10 @@ public class UserService : IUserService
             }
         }
 
-        if (dto.Email != null)
-        {
-            if (string.IsNullOrWhiteSpace(dto.Email))
-                throw new InvalidOperationException("Email cannot be empty");
-            var trimmedEmail = dto.Email.Trim();
-            if (trimmedEmail != user.Email)
-            {
-                if (!Regex.IsMatch(trimmedEmail, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-                    throw new InvalidOperationException("Invalid email format");
-                var existingByEmail = await _userRepository.GetByEmailAsync(trimmedEmail);
-                if (existingByEmail != null && existingByEmail.Id != userId)
-                    throw new InvalidOperationException("Email is already in use");
-                user.Email = trimmedEmail;
-            }
-        }
+        // Email is intentionally NOT changed here. Email changes go through the
+        // verified flow (AuthService.RequestEmailChangeAsync / ConfirmEmailChangeAsync)
+        // so the address only updates after the new inbox confirms it. Any Email
+        // value in this payload is ignored on purpose.
 
         if (dto.FirstName != null)
         {
@@ -128,6 +118,7 @@ public class UserService : IUserService
             Country = user.Country,
             Bio = user.Bio,
             ProfileImageUrl = user.ProfileImageUrl,
+            PendingEmail = user.PendingEmail,
             CreatedAt = user.CreatedAt
         };
     }

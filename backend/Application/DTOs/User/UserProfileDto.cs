@@ -14,5 +14,8 @@ public class UserProfileDto
     public string? Country { get; set; }
     public string? Bio { get; set; }
     public string? ProfileImageUrl { get; set; }
+    // Set while a verified email change is pending confirmation on the new
+    // address. Null when there is no pending change.
+    public string? PendingEmail { get; set; }
     public DateTime CreatedAt { get; set; }
 }

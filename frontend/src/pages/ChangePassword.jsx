@@ -1,140 +1,70 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import LandingNavbar from "../components/LandingNavbar";
+import DashboardLayout from "../components/DashboardLayout";
 import PasswordChecklist from "../components/PasswordChecklist";
 import { authApi } from "../api/authApi";
 import { isPasswordValid, PASSWORD_ERROR_MESSAGE } from "../utils/passwordPolicy";
-import "../index.css";
-import "../login.css";
-import "../change-password.css";
+import "../account.css";
 
-function ChangePassword() {
-    const [currentPassword, setCurrentPassword] = useState("");
-    const [newPassword, setNewPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
-    const [showCurrent, setShowCurrent] = useState(false);
-    const [showNew, setShowNew] = useState(false);
-    const [showConfirm, setShowConfirm] = useState(false);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
-    const navigate = useNavigate();
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError("");
-        setSuccess("");
-
-        if (!currentPassword || !newPassword || !confirmPassword) {
-            setError("Please fill in all fields");
-            return;
-        }
-
-        if (!isPasswordValid(newPassword)) {
-            setError(PASSWORD_ERROR_MESSAGE);
-            return;
-        }
-
-        if (newPassword !== confirmPassword) {
-            setError("Passwords do not match");
-            return;
-        }
-
-        try {
-            await authApi.changePassword(currentPassword, newPassword);
-            setSuccess("Password changed successfully!");
-            setTimeout(() => navigate("/profile"), 1500);
-        } catch (err) {
-            setError(err.response?.data?.message || "Failed to change password. Please try again.");
-        }
-    };
-
-    return (
-        <>
-            <LandingNavbar />
-            <section className="change-password-section">
-                <div className="change-password-box">
-                    <div className="change-password-icon">
-                        <i className="fa-solid fa-lock" style={{ color: "#ffffff", fontSize: "28px" }}></i>
-                    </div>
-                    <div className="change-password-title">
-                        <h1>Reset Your Password</h1>
-                        <p>Enter and confirm your new password below.</p>
-                    </div>
-                    {error && <div className="change-password-error">{error}</div>}
-                    {success && <div className="change-password-success">{success}</div>}
-                    <form className="change-password-form" onSubmit={handleSubmit}>
-                        <h5 className="change-password-form-title">Current Password</h5>
-                        <div className="change-password-input-wrapper">
-                            <i className="fa-solid fa-lock change-password-input-icon"></i>
-                            <input
-                                className="change-password-input"
-                                type={showCurrent ? "text" : "password"}
-                                placeholder="Enter your current password"
-                                value={currentPassword}
-                                onChange={(e) => setCurrentPassword(e.target.value)}
-                                autoComplete="current-password"
-                            />
-                            <button
-                                type="button"
-                                className="change-password-toggle-icon"
-                                onClick={() => setShowCurrent((v) => !v)}
-                                aria-label={showCurrent ? "Hide password" : "Show password"}
-                            >
-                                <i className={showCurrent ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"}></i>
-                            </button>
-                        </div>
-                        <h5 className="change-password-form-title">New Password</h5>
-                        <div className="change-password-input-wrapper">
-                            <i className="fa-solid fa-lock change-password-input-icon"></i>
-                            <input
-                                className="change-password-input"
-                                type={showNew ? "text" : "password"}
-                                placeholder="Enter your new password"
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                            />
-                            <button
-                                type="button"
-                                className="change-password-toggle-icon"
-                                onClick={() => setShowNew((v) => !v)}
-                                aria-label={showNew ? "Hide password" : "Show password"}
-                            >
-                                <i className={showNew ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"}></i>
-                            </button>
-                        </div>
-                        <PasswordChecklist password={newPassword} />
-                        <h5 className="change-password-form-title">Confirm New Password</h5>
-                        <div className="change-password-input-wrapper">
-                            <i className="fa-solid fa-lock change-password-input-icon"></i>
-                            <input
-                                className="change-password-input"
-                                type={showConfirm ? "text" : "password"}
-                                placeholder="Confirm your new password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                            />
-                            <button
-                                type="button"
-                                className="change-password-toggle-icon"
-                                onClick={() => setShowConfirm((v) => !v)}
-                                aria-label={showConfirm ? "Hide password" : "Show password"}
-                            >
-                                <i className={showConfirm ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"}></i>
-                            </button>
-                        </div>
-                        <button type="submit" className="btn-change-password-primary">
-                            Save New Password
-                        </button>
-                        <div className="change-password-back">
-                            <Link className="change-password-back-link" to="/profile">
-                                Back to Profile
-                            </Link>
-                        </div>
-                    </form>
-                </div>
-            </section>
-        </>
-    );
+function PwField({ label, value, onChange, show, setShow, autoComplete }) {
+  return (
+    <div className="b-field">
+      <label className="b-label">{label}</label>
+      <div className="b-input-wrap">
+        <i className="fa-solid fa-lock ico-l"></i>
+        <input className="b-input has-l has-r" type={show ? "text" : "password"} value={value} onChange={onChange} autoComplete={autoComplete} placeholder={label} />
+        <button type="button" className="pw-eye" onClick={() => setShow((v) => !v)} aria-label={show ? "Hide" : "Show"}><i className={show ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"}></i></button>
+      </div>
+    </div>
+  );
 }
 
+function ChangePassword() {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(""); setSuccess("");
+    if (!currentPassword || !newPassword || !confirmPassword) { setError("Please fill in all fields"); return; }
+    if (!isPasswordValid(newPassword)) { setError(PASSWORD_ERROR_MESSAGE); return; }
+    if (newPassword !== confirmPassword) { setError("Passwords do not match"); return; }
+    try {
+      await authApi.changePassword(currentPassword, newPassword);
+      setSuccess("Password changed successfully. Redirecting…");
+      setTimeout(() => navigate("/profile"), 1500);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to change password. Please try again.");
+    }
+  };
+
+  return (
+    <DashboardLayout>
+      <div className="acct-wrap">
+        <div className="acct-head"><h1>Change password</h1><p>Update the password you use to sign in.</p></div>
+        <div className="acct-card">
+          {error && <div className="b-error">{error}</div>}
+          {success && <div className="b-success">{success}</div>}
+          <form onSubmit={handleSubmit}>
+            <PwField label="Current password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} show={showCurrent} setShow={setShowCurrent} autoComplete="current-password" />
+            <PwField label="New password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} show={showNew} setShow={setShowNew} autoComplete="new-password" />
+            <PasswordChecklist password={newPassword} />
+            <PwField label="Confirm new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} show={showConfirm} setShow={setShowConfirm} autoComplete="new-password" />
+            <div className="acct-actions">
+              <button type="submit" className="b-btn b-btn--primary">Save new password</button>
+              <Link to="/profile" className="b-btn b-btn--ghost">Cancel</Link>
+            </div>
+          </form>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}
 export default ChangePassword;

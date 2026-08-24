@@ -133,6 +133,35 @@ public class UsersController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Request a verified email change. Emails a confirmation link to the NEW
+    /// address; the account email is only swapped once that link is confirmed.
+    /// </summary>
+    [HttpPost("request-email-change")]
+    public async Task<ActionResult<ResponseDto<object>>> RequestEmailChange([FromBody] RequestEmailChangeDto dto)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            await _authService.RequestEmailChangeAsync(userId, dto.NewEmail);
+
+            return Ok(new ResponseDto<object>
+            {
+                Success = true,
+                Message = "Confirmation link sent to your new email. Your current email stays active until you confirm."
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to request email change");
+            return BadRequest(new ResponseDto<object>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
     private int GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

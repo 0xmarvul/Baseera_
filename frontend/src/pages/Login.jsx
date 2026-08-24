@@ -1,21 +1,16 @@
 import React, { useState } from "react";
-import "../index.css";
-import "../about.css";
-import "../contact.css";
-import "../login.css";
 import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../api/authApi';
-import icon7 from "../assets/lock.png";
-import Navbar from "../components/Navbar";
+import MarketingNav from "../components/MarketingNav";
+import Logo from "../components/Logo";
 import { clearUserSession } from "../utils/session";
 
-function Login(){
+function Login() {
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
-
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -23,44 +18,25 @@ function Login(){
         setError("");
         setLoading(true);
 
-        if (!email || !password) {
-            setError("Please fill all fields");
-            setLoading(false);
-            return;
-        }
-
-        if (!email.includes("@")) {
-            setError("Invalid email address");
-            setLoading(false);
-            return;
-        }
+        if (!email || !password) { setError("Please fill all fields"); setLoading(false); return; }
+        if (!email.includes("@")) { setError("Invalid email address"); setLoading(false); return; }
 
         let username = email.split("@")[0];
 
         try {
             const response = await authApi.login({ email, password });
-
             if (response.success) {
-
-                // Defensive wipe: if a previous user logged out (or didn't),
-                // their per-user keys (chat history, avatar, profile cache)
-                // could still be in localStorage on this device. Clear them
-                // before we plant the new user's keys so chats can't leak
-                // across identities on a shared browser.
                 clearUserSession();
-
-                // ✅ Save token
                 const token = response.data;
                 localStorage.setItem("authToken", token);
 
-                // ✅ Fetch actual profile to get the real username
                 try {
                     const profileRes = await authApi.getProfile();
                     if (profileRes.success && profileRes.data) {
                         username = profileRes.data.username || email.split("@")[0];
                         localStorage.setItem("baseeraUserName", username);
                         localStorage.setItem("baseeraUserData", JSON.stringify({
-                            username: username,
+                            username,
                             email: profileRes.data.email,
                             fullName: `${profileRes.data.firstName || ''} ${profileRes.data.lastName || ''}`.trim() || username,
                         }));
@@ -70,43 +46,19 @@ function Login(){
                     }
                 } catch (err) {
                     console.error("Failed to fetch profile:", err);
-                    // Fallback: use email prefix
                     localStorage.setItem("baseeraUserName", username);
                 }
 
-                // ✅ Send token to Chrome Extension
-                // Notify extension about auth change
-                // Method 1: Direct external messaging (most reliable)
-                if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
-                    try {
-                        // Try to find the extension - the extension ID may vary
-                        // Use postMessage as primary since extension ID is dynamic
-                        window.postMessage({
-                            type: 'BASEERA_AUTH_UPDATE',
-                            token: response.data,
-                            email: email
-                        }, '*');
-                    } catch {
-                        // postMessage to extension is best-effort — backup path runs below regardless.
-                    }
-                }
-
-                // Method 2: postMessage for content script relay (backup)
-                window.postMessage({ type: 'BASEERA_AUTH_UPDATE', token: response.data, email: email }, '*');
+                // Relay auth to the Chrome extension (best-effort).
+                window.postMessage({ type: 'BASEERA_AUTH_UPDATE', token: response.data, email }, '*');
 
                 setError("");
-                // Delay navigation to allow content script to relay auth to extension
-                setTimeout(() => {
-                    navigate("/landing");
-                }, 200);
-
+                setTimeout(() => navigate("/landing"), 200);
             } else {
                 setError(response.message || "Login failed");
             }
-
         } catch (error) {
             console.error("Login error:", error);
-            // Rate-limited (429): show a friendlier countdown-style message
             if (error.response?.status === 429) {
                 const retryAfter = parseInt(error.response.headers?.["retry-after"] || "60", 10);
                 setError(`Too many login attempts. Try again in ${retryAfter}s.`);
@@ -118,9 +70,7 @@ function Login(){
                 setError(
                     <>
                         {errMsg}{" "}
-                        <Link className="link" to="/account-verification" state={{ email }}>
-                            Resend verification email
-                        </Link>
+                        <Link className="b-link" to="/account-verification" state={{ email }}>Resend verification email</Link>
                     </>
                 );
             } else {
@@ -131,96 +81,50 @@ function Login(){
         }
     };
 
-    return(
+    return (
         <>
-           <Navbar/>
-            <section className="login-section">
-                <div className="login-box">
-                <div className="login-icon">
-                    <img src={icon7} alt="login icon" width={30} height={30} />
-                </div>
-                <div className="login">
-                    <div className="login-title">
-                        <h1 className="welcome">Welcome Back</h1>
-                        <p className="login-description">
-                            Sign in to your account to continue
-                        </p>
-                    </div>
+            <MarketingNav />
+            <section className="auth-wrap">
+                <div className="auth-card">
+                    <div className="auth-badge"><Logo size={30} pupil="#0c1526" /></div>
+                    <h1 className="auth-title">Welcome back</h1>
+                    <p className="auth-sub">Sign in to your Baseera account to continue</p>
 
-                    {error && (
-                        <div className="form-error-msg">
-                            {error}
+                    {error && <div className="b-error">{error}</div>}
+
+                    <form onSubmit={handleSubmit}>
+                        <div className="b-field">
+                            <label className="b-label">Email address</label>
+                            <div className="b-input-wrap">
+                                <i className="fa-solid fa-envelope ico-l"></i>
+                                <input className="b-input has-l" type="email" placeholder="you@example.com"
+                                    value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} required autoComplete="email username" />
+                            </div>
                         </div>
-                    )}
 
-                <form className="login-form" onSubmit={handleSubmit}>
-                    <h5 className="login-form-title">
-                        Email Address
-                    </h5>
+                        <div className="b-field">
+                            <label className="b-label">Password</label>
+                            <div className="b-input-wrap">
+                                <i className="fa-solid fa-lock ico-l"></i>
+                                <input className="b-input has-l has-r" type={showPassword ? "text" : "password"} placeholder="Your password"
+                                    value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} required autoComplete="current-password" />
+                                <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'} ico-r`}
+                                    onClick={() => setShowPassword((p) => !p)} role="button" tabIndex={0}
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                    onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") setShowPassword((p) => !p); }}></i>
+                            </div>
+                        </div>
 
-                    <div className="login-input-wrapper">
-                        <i className="fa-solid fa-envelope login-input-icon-left"></i>
-                        <input
-                            className="login-form-input"
-                            type="email"
-                            placeholder=" Email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            disabled={loading}
-                            required
-                            autoComplete="email username"
-                        />
-                    </div>
+                        <div style={{ textAlign: 'right', marginBottom: '18px' }}>
+                            <Link className="b-link" to="/forget" style={{ fontSize: '13px' }}>Forgot password?</Link>
+                        </div>
 
-                    <h5 className="login-form-title">
-                        Password
-                    </h5>
+                        <button className="b-btn b-btn--primary b-btn--block b-btn--lg" type="submit" disabled={loading}>
+                            {loading ? "Signing in…" : "Sign in"}
+                        </button>
+                    </form>
 
-                    <div className="login-input-wrapper">
-                        <i className="fa-solid fa-lock login-input-icon-left"></i>
-                        <input
-                            className="login-form-input"
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            disabled={loading}
-                            required
-                            autoComplete="current-password"
-                        />
-                        <i
-                            className="fa-solid fa-eye login-input-icon-right"
-                            onClick={() => setShowPassword((prev) => !prev)}
-                            role="button"
-                            aria-label={showPassword ? "Hide password" : "Show password"}
-                            tabIndex={0}
-                            onKeyDown={(event) => {
-                                if (event.key === "Enter" || event.key === " ") {
-                                    setShowPassword((prev) => !prev);
-                                }
-                            }}
-                        ></i>
-                    </div>
-
-                    <div className="login-forgot-row">
-                        <Link className="login-forgot-link" to="/forget">
-                            Forgot password?
-                        </Link>
-                    </div>
-
-                    <button type="submit" disabled={loading}>
-                        {loading ? "Logging in..." : "Login"}
-                    </button>
-                </form>
-
-                <div className="register">
-                    <p className="register-p">Don't have an account? </p>
-                    <Link className="link" to="/register">
-                        Register Here.
-                    </Link>
-                </div>
-
-                </div>
+                    <p className="auth-alt">Don't have an account? <Link className="b-link" to="/register">Create one</Link></p>
                 </div>
             </section>
         </>

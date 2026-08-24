@@ -235,4 +235,47 @@ public class AuthController : ControllerBase
             });
         }
     }
+
+    [HttpPost("confirm-email-change")]
+    public async Task<ActionResult<ResponseDto<string>>> ConfirmEmailChange([FromBody] ConfirmEmailChangeDto dto, CancellationToken ct)
+    {
+        try
+        {
+            await _authService.ConfirmEmailChangeAsync(dto.Token, ct);
+            return Ok(new ResponseDto<string>
+            {
+                Success = true,
+                Message = "Your email has been updated.",
+                Data = null
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new ResponseDto<string>
+            {
+                Success = false,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ResponseDto<string>
+            {
+                Success = false,
+                Message = ex.Message,
+                Data = null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Confirm email change failed");
+            return BadRequest(new ResponseDto<string>
+            {
+                Success = false,
+                Message = "An error occurred. Please try again.",
+                Data = null
+            });
+        }
+    }
 }

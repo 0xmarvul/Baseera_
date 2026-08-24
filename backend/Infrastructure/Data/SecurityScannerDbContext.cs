@@ -37,7 +37,11 @@ public class SecurityScannerDbContext : DbContext
             entity.Property(e => e.Gender).HasMaxLength(20);
             entity.Property(e => e.Country).HasMaxLength(100);
             entity.Property(e => e.Bio).HasMaxLength(500);
-            entity.Property(e => e.ProfileImageUrl).HasMaxLength(2048);
+            // nvarchar(max): profile images are stored as base64 data URLs which
+            // exceed 2048 chars. Matches the ExpandProfileImageUrl migration and
+            // the DB; keeping the old HasMaxLength(2048) here caused every EF
+            // scaffold to try to shrink (and truncate) the column.
+            entity.Property(e => e.ProfileImageUrl).HasColumnType("nvarchar(max)");
 
             entity.HasIndex(e => e.Email).IsUnique();
             entity.HasIndex(e => e.Username);

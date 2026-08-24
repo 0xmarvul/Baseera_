@@ -1,0 +1,78 @@
+/* Marketing sections shared by Home (guest) and Landing (member). */
+.hero{min-height:calc(100vh - 71px);display:grid;grid-template-columns:1.05fr 1fr;align-items:center;gap:56px;padding:70px 60px 60px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-140px;left:-100px;width:700px;height:700px;background:radial-gradient(circle,var(--a-glow) 0%,transparent 65%);pointer-events:none}
+.hero h1{font-family:var(--fd);font-size:clamp(42px,5.4vw,70px);font-weight:700;line-height:1.04;letter-spacing:-.035em;margin:20px 0 18px}
+.hero h1 em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:17px;line-height:1.7;color:var(--t2);max-width:440px;margin-bottom:30px}
+.hero-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.hero-note{font-size:12px;color:var(--t2)}
+.hero-note strong{color:var(--t1);font-weight:600}
+
+.trust{display:flex;align-items:center;gap:44px;padding:26px 60px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.trust-lbl{font-size:11px;color:var(--t2);font-weight:500;white-space:nowrap;text-transform:uppercase;letter-spacing:.1em}
+.trust-logos{display:flex;align-items:center;gap:30px;flex:1;flex-wrap:wrap}
+.trust-logo{font-family:var(--fm);font-size:13px;font-weight:500;color:rgba(255,255,255,.22);letter-spacing:.02em}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line)}
+.stat{padding:50px 60px;border-right:1px solid var(--line)}
+.stat:last-child{border-right:none}
+.stat-num{font-family:var(--fd);font-size:52px;font-weight:700;letter-spacing:-.04em;line-height:1;margin-bottom:6px}
+.stat-num span{color:var(--accent)}
+.stat-lbl{font-size:13px;color:var(--t2);line-height:1.5;max-width:180px}
+
+.section{padding:92px 60px}
+.feat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:48px}
+.feat-card{background:var(--s1);border:1px solid var(--line);border-radius:14px;padding:30px;position:relative;overflow:hidden;transition:border-color .2s,transform .2s}
+.feat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--a-brd),transparent);opacity:0;transition:opacity .3s}
+.feat-card:hover{border-color:var(--a-brd);transform:translateY(-2px)}
+.feat-card:hover::after{opacity:1}
+.feat-icon{width:44px;height:44px;background:var(--a-dim);border:1px solid var(--a-brd);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+.feat-icon svg{width:22px;height:22px;color:var(--accent)}
+.feat-title{font-family:var(--fd);font-size:17px;font-weight:600;margin-bottom:8px}
+.feat-desc{font-size:13px;color:var(--t2);line-height:1.7}
+.feat-tag{display:inline-block;margin-top:14px;padding:3px 8px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:4px;font-family:var(--fm);font-size:10px;color:var(--t2)}
+
+.ai-section{background:var(--s1);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.ai-inner{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+.chat-card{background:var(--s2);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.chat-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.chat-avatar{width:30px;height:30px;background:rgba(155,111,255,.12);border:1px solid rgba(155,111,255,.3);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.chat-avatar svg{width:16px;height:16px;color:var(--purple)}
+.chat-name{font-size:13px;font-weight:600}
+.chat-online{margin-left:auto;display:flex;align-items:center;gap:5px;font-family:var(--fm);font-size:10px;color:var(--accent)}
+.chat-body{padding:16px;display:flex;flex-direction:column;gap:12px}
+.bubble{max-width:82%;padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.55}
+.bubble.user{align-self:flex-end;background:var(--a-dim);border:1px solid var(--a-brd);color:var(--t1);border-radius:10px 10px 2px 10px}
+.bubble.ai{align-self:flex-start;background:rgba(155,111,255,.1);border:1px solid rgba(155,111,255,.2);color:var(--t2);border-radius:10px 10px 10px 2px}
+.bubble.ai strong{color:var(--t1);font-weight:600}
+.bubble code{font-family:var(--fm);font-size:11px;background:rgba(255,255,255,.07);padding:1px 4px;border-radius:3px;color:var(--accent)}
+.chat-input-row{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--line);background:var(--s1)}
+.chat-placeholder{flex:1;font-size:12px;color:var(--t3)}
+.chat-send{width:26px;height:26px;background:var(--accent);border:none;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#04121A}
+.chat-send svg{width:14px;height:14px}
+
+.steps-section{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:48px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.step{background:var(--bg);padding:36px 32px}
+.step-num{font-family:var(--fm);font-size:11px;color:var(--accent);margin-bottom:18px;letter-spacing:.05em}
+.step-title{font-family:var(--fd);font-size:20px;font-weight:700;margin-bottom:9px}
+.step-desc{font-size:13px;color:var(--t2);line-height:1.75}
+
+.cta{padding:110px 60px;text-align:center;position:relative;overflow:hidden}
+.cta::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:700px;height:350px;background:radial-gradient(ellipse,var(--a-glow) 0%,transparent 70%);pointer-events:none}
+.cta-title{font-family:var(--fd);font-size:clamp(38px,5vw,62px);font-weight:700;letter-spacing:-.04em;margin-bottom:14px;line-height:1.05;position:relative}
+.cta-sub{font-size:17px;color:var(--t2);margin-bottom:34px;position:relative}
+.cta-actions{display:flex;align-items:center;justify-content:center;gap:14px;position:relative;flex-wrap:wrap}
+
+@media(max-width:960px){
+  .hero{grid-template-columns:1fr;padding:50px 22px;min-height:auto;gap:44px}
+  .trust{padding:22px;flex-wrap:wrap;gap:18px}
+  .section{padding:64px 22px}
+  .stats{grid-template-columns:1fr}
+  .stat{padding:34px 22px;border-right:none;border-bottom:1px solid var(--line)}
+  .stat:last-child{border-bottom:none}
+  .feat-grid{grid-template-columns:1fr}
+  .ai-inner{grid-template-columns:1fr}
+  .steps-grid{grid-template-columns:1fr}
+  .cta{padding:76px 22px}
+}

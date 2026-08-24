@@ -1,117 +1,70 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import "../index.css";
-import "../register.css";
-import Navbar from "../components/Navbar";
+import MarketingNav from "../components/MarketingNav";
 import { authApi } from "../api/authApi";
-import icon1 from "../assets/logo.png";
 
 function VerifyEmail() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const email = searchParams.get("email") || "";
     const token = searchParams.get("token") || "";
-
-    const [status, setStatus] = useState("verifying"); // "verifying" | "success" | "already-verified" | "error"
+    const [status, setStatus] = useState("verifying");
     const [message, setMessage] = useState("");
     const [resendStatus, setResendStatus] = useState("");
     const [resendLoading, setResendLoading] = useState(false);
 
     useEffect(() => {
         const verify = async () => {
-            if (!email || !token) {
-                setStatus("error");
-                setMessage("Invalid verification link. Please request a new one.");
-                return;
-            }
+            if (!email || !token) { setStatus("error"); setMessage("Invalid verification link. Please request a new one."); return; }
             try {
                 await authApi.verifyEmail({ email, token });
-                setStatus("success");
-                setMessage("Email verified successfully! Redirecting to login...");
+                setStatus("success"); setMessage("Email verified. Redirecting to sign in…");
                 setTimeout(() => navigate("/login"), 3000);
             } catch (err) {
                 const errMsg = err.response?.data?.message || "Invalid or expired verification link.";
-                if (errMsg.toLowerCase().includes("already been verified")) {
-                    setStatus("already-verified");
-                    setMessage("This email has already been verified. You can proceed to login.");
-                } else {
-                    setStatus("error");
-                    setMessage(errMsg);
-                }
+                if (errMsg.toLowerCase().includes("already been verified")) { setStatus("already-verified"); setMessage("This email has already been verified. You can proceed to sign in."); }
+                else { setStatus("error"); setMessage(errMsg); }
             }
         };
         verify();
     }, [email, token, navigate]);
 
     const handleResend = async () => {
-        setResendStatus("");
-        setResendLoading(true);
-        try {
-            await authApi.resendVerification(email);
-            setResendStatus("A new verification email has been sent. Please check your inbox.");
-        } catch {
-            setResendStatus("Failed to resend. Please try again later.");
-        } finally {
-            setResendLoading(false);
-        }
+        setResendStatus(""); setResendLoading(true);
+        try { await authApi.resendVerification(email); setResendStatus("A new verification email has been sent. Check your inbox."); }
+        catch { setResendStatus("Failed to resend. Please try again later."); }
+        finally { setResendLoading(false); }
     };
+
+    const ok = status === "success" || status === "already-verified";
+    const icon = status === "verifying"
+        ? <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: 26, color: 'var(--accent)' }}></i>
+        : ok ? <i className="fa-solid fa-check" style={{ fontSize: 26, color: 'var(--accent)' }}></i>
+            : <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: 26, color: 'var(--high)' }}></i>;
 
     return (
         <>
-            <Navbar />
-            <section className="register-container">
-                <div className="register-box">
-                    <div className="logo-icon">
-                        <img src={icon1} alt="login icon" width={30} height={30} />
-                        <h2 className="logo-title">Baseera</h2>
-                    </div>
-                    <div className="register-info">
-                        <div className="register-title">
-                            <h1 className="create">
-                                {status === "verifying" && "Verifying Email..."}
-                                {status === "success" && "Email Verified!"}
-                                {status === "already-verified" && "Email Already Verified"}
-                                {status === "error" && "Verification Failed"}
-                            </h1>
-                            {status === "verifying" && (
-                                <p className="register-description">Please wait while we verify your email.</p>
-                            )}
-                            {status === "success" && (
-                                <p className="register-description" style={{ color: "#4caf50" }}>{message}</p>
-                            )}
-                            {status === "already-verified" && (
-                                <p className="register-description" style={{ color: "#00D492" }}>{message}</p>
-                            )}
-                            {status === "error" && (
-                                <p className="register-description" style={{ color: "#f44336" }}>{message}</p>
-                            )}
-                        </div>
-                    </div>
-
+            <MarketingNav />
+            <section className="auth-wrap">
+                <div className="auth-card" style={{ textAlign: 'center' }}>
+                    <div className="auth-badge">{icon}</div>
+                    <h1 className="auth-title">
+                        {status === "verifying" && "Verifying email…"}
+                        {status === "success" && "Email verified"}
+                        {status === "already-verified" && "Already verified"}
+                        {status === "error" && "Verification failed"}
+                    </h1>
+                    <p className="auth-sub">{message || "Please wait while we verify your email."}</p>
                     {status === "error" && (
                         <>
-                            {resendStatus && (
-                                <div className={resendStatus.includes("Failed") ? "form-error-msg" : "form-success-msg"}>
-                                    {resendStatus}
-                                </div>
-                            )}
-                            <div className="btn" style={{ marginTop: "16px" }}>
-                                <button onClick={handleResend} disabled={resendLoading}>
-                                    {resendLoading ? "Sending..." : "Resend Verification Email"}
-                                </button>
-                            </div>
+                            {resendStatus && <div className={resendStatus.includes("Failed") ? "b-error" : "b-success"}>{resendStatus}</div>}
+                            <button className="b-btn b-btn--ghost b-btn--block" onClick={handleResend} disabled={resendLoading}>{resendLoading ? "Sending…" : "Resend verification email"}</button>
                         </>
                     )}
-
-                    <div className="login-2" style={{ marginTop: "16px" }}>
-                        <Link className="link" to="/login">
-                            Back to Login
-                        </Link>
-                    </div>
+                    <p className="auth-alt"><Link className="b-link" to="/login">Back to sign in</Link></p>
                 </div>
             </section>
         </>
     );
 }
-
 export default VerifyEmail;

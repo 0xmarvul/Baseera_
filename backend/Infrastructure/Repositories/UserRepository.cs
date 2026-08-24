@@ -25,4 +25,9 @@ public class UserRepository : GenericRepository<User>, IUserRepository
     {
         return await _dbSet.AnyAsync(u => u.Email == email);
     }
+
+    public async Task<User?> GetByEmailChangeTokenHashAsync(string tokenHash)
+    {
+        return await _dbSet.FirstOrDefaultAsync(u => u.EmailChangeTokenHash == tokenHash);
+    }
 }

@@ -19,7 +19,15 @@ public class User
     public string? Country { get; set; }
     public string? Bio { get; set; }
     public string? ProfileImageUrl { get; set; }
-    
+
+    // Verified email-change flow. When a user asks to change their email we
+    // stash the requested address here and email a confirmation link to it.
+    // The account's real Email is only swapped once that link is confirmed,
+    // so an unconfirmed change leaves the original address intact.
+    public string? PendingEmail { get; set; }
+    public string? EmailChangeTokenHash { get; set; }
+    public DateTime? EmailChangeTokenExpiresAtUtc { get; set; }
+
     // Navigation Properties
     public ICollection<Scan> Scans { get; set; } = new List<Scan>();
 }

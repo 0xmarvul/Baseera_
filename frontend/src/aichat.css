@@ -1,0 +1,60 @@
+/* AI Assistant page. Lives inside the dashboard shell (DashboardLayout);
+   this removes the default .dmain padding so the chat can fill the height. */
+.dmain:has(.chatpage){padding:0}
+.chatpage{display:flex;flex-direction:column;height:100vh;min-width:0}
+.chat-top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 26px;border-bottom:1px solid var(--line);background:rgba(6,13,24,.7);backdrop-filter:blur(12px);position:relative}
+.ct-left{display:flex;align-items:center;gap:12px}
+.ct-av{width:38px;height:38px;border-radius:11px;background:rgba(0,217,165,.10);border:1px solid var(--line2);display:grid;place-items:center;flex-shrink:0}
+.ct-title{font-family:var(--fd);font-size:17px;font-weight:700;display:flex;align-items:center;gap:9px}
+.ct-badge{font-family:var(--fm);font-size:9px;color:var(--accent);background:rgba(0,217,165,.1);border:1px solid var(--line2);padding:2px 8px;border-radius:20px}
+.ct-sub{font-size:12px;color:var(--t2);margin-top:1px}
+.ct-actions{display:flex;gap:8px}
+.cbtn{display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:var(--s1);color:var(--t1);font-family:var(--fb)}
+.cbtn:hover{border-color:rgba(255,255,255,.2)}
+.cbtn svg{width:14px;height:14px}
+.history-menu{position:absolute;top:calc(100% + 8px);right:26px;width:280px;max-height:60vh;overflow-y:auto;background:var(--s2);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 24px 60px -20px rgba(0,0,0,.7);z-index:50}
+.history-menu .hempty{color:var(--t3);font-size:12px;padding:14px;text-align:center;font-family:var(--fm)}
+.hrow{display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:8px;cursor:pointer}
+.hrow:hover{background:rgba(255,255,255,.04)}
+.hrow.on{background:rgba(0,217,165,.08)}
+.hrow .ht{flex:1;min-width:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hrow .hd{color:var(--t3);cursor:pointer;font-size:12px}
+.hrow .hd:hover{color:var(--crit)}
+
+.chat-scroll{flex:1;overflow-y:auto;padding:30px 26px 10px}
+.thread{max-width:760px;margin:0 auto}
+.welcome{max-width:760px;margin:40px auto;text-align:center}
+.welcome .wmark{width:64px;height:64px;border-radius:18px;background:rgba(0,217,165,.1);border:1px solid var(--line2);display:grid;place-items:center;margin:0 auto 18px}
+.welcome h2{font-family:var(--fd);font-size:24px;margin-bottom:8px}
+.welcome p{color:var(--t2);max-width:52ch;margin:0 auto;line-height:1.6}
+.msg{display:flex;gap:12px;margin-bottom:22px}
+.msg .av{width:32px;height:32px;border-radius:9px;flex-shrink:0;display:grid;place-items:center}
+.msg.ai .av{background:rgba(0,217,165,.12);border:1px solid var(--line2)}
+.msg.user{flex-direction:row-reverse}
+.msg.user .av{background:var(--grad);color:#04121A;font-family:var(--fd);font-weight:700;font-size:13px;text-transform:uppercase}
+.body{max-width:82%}
+.msg.ai .body{background:var(--s1);border:1px solid var(--line);border-radius:4px 14px 14px 14px;padding:15px 17px}
+.msg.user .body{background:rgba(0,217,165,.09);border:1px solid var(--line2);border-radius:14px 4px 14px 14px;padding:12px 16px}
+.mname{font-family:var(--fm);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);margin-bottom:7px}
+.msg.user .mname{text-align:right}
+.mbody{font-size:14px;line-height:1.68;color:#dbe6f2;white-space:pre-wrap;word-wrap:break-word}
+.msg.user .mbody{color:var(--t1)}
+.mbody strong{color:var(--accent);font-weight:600}
+.typing{display:flex;gap:5px;padding:4px 2px}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--accent);opacity:.5;animation:td 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+@keyframes td{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}
+.chat-bottom{border-top:1px solid var(--line);padding:14px 26px 18px;background:var(--bg)}
+.bwrap{max-width:760px;margin:0 auto}
+.suggests{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.schip{font-size:12.5px;color:var(--t2);background:var(--s1);border:1px solid var(--line);border-radius:20px;padding:7px 13px;cursor:pointer;transition:all .15s}
+.schip:hover{color:var(--accent);border-color:var(--line2);background:rgba(0,217,165,.06)}
+.composer{display:flex;align-items:center;gap:10px;background:var(--s1);border:1px solid var(--line);border-radius:14px;padding:8px 8px 8px 17px;transition:border-color .15s}
+.composer:focus-within{border-color:var(--line2)}
+.composer textarea{flex:1;background:none;border:none;outline:none;color:var(--t1);font-size:14px;font-family:var(--fb);padding:8px 0;resize:none;max-height:120px;line-height:1.5}
+.composer textarea::placeholder{color:var(--t3)}
+.send{width:38px;height:38px;border-radius:10px;background:var(--grad);border:none;cursor:pointer;display:grid;place-items:center;flex-shrink:0}
+.send:disabled{opacity:.5;cursor:not-allowed}
+.send svg{width:17px;height:17px;color:#04121A}
+.disc{text-align:center;font-size:11px;color:var(--t3);margin-top:10px}
+@media(max-width:900px){.chatpage{height:calc(100vh - 52px)}.history-menu{right:18px}.body{max-width:88%}}

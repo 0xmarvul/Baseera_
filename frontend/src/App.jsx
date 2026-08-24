@@ -23,9 +23,9 @@ import ChangePassword from './pages/ChangePassword';
 import ExtensionSettings from './pages/ExtensionSettings';
 import AccountVerification from './pages/AccountVerification';
 import VerifyEmail from './pages/VerifyEmail';
+import ConfirmEmailChange from './pages/ConfirmEmailChange';
 import AIChatbot from './pages/AIChatbot';
 import NotFound from './pages/NotFound';
-import BaseeraFloatingChat from './components/BaseeraFloatingChat';
 import { ToastHost } from './components/Toast';
 
 
@@ -88,6 +88,7 @@ function AppContent() {
           } />
         <Route path="/account-verification" element={<AccountVerification />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
         <Route path="/ai-chatbot" element={
             <ProtectedRoute>
               <AIChatbot />
@@ -105,7 +106,6 @@ function AppContent() {
         {/* Catch-all: any unknown route renders the branded 404 page. */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <BaseeraFloatingChat />
     </>
   );
 }
