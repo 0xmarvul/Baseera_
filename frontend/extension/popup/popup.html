@@ -87,21 +87,15 @@
     <!-- State 2: Scanning in Progress -->
     <div id="state-scanning" class="state-panel" style="display:none;">
       <div class="scanning-center">
-        <div class="scanning-pulse">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="10" stroke="url(#scanGrad)" stroke-width="1.5" stroke-dasharray="4 2"/>
-            <circle cx="12" cy="12" r="5" fill="rgba(0,188,125,0.15)" stroke="url(#scanGrad)" stroke-width="1.5"/>
-            <circle cx="12" cy="12" r="2" fill="url(#scanGrad)"/>
-            <defs>
-              <linearGradient id="scanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#00E6B0"/>
-                <stop offset="100%" style="stop-color:#00B4D8"/>
-              </linearGradient>
-            </defs>
+        <div class="scan-ring">
+          <svg width="84" height="84" viewBox="0 0 84 84">
+            <circle cx="42" cy="42" r="34" fill="none" stroke="#16273f" stroke-width="7"/>
+            <circle id="scan-ring-arc" cx="42" cy="42" r="34" fill="none" stroke="#00D9A5" stroke-width="7" stroke-linecap="round" stroke-dasharray="213.6" stroke-dashoffset="213.6" transform="rotate(-90 42 42)"/>
           </svg>
+          <div class="scan-ring-v"><b id="scan-ring-pct">0%</b><span>scanning</span></div>
         </div>
-        <p class="scanning-title">Scanning in progress...</p>
-        <p class="scanning-subtitle">Analyzing vulnerabilities and security headers</p>
+        <p class="scanning-title">Scanning this page</p>
+        <p class="scanning-subtitle">Analyzing DOM, scripts and security headers</p>
       </div>
       <div class="scan-checklist" id="scan-checklist">
         <div class="checklist-item" id="check-ssl">
@@ -159,14 +153,7 @@
           </div>
         </div>
       </div>
-      <button class="rescan-btn" id="rescan-btn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="23 4 23 10 17 10"/>
-          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-        </svg>
-        Rescan Website
-      </button>
-
+      <div id="results-cta"></div>
     </div>
 
     <!-- Footer -->

@@ -8,6 +8,8 @@ let APP_BASE_URL = 'https://baseera-three.vercel.app';
 let scanResults = null;
 let currentURL = '';
 let scanCancelled = false;
+let isAuthed = false;
+let scanProgTimer = null;
 
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
@@ -72,8 +74,7 @@ async function initPopup() {
   // Bind scan button (state 1 → start scan)
   document.getElementById('scan-btn').addEventListener('click', runScan);
 
-  // Bind rescan button (state 3 → start scan again)
-  document.getElementById('rescan-btn').addEventListener('click', runScan);
+  // Rescan is rendered dynamically in the results CTA (see displayResults).
 
   // Bind cancel button (state 2 → back to idle)
   document.getElementById('cancel-btn').addEventListener('click', () => {
@@ -121,6 +122,7 @@ function showState(state) {
 async function checkAuthStatus() {
   return new Promise((resolve) => {
     chrome.storage.local.get(['authToken', 'userName'], (result) => {
+      isAuthed = !!result.authToken;
       const badge = document.getElementById('auth-status');
       if (result.authToken) {
         badge.textContent = result.userName ? `Logged in as ${result.userName}` : 'Authenticated';
@@ -143,7 +145,9 @@ async function runScan() {
   scanCancelled = false;
   showState('scanning');
   resetChecklist();
+  resetScanRing();
   animateChecklist();
+  animateScanProgress();
 
   const scanStartTime = Date.now();
 
@@ -219,6 +223,37 @@ function completeChecklist() {
     const icon = document.querySelector(`#${id} .check-icon`);
     if (icon) icon.className = 'check-icon check-done';
   });
+  // Snap the progress ring to 100% as the scan completes.
+  clearInterval(scanProgTimer);
+  const arc = document.getElementById('scan-ring-arc');
+  const pct = document.getElementById('scan-ring-pct');
+  if (arc) arc.style.strokeDashoffset = 0;
+  if (pct) pct.textContent = '100%';
+}
+
+// Progress ring for the scanning state. The real scan is one executeScript
+// call, so the % is a smooth fill over the animation floor that snaps to 100%
+// the moment results are ready — the same feel as the website landing demo.
+const SCAN_RING_C = 213.6; // 2*pi*34
+function resetScanRing() {
+  clearInterval(scanProgTimer);
+  const arc = document.getElementById('scan-ring-arc');
+  const pct = document.getElementById('scan-ring-pct');
+  if (arc) arc.style.strokeDashoffset = SCAN_RING_C;
+  if (pct) pct.textContent = '0%';
+}
+function animateScanProgress() {
+  clearInterval(scanProgTimer);
+  let p = 0;
+  scanProgTimer = setInterval(() => {
+    if (scanCancelled) { clearInterval(scanProgTimer); return; }
+    p = Math.min(96, p + 4); // creep to ~96; completeChecklist snaps to 100
+    const arc = document.getElementById('scan-ring-arc');
+    const pct = document.getElementById('scan-ring-pct');
+    if (pct) pct.textContent = p + '%';
+    if (arc) arc.style.strokeDashoffset = SCAN_RING_C * (1 - p / 100);
+    if (p >= 96) clearInterval(scanProgTimer);
+  }, 55);
 }
 
 function displayResults(results) {
@@ -268,6 +303,36 @@ function displayResults(results) {
     document.getElementById('vuln-summary-card').style.display = 'block';
     autoSaveResults();
   }
+
+  // Results CTA differs for signed-in members vs guests (mirrors the website):
+  // members get "saved to your dashboard" + view/rescan; guests get a locked
+  // teaser that pushes sign-up.
+  const total = critical + high + medium + low;
+  const cta = document.getElementById('results-cta');
+  if (clean) {
+    cta.innerHTML = `<button class="cta-primary" data-act="rescan">Rescan page</button>`;
+  } else if (isAuthed) {
+    cta.innerHTML = `
+      <div class="xsaved"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Scan saved to your dashboard</div>
+      <button class="cta-primary" data-act="dashboard">View findings on dashboard</button>
+      <button class="cta-ghost" data-act="rescan">Rescan</button>`;
+  } else {
+    cta.innerHTML = `
+      <div class="xlock">
+        <div class="xlock-lk"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+        <div class="xlock-t">${total} finding${total === 1 ? '' : 's'} on this page</div>
+        <div class="xlock-s">Sign up to see what they are and how to fix them</div>
+      </div>
+      <button class="cta-primary" data-act="register">Sign up to view findings</button>
+      <button class="cta-ghost" data-act="login">Already have an account? Sign in</button>`;
+  }
+  cta.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
+    const a = b.dataset.act;
+    if (a === 'rescan') runScan();
+    else if (a === 'dashboard') chrome.tabs.create({ url: `${APP_BASE_URL}/bugs` });
+    else if (a === 'register') chrome.tabs.create({ url: `${APP_BASE_URL}/register` });
+    else if (a === 'login') chrome.tabs.create({ url: `${APP_BASE_URL}/login` });
+  }));
 
   showState('results');
 }
