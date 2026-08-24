@@ -13,10 +13,14 @@ let scanProgTimer = null;
 
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
-  if (typeof window.BaseeraConfig?.getBaseeraConfig === 'function') {
-    const cfg = await window.BaseeraConfig.getBaseeraConfig();
-    API_BASE_URL = cfg.apiBaseUrl;
-    APP_BASE_URL = cfg.appBaseUrl;
+  try {
+    if (typeof window.BaseeraConfig?.getBaseeraConfig === 'function') {
+      const cfg = await window.BaseeraConfig.getBaseeraConfig();
+      API_BASE_URL = cfg.apiBaseUrl;
+      APP_BASE_URL = cfg.appBaseUrl;
+    }
+  } catch (e) {
+    // Config read failed (service worker waking up); fall back to prod defaults.
   }
   await initPopup();
 });
@@ -65,12 +69,6 @@ async function initPopup() {
   currentURL = tab?.url || '';
   document.getElementById('current-url').textContent = currentURL || 'Unknown';
 
-  // Proactively sync auth from website's localStorage
-  await syncAuthFromWebsite();
-
-  // Check auth status
-  await checkAuthStatus();
-
   // Bind scan button (state 1 → start scan)
   document.getElementById('scan-btn').addEventListener('click', runScan);
 
@@ -111,6 +109,17 @@ async function initPopup() {
     e.preventDefault();
     chrome.tabs.create({ url: `${APP_BASE_URL}/bugs` });
   });
+
+  // Auth sync + status run LAST and are non-blocking: the buttons above are
+  // already wired, so the popup stays fully usable even if the service worker
+  // is still waking up or there is no Baseera tab open to sync from. The badge
+  // flips to "logged in" once the sync resolves.
+  try {
+    await syncAuthFromWebsite();
+    await checkAuthStatus();
+  } catch (err) {
+    // Best effort; UI stays usable and defaults to the guest state.
+  }
 }
 
 function showState(state) {
