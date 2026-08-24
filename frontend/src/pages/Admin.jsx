@@ -124,7 +124,7 @@ function Admin() {
                         <td><div className="u-cell"><div className="u-av">{(u.firstName[0] || '') + (u.lastName[0] || '')}</div><div className="u-name">{u.firstName} {u.lastName}</div></div></td>
                         <td className="u-mono">@{u.username}</td>
                         <td className="u-mono">{u.email}</td>
-                        <td>{u.country || '—'}</td>
+                        <td className="u-country">{u.country || '—'}</td>
                         <td><span className={`arole ${u.role === 'Admin' ? 'admin' : ''}`}>{u.role}</span></td>
                         <td><span className={`apill ${u.isEmailVerified ? 'yes' : 'no'}`} onClick={() => patch(u.id, { isEmailVerified: !u.isEmailVerified })}><span className="d"></span>{u.isEmailVerified ? 'Verified' : 'Pending'}</span></td>
                         <td><span className={`apill ${u.isActive ? 'active' : 'inactive'}`} onClick={() => patch(u.id, { isActive: !u.isActive })}><span className="d"></span>{u.isActive ? 'Active' : 'Inactive'}</span></td>

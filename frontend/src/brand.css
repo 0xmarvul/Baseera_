@@ -14,6 +14,12 @@
   --fb:'Inter',system-ui,sans-serif;
   --fm:'JetBrains Mono',ui-monospace,monospace;
   --r:12px;
+  /* Neutralise Bootstrap's near-black defaults so no element ever falls back
+     to dark text on our dark theme. */
+  --bs-body-color:#EAF1FA;
+  --bs-emphasis-color:#EAF1FA;
+  --bs-secondary-color:#8FA1B8;
+  --bs-body-bg:#060D18;
 }
 *,*::before,*::after{box-sizing:border-box}
 html{scroll-behavior:smooth}

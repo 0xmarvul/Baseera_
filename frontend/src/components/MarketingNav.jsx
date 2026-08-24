@@ -11,11 +11,13 @@ import { WEBSTORE_LINK_PROPS } from '../utils/extensionLink';
 export default function MarketingNav() {
   const [open, setOpen] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [name, setName] = useState('');
 
   useEffect(() => {
     setIsAuthed(!!localStorage.getItem('authToken'));
     setName(localStorage.getItem('baseeraUserName') || '');
+    try { setIsAdmin(JSON.parse(localStorage.getItem('baseeraUserData') || '{}').role === 'Admin'); } catch { setIsAdmin(false); }
   }, []);
 
   return (
@@ -31,6 +33,7 @@ export default function MarketingNav() {
         <li><Link to="/contact">Contact</Link></li>
         <li><a {...WEBSTORE_LINK_PROPS}>Extension</a></li>
         {isAuthed && <li><Link to="/bugs">Dashboard</Link></li>}
+        {isAuthed && isAdmin && <li><Link to="/admin" style={{ color: 'var(--violet)' }}>Admin</Link></li>}
       </ul>
 
       <div className="mnav-actions">
