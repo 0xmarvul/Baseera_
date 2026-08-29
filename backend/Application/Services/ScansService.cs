@@ -79,6 +79,7 @@ public class ScansService : IScansService
                 Description = v.Description,
                 Location = v.Location,
                 Recommendation = v.Recommendation,
+                Evidence = v.Evidence,
                 DetectedAt = DateTime.UtcNow
             };
             await _vulnerabilityRepository.AddAsync(vuln);

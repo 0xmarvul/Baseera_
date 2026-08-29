@@ -368,7 +368,8 @@ async function autoSaveResults() {
           severity: v.severity,
           description: v.description,
           location: v.location || currentURL,
-          recommendation: v.recommendation || null
+          recommendation: v.recommendation || null,
+          evidence: v.evidence || null
         }))
       })
     });
@@ -378,12 +379,56 @@ async function autoSaveResults() {
 }
 
 // This function runs in the page context
-function runPageScanners(pageUrl) {
+async function runPageScanners(pageUrl) {
   const vulnerabilities = [];
 
-  function addVuln(type, severity, description, location, recommendation) {
-    vulnerabilities.push({ type, severity, description, location: location || pageUrl, recommendation });
+  function addVuln(type, severity, description, location, recommendation, evidence) {
+    vulnerabilities.push({
+      type, severity, description,
+      location: location || pageUrl,
+      recommendation,
+      evidence: evidence ? String(evidence).slice(0, 500) : null
+    });
   }
+
+  // Partially mask a secret so the finding *shows what leaked* (first + last
+  // few chars) without splashing a live, fully-usable credential across the
+  // dashboard and the database.
+  function mask(s) {
+    s = String(s);
+    if (s.length <= 12) return s.slice(0, 3) + '****';
+    return s.slice(0, 6) + '…' + s.slice(-4) + ` (${s.length} chars)`;
+  }
+
+  // Obvious placeholders / docs samples that are NOT real leaked secrets.
+  function isPlaceholder(s) {
+    const t = String(s).toLowerCase();
+    if (/x{6,}/i.test(s) || /^(0{6,}|1{6,}|a{6,})/i.test(s)) return true;
+    return /your[_-]?|example|sample|placeholder|dummy|test[_-]?key|changeme|<.*>|\.\.\./.test(t);
+  }
+
+  // Real HTTP response headers. A content script CANNOT read these from the
+  // DOM, so the old meta-tag guesses fired on nearly every site: X-Frame-
+  // Options and HSTS are header-only, browsers ignore their meta form, so the
+  // "missing" check was ALWAYS true = a pure false positive. Here we fetch the
+  // page once from the extension's isolated world (host permission bypasses
+  // CORS) and read the genuine headers. If the fetch fails, we SKIP every
+  // header finding rather than guess.
+  let H = null;
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 4000);
+    const resp = await fetch(pageUrl, { method: 'GET', credentials: 'include', redirect: 'follow', signal: ctl.signal });
+    clearTimeout(timer);
+    // If we were redirected off-origin (e.g. to a login page), the headers no
+    // longer describe the page the user is looking at — don't trust them.
+    let sameOrigin = true;
+    try { sameOrigin = new URL(resp.url).origin === location.origin; } catch (e) {}
+    if (sameOrigin) H = resp.headers;
+  } catch (e) { H = null; }
+  // hdr(name) -> header value string, '' if the header is absent, or null if
+  // we could not read headers at all (caller must then skip the check).
+  const hdr = (n) => H ? (H.get(n) || '') : null;
 
   // 1. XSS - dangerous patterns, javascript: URL, iframe srcdoc, reflected-parameter
   try {
@@ -446,7 +491,7 @@ function runPageScanners(pageUrl) {
       // context. This IS active XSS surface, flag at High.
       for (const v of values) {
         if (dangerousContext.indexOf(v) !== -1) {
-          addVuln('Reflected XSS', 'High', 'URL parameter value lands inside a dangerous context (inline script / event handler / javascript: URL / src attribute) without encoding.', pageUrl, 'HTML-encode user input before inserting into the DOM. Never echo URL parameters into <script> blocks, event-handler attributes, or src attributes without strict sanitisation.');
+          addVuln('Reflected XSS', 'High', 'A URL parameter value lands inside a dangerous context (inline script / event-handler attribute / javascript: URL / src attribute) without encoding. An attacker can craft a URL that injects script into this page.', pageUrl, 'HTML-encode user input before inserting into the DOM. Never echo URL parameters into <script> blocks, event-handler attributes, or src attributes without strict sanitisation.', `reflected value: "${v.slice(0, 80)}"`);
           break;
         }
       }
@@ -484,53 +529,100 @@ function runPageScanners(pageUrl) {
     }
   } catch (e) {}
 
-  // 2. SQL Injection - Check for SQL error messages
+  // 2. SQL Injection - a real database error string leaking to the page.
+  //    Tightened to vendor-specific signatures so the words "syntax error" in
+  //    a blog or tutorial no longer fire. The matched snippet is the proof.
   try {
-    const body = document.body?.textContent || '';
-    const sqlErrors = /SQL syntax|mysql_fetch|ORA-\d+|syntax error.*SQL|ODBC.*Error|Warning.*mysql|Microsoft.*ODBC/i;
-    if (sqlErrors.test(body)) {
-      addVuln('SQL Injection', 'Critical', 'SQL error messages found in page response.', pageUrl, 'Hide database errors from end users and use parameterized queries.');
+    const body = document.body?.innerText || '';
+    const sqlErrors = /(SQL syntax.*(MySQL|MariaDB)|Warning:\s*mysqli?_|valid MySQL result|ORA-\d{5}|PostgreSQL.*ERROR|PG::[A-Za-z]+Error|Microsoft OLE DB Provider for (ODBC|SQL Server)|Unclosed quotation mark after the character string|quoted string not properly terminated|SQLite\/JDBCDriver|System\.Data\.SqlClient\.SqlException)/i;
+    const m = body.match(sqlErrors);
+    if (m) {
+      addVuln('SQL Injection', 'Critical', 'A raw database error message is being returned to the browser. Verbose SQL errors confirm the query reaches the database unsanitised and hand an attacker a roadmap for injection.', pageUrl, 'Use parameterised queries / prepared statements, and return a generic error page instead of the database error.', m[0].slice(0, 180));
     }
   } catch (e) {}
 
-  // 3. Command Injection - Check for system error patterns
+  // 3. Command Injection - shell error output leaking to the page. Requires a
+  //    real shell prompt prefix; bare "permission denied" (common in normal
+  //    copy) no longer fires.
   try {
-    const body = document.body?.textContent || '';
-    const cmdErrors = /sh:\s+\d+:|permission denied|command not found|bash:/i;
-    if (cmdErrors.test(body)) {
-      addVuln('Command Injection', 'Critical', 'System command error output detected in page.', pageUrl, 'Never expose command output to users. Sanitize inputs thoroughly.');
+    const body = document.body?.innerText || '';
+    const cmdErrors = /(\/bin\/(?:ba)?sh:\s|(?:^|\n)(?:ba)?sh:\s.*(?:command not found|No such file)|sh:\s+\d+:\s)/;
+    const m = body.match(cmdErrors);
+    if (m) {
+      addVuln('Command Injection', 'Critical', 'Operating-system shell error output is visible in the page, which means user input is reaching a system shell.', pageUrl, 'Never pass user input to a shell. Use language-native APIs with argument arrays, and never echo command output to users.', m[0].trim().slice(0, 180));
     }
   } catch (e) {}
 
-  // 4. API Keys Exposure - expanded provider coverage
+  // 4. Secret / API Key Exposure - classify secret vs publishable, show the
+  //    actual (masked) value, and skip obvious placeholders. A publishable /
+  //    browser key (Stripe pk_live, Google Maps AIza, Firebase apiKey) is
+  //    DESIGNED to ship in client code, so flagging it Critical was noise; it
+  //    is reported Low with a "restrict it" note instead.
   try {
     const html = document.documentElement.innerHTML;
+    const SECRET = 'secret', PUBLIC = 'public';
     const patterns = [
-      { regex: /AIza[0-9A-Za-z\-_]{35}/, name: 'Google API Key' },
-      { regex: /AKIA[0-9A-Z]{16}/, name: 'AWS Access Key' },
-      { regex: /sk-[A-Za-z0-9]{48}/, name: 'OpenAI API Key' },
-      { regex: /sk_live_[0-9a-zA-Z]{24,}/, name: 'Stripe Secret Key (live)' },
-      { regex: /pk_live_[0-9a-zA-Z]{24,}/, name: 'Stripe Publishable Key (live)' },
-      { regex: /rk_live_[0-9a-zA-Z]{24,}/, name: 'Stripe Restricted Key (live)' },
-      { regex: /ghp_[A-Za-z0-9]{36}/, name: 'GitHub Personal Access Token' },
-      { regex: /gho_[A-Za-z0-9]{36}/, name: 'GitHub OAuth Token' },
-      { regex: /xox[baprs]-[0-9A-Za-z\-]{10,}/, name: 'Slack Token' },
-      { regex: /AC[a-f0-9]{32}/, name: 'Twilio Account SID' },
-      { regex: /SK[a-f0-9]{32}/, name: 'Twilio API Key' },
-      { regex: /SG\.[\w\-]{22}\.[\w\-]{43}/, name: 'SendGrid API Key' },
-      { regex: /key-[0-9a-zA-Z]{32}/, name: 'Mailgun API Key' },
-      { regex: /sq0(?:atp|csp)-[0-9A-Za-z\-_]{22,43}/, name: 'Square Token' },
-      { regex: /eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}/, name: 'JWT Token' },
-      { regex: /-----BEGIN (?:RSA |EC |OPENSSH |DSA |)PRIVATE KEY-----/, name: 'Private Key Block' },
-      { regex: /AccountKey=[A-Za-z0-9+/=]{40,}/, name: 'Azure Storage Account Key' },
-      { regex: /"type":\s*"service_account"/, name: 'GCP Service Account JSON' },
-      { regex: /firebase[^,]{0,30}apiKey[^,]{0,10}["'][A-Za-z0-9_\-]{20,}["']/i, name: 'Firebase API Key' },
+      { regex: /AKIA[0-9A-Z]{16}/,                     name: 'AWS Access Key ID',            kind: SECRET },
+      { regex: /sk-[A-Za-z0-9]{48}/,                   name: 'OpenAI API Key',               kind: SECRET },
+      { regex: /sk_live_[0-9a-zA-Z]{24,}/,             name: 'Stripe Secret Key (live)',     kind: SECRET },
+      { regex: /rk_live_[0-9a-zA-Z]{24,}/,             name: 'Stripe Restricted Key (live)', kind: SECRET },
+      { regex: /ghp_[A-Za-z0-9]{36}/,                  name: 'GitHub Personal Access Token', kind: SECRET },
+      { regex: /gho_[A-Za-z0-9]{36}/,                  name: 'GitHub OAuth Token',           kind: SECRET },
+      { regex: /xox[baprs]-[0-9A-Za-z\-]{10,}/,        name: 'Slack Token',                  kind: SECRET },
+      { regex: /SK[a-f0-9]{32}/,                       name: 'Twilio API Key',               kind: SECRET },
+      { regex: /SG\.[\w\-]{22}\.[\w\-]{43}/,           name: 'SendGrid API Key',             kind: SECRET },
+      { regex: /key-[0-9a-zA-Z]{32}/,                  name: 'Mailgun API Key',              kind: SECRET },
+      { regex: /sq0(?:atp|csp)-[0-9A-Za-z\-_]{22,43}/, name: 'Square Access Token',          kind: SECRET },
+      { regex: /-----BEGIN (?:RSA |EC |OPENSSH |DSA |)PRIVATE KEY-----/, name: 'Private Key Block', kind: SECRET },
+      { regex: /AccountKey=[A-Za-z0-9+/=]{40,}/,       name: 'Azure Storage Account Key',    kind: SECRET },
+      { regex: /"type":\s*"service_account"/,          name: 'GCP Service Account JSON',     kind: SECRET },
+      // Publishable / browser keys - meant to be public, but should be locked
+      // down (HTTP referrer / domain / API restrictions).
+      { regex: /pk_live_[0-9a-zA-Z]{24,}/,             name: 'Stripe Publishable Key (live)', kind: PUBLIC },
+      { regex: /AIza[0-9A-Za-z\-_]{35}/,               name: 'Google API Key',                kind: PUBLIC },
+      { regex: /firebase[^,]{0,30}apiKey[^,]{0,10}["']([A-Za-z0-9_\-]{20,})["']/i, name: 'Firebase Web API Key', kind: PUBLIC },
     ];
+    const seen = new Set();
     patterns.forEach(p => {
-      if (p.regex.test(html)) {
-        addVuln('API Keys Exposure', 'Critical', `Exposed ${p.name} detected in page source.`, pageUrl, 'Move secrets to server-side environment variables. Rotate any leaked credential immediately.');
+      const m = html.match(p.regex);
+      if (!m) return;
+      const value = m[1] || m[0];
+      if (isPlaceholder(value) || seen.has(value)) return;
+      seen.add(value);
+      if (p.kind === SECRET) {
+        addVuln('Exposed Secret', 'Critical',
+          `A ${p.name} is exposed in this page's source. This is a live credential an attacker can copy straight from "View Source" and use to reach your accounts, send mail, or move money.`,
+          pageUrl,
+          `Remove the ${p.name} from client-side code and keep it server-side. Rotate/revoke this key now - assume it is already compromised.`,
+          `${p.name}: ${mask(value)}`);
+      } else {
+        addVuln('Publishable Key Exposure', 'Low',
+          `A ${p.name} is present in the page. This key type is meant to be public, so it is not a leak by itself - but if it is not restricted, someone can reuse it under your quota/billing.`,
+          pageUrl,
+          `Lock this key down: for Google add HTTP-referrer + API restrictions in the Cloud console; for Stripe, publishable keys are safe on their own - just confirm no secret key sits beside it.`,
+          `${p.name}: ${mask(value)}`);
       }
     });
+
+    // JWTs are how virtually every SPA carries its session, so a JWT in the
+    // page is normal, not a Critical leak. Surface it Low and decode the
+    // header so the user sees the algorithm (alg:none / a weak alg is the real
+    // issue worth chasing).
+    const jwt = html.match(/eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{6,}/);
+    if (jwt) {
+      let detail = mask(jwt[0]);
+      try {
+        const head = JSON.parse(atob(jwt[0].split('.')[0].replace(/-/g, '+').replace(/_/g, '/')));
+        const body = JSON.parse(atob(jwt[0].split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        const exp = body.exp ? new Date(body.exp * 1000).toISOString().slice(0, 10) : 'no exp';
+        detail = `alg=${head.alg}${body.iss ? ', iss=' + String(body.iss).slice(0, 40) : ''}, exp=${exp}`;
+      } catch (e) {}
+      addVuln('JWT in Page Source', 'Low',
+        'A JSON Web Token is present in the page. This is common (session handling), but confirm it is a short-lived access token, not a long-lived secret, and that the signing algorithm is strong (never alg:none, or HS256 with a guessable key).',
+        pageUrl,
+        'Keep tokens short-lived, prefer HttpOnly cookies over JS-reachable HTML/localStorage, and verify the signature server-side with a strong algorithm.',
+        detail);
+    }
   } catch (e) {}
 
   // 5. Insecure Forms
@@ -543,11 +635,31 @@ function runPageScanners(pageUrl) {
     }
   } catch (e) {}
 
-  // 6. Missing CSP
+  // 6. Content-Security-Policy - evaluated from the REAL response header first
+  //    (meta CSP as a fallback). Missing CSP = Medium; a CSP weakened by
+  //    'unsafe-inline' / 'unsafe-eval' / wildcard = High (it exists but does
+  //    not actually stop XSS). Skipped entirely when headers are unreadable
+  //    AND no meta CSP is present, so we never guess.
   try {
-    const metaCSP = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-    if (!metaCSP) {
-      addVuln('Missing CSP', 'Medium', 'No Content-Security-Policy meta tag found. CSP is the primary anti-XSS defence-in-depth control; absent CSP leaves the page reliant on output encoding alone.', pageUrl, 'Add a Content-Security-Policy header (or meta tag) restricting script-src, style-src, and frame-ancestors. Start with report-only mode to discover violations.');
+    const metaCSP = document.querySelector('meta[http-equiv="Content-Security-Policy" i]');
+    const metaVal = metaCSP ? (metaCSP.getAttribute('content') || '') : '';
+    const headerCSP = hdr('content-security-policy'); // '' absent, null unreadable
+    const haveKnowledge = headerCSP !== null || metaCSP;
+    const csp = ((headerCSP || '') + ' ' + metaVal).trim();
+    if (haveKnowledge) {
+      if (!csp) {
+        addVuln('Missing CSP', 'Medium', 'No Content-Security-Policy was served. CSP is the main defence-in-depth control that stops injected scripts from running; without it the page relies on output encoding alone.', pageUrl, 'Add a Content-Security-Policy response header restricting script-src, object-src and frame-ancestors. Start in report-only mode.', 'content-security-policy: (absent)');
+      } else {
+        const weak = [];
+        if (/unsafe-inline/i.test(csp)) weak.push("'unsafe-inline'");
+        if (/unsafe-eval/i.test(csp)) weak.push("'unsafe-eval'");
+        // Bare "*" source only (a whitespace/quote-delimited * that is NOT the
+        // start of a domain like *.cdn.com or https://*.example.com).
+        if (/(?:script-src|default-src)[^;]*(?:\s|')\*(?![\w.\-])/i.test(csp)) weak.push('wildcard *');
+        if (weak.length) {
+          addVuln('Weak CSP', 'High', `A Content-Security-Policy is set but weakened by ${weak.join(', ')}, which lets injected inline / eval'd scripts run anyway - so it does not effectively block XSS.`, pageUrl, "Remove 'unsafe-inline' and 'unsafe-eval'; use nonces or hashes for the scripts you trust, and drop wildcard sources.", `weakened by ${weak.join(', ')}`);
+        }
+      }
     }
   } catch (e) {}
 
@@ -564,34 +676,42 @@ function runPageScanners(pageUrl) {
     }
   } catch (e) {}
 
-  // 8. Clickjacking
+  // 8. Clickjacking - real X-Frame-Options header OR CSP frame-ancestors.
+  //    (The old meta[X-Frame-Options] check was meaningless: browsers ignore
+  //    XFO in a meta tag, so it reported "missing" on every single site.)
   try {
-    const metaFrame = document.querySelector('meta[http-equiv="X-Frame-Options"]');
-    if (!metaFrame) {
-      addVuln('Clickjacking', 'Medium', 'No X-Frame-Options meta tag found.', pageUrl, 'Add X-Frame-Options: DENY or SAMEORIGIN header to prevent clickjacking.');
-    }
-  } catch (e) {}
-
-  // 9. Insecure Cookies (detected via JS-accessible cookies)
-  try {
-    if (document.cookie) {
-      const cookies = document.cookie.split(';');
-      if (cookies.length > 0) {
-        addVuln('Insecure Cookies', 'Medium', `${cookies.length} cookie(s) accessible via JavaScript (missing HttpOnly flag).`, pageUrl, 'Set the HttpOnly flag on sensitive cookies to prevent JavaScript access.');
+    const xfo = hdr('x-frame-options');
+    if (xfo !== null) { // headers readable
+      const framed = /frame-ancestors/i.test(hdr('content-security-policy') || '');
+      if (!xfo && !framed) {
+        addVuln('Clickjacking', 'Medium', 'This page can be framed by any site: it sends neither X-Frame-Options nor a CSP frame-ancestors directive. An attacker can overlay it invisibly and trick users into clicking (clickjacking).', pageUrl, "Send X-Frame-Options: DENY (or SAMEORIGIN) and/or Content-Security-Policy: frame-ancestors 'self'.", 'x-frame-options: (absent), no frame-ancestors');
       }
     }
   } catch (e) {}
 
-  // 10. Missing SRI
+  // 9. Insecure Cookies - only flag session/auth-looking cookies that JS can
+  //    read (missing HttpOnly). A JS-readable analytics/UI cookie is fine and
+  //    was the source of a lot of noise here.
   try {
-    const externalScripts = document.querySelectorAll('script[src]:not([integrity])');
-    let externalCount = 0;
-    externalScripts.forEach(s => {
+    if (document.cookie) {
+      const names = document.cookie.split(';').map(c => c.split('=')[0].trim()).filter(Boolean);
+      const risky = names.filter(n => /sess|sid|auth|token|jwt|login|remember|secret|csrf/i.test(n));
+      if (risky.length > 0) {
+        addVuln('Insecure Cookies', 'Medium', `${risky.length} session/auth-related cookie(s) can be read from JavaScript (no HttpOnly flag). If any XSS lands on this site, an attacker can steal these and hijack the session.`, pageUrl, 'Set HttpOnly (plus Secure and SameSite) on session and auth cookies so they are never exposed to page scripts.', risky.join(', '));
+      }
+    }
+  } catch (e) {}
+
+  // 10. Missing SRI - external scripts with no integrity hash. Defence-in-depth
+  //     (supply-chain), so Low; the actual script URLs are the evidence.
+  try {
+    const ext = [];
+    document.querySelectorAll('script[src]:not([integrity])').forEach(s => {
       const src = s.getAttribute('src') || '';
-      if (src.startsWith('http') && !src.includes(window.location.hostname)) externalCount++;
+      if (src.startsWith('http') && !src.includes(window.location.hostname)) ext.push(src);
     });
-    if (externalCount > 0) {
-      addVuln('Missing SRI', 'Medium', `${externalCount} external script(s) loaded without Subresource Integrity (SRI).`, pageUrl, 'Add integrity and crossorigin attributes to external scripts.');
+    if (ext.length > 0) {
+      addVuln('Missing SRI', 'Low', `${ext.length} external script(s) load without Subresource Integrity. If that third-party host is ever compromised, its code runs on your page with no integrity check to stop it.`, pageUrl, 'Add integrity="sha384-…" and crossorigin="anonymous" to external <script> tags, or self-host the file.', ext.slice(0, 3).join('  ,  '));
     }
   } catch (e) {}
 
@@ -604,7 +724,7 @@ function runPageScanners(pageUrl) {
     redirectParams.forEach(param => {
       const val = urlParams.get(param);
       if (val && (val.startsWith('http') || val.startsWith('//'))) {
-        addVuln('Open Redirect', 'Medium', `URL parameter "${param}" may allow open redirect: ${val}`, pageUrl, 'Validate and whitelist redirect URLs on the server side.');
+        addVuln('Open Redirect', 'Medium', `The URL parameter "${param}" holds a full external URL that the page may redirect to. If it is not validated, an attacker can craft a link on your domain that bounces users to a phishing site.`, pageUrl, 'Validate redirect targets against a server-side allow-list; reject absolute URLs and protocol-relative (//) values.', `${param}=${val.slice(0, 120)}`);
       }
     });
   } catch (e) {}
@@ -655,7 +775,7 @@ function runPageScanners(pageUrl) {
     let n; while ((n = walker.nextNode())) { urls.add(n.nodeValue || ''); }
     const hits = [...urls].filter(u => patterns.test(u));
     if (hits.length > 0) {
-      addVuln('Sensitive Files', 'High', `Found ${hits.length} reference(s) to potentially sensitive paths.`, hits[0].slice(0, 200), 'Block access at the web server level. Remove backup and VCS files from production.');
+      addVuln('Sensitive Files', 'High', `Found ${hits.length} reference(s) to potentially sensitive paths (VCS metadata, env/config, backups, admin or API-doc endpoints). If any of these are actually reachable, they can leak source code, credentials, or an attack surface.`, hits[0].slice(0, 200), 'Block these paths at the web server / WAF and remove backup and VCS files from production.', hits.slice(0, 3).map(h => h.slice(0, 100)).join('  ,  '));
     }
     if (typeof document.title === 'string' && document.title.toLowerCase().startsWith('index of /')) {
       addVuln('Directory Listing', 'Medium', 'Directory listing is enabled on this endpoint.', pageUrl, 'Disable directory listing (Options -Indexes in Apache, autoindex off in Nginx).');
@@ -682,22 +802,27 @@ function runPageScanners(pageUrl) {
     }
   } catch (e) {}
 
-  // 17. CORS Issues
+  // 17. CORS Misconfiguration - from the real Access-Control-Allow-Origin
+  //     header. Wildcard + credentials is the genuinely dangerous combination.
   try {
-    const metaTags = document.querySelectorAll('meta[name]');
-    // Check for wildcard CORS hints in meta (limited passive check)
-    const html = document.documentElement.outerHTML;
-    if (html.includes('Access-Control-Allow-Origin: *') || html.includes("'Access-Control-Allow-Origin', '*'")) {
-      addVuln('CORS Issues', 'Medium', 'Wildcard CORS policy detected in page source.', pageUrl, 'Restrict CORS to specific trusted origins instead of using wildcards.');
+    const acao = hdr('access-control-allow-origin');
+    if (acao) {
+      const acac = (hdr('access-control-allow-credentials') || '').toLowerCase() === 'true';
+      if (acao.trim() === '*' && acac) {
+        addVuln('CORS Misconfiguration', 'High', 'The response sends Access-Control-Allow-Origin: * together with Access-Control-Allow-Credentials: true. Wherever that combination is honoured, another site can read this origin\'s authenticated responses.', pageUrl, 'Never combine a wildcard origin with credentials. Echo back a specific, allow-listed origin instead.', 'ACAO: *  +  ACAC: true');
+      } else if (acao.trim() === '*') {
+        addVuln('Permissive CORS', 'Low', 'Access-Control-Allow-Origin is set to * (any origin). Fine for genuinely public data; a problem if this endpoint ever returns anything user-specific.', pageUrl, 'Scope CORS to the specific origins that need it rather than *.', 'access-control-allow-origin: *');
+      }
     }
   } catch (e) {}
 
-  // 18. Missing HSTS (passive check via meta)
+  // 18. Missing HSTS - real header, https only. (Meta HSTS is ignored by
+  //     browsers, so the old check fired on every site.) Defence-in-depth = Low.
   try {
     if (pageUrl.startsWith('https://')) {
-      const metaHSTS = document.querySelector('meta[http-equiv="Strict-Transport-Security"]');
-      if (!metaHSTS) {
-        addVuln('Missing HSTS', 'Medium', 'No Strict-Transport-Security meta tag found.', pageUrl, 'Enable HSTS to prevent protocol downgrade attacks.');
+      const hsts = hdr('strict-transport-security');
+      if (hsts !== null && !hsts) {
+        addVuln('Missing HSTS', 'Low', 'No Strict-Transport-Security header. Without HSTS, a first visit or an on-path attacker can downgrade the user to http:// and strip TLS.', pageUrl, 'Send Strict-Transport-Security: max-age=31536000; includeSubDomains (add preload once you are confident).', 'strict-transport-security: (absent)');
       }
     }
   } catch (e) {}
@@ -705,24 +830,18 @@ function runPageScanners(pageUrl) {
   // 19. Insecure localStorage usage (sensitive data)
   try {
     const lsKeys = Object.keys(localStorage);
-    const sensitiveKeys = lsKeys.filter(k => /password|secret|token|api_key|credit|ssn/i.test(k));
+    const sensitiveKeys = lsKeys.filter(k => /password|secret|token|api_key|apikey|credit|ssn|private/i.test(k));
     if (sensitiveKeys.length > 0) {
-      addVuln('Insecure Storage', 'High', `Potentially sensitive data stored in localStorage: ${sensitiveKeys.join(', ')}.`, pageUrl, 'Avoid storing sensitive data in localStorage. Use secure server-side sessions instead.');
+      addVuln('Insecure Storage', 'High', `localStorage holds key(s) whose names suggest sensitive data: ${sensitiveKeys.join(', ')}. localStorage is readable by any script on the page, so an XSS steals it instantly, and it persists on disk with no expiry.`, pageUrl, 'Do not keep secrets or session tokens in localStorage. Use HttpOnly cookies for sessions and keep secrets server-side.', sensitiveKeys.join(', '));
     }
   } catch (e) {}
 
-  // 20. Weak CSP (unsafe-inline, unsafe-eval)
-  try {
-    const metaCSP = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-    if (metaCSP) {
-      const content = metaCSP.getAttribute('content') || '';
-      if (content.includes("'unsafe-inline'") || content.includes("'unsafe-eval'") || content.includes('*')) {
-        addVuln('Weak CSP', 'High', "Content-Security-Policy contains unsafe directives ('unsafe-inline', 'unsafe-eval', or wildcards).", pageUrl, "Remove 'unsafe-inline' and 'unsafe-eval' from CSP and use nonces or hashes instead.");
-      }
-    }
-  } catch (e) {}
+  // 20. (Merged into section 6 - weak CSP is reported there from the real header.)
 
-  // 21. Outdated JavaScript Libraries
+  // 21. Outdated JavaScript Libraries. Version is read from the script/link
+  //     URL (e.g. jquery-3.4.1.min.js, jquery@3.4.1) so it works from the
+  //     isolated content-script world, where page globals like window.jQuery
+  //     are NOT visible. window.* globals are checked too as a bonus.
   try {
     const lt = (a, b) => {
       const pa = String(a).split('.').map(Number);
@@ -733,23 +852,45 @@ function runPageScanners(pageUrl) {
       }
       return false;
     };
-    const report = (name, version, minSafe) => addVuln('Outdated Components', 'High',
-      `${name} ${version} is older than the recommended ${minSafe}. Known CVEs may apply.`,
-      pageUrl,
-      `Upgrade ${name} to ${minSafe} or later. Audit regularly with Retire.js, npm audit, or Snyk.`);
-    try { if (window.jQuery && window.jQuery.fn && window.jQuery.fn.jquery && lt(window.jQuery.fn.jquery, '3.5.0')) report('jQuery', window.jQuery.fn.jquery, '3.5.0'); } catch (e) {}
-    try { if (window.angular && window.angular.version && window.angular.version.full && window.angular.version.full.startsWith('1.')) report('AngularJS', window.angular.version.full, '(migrate off — AngularJS 1.x is end-of-life)'); } catch (e) {}
-    try { if (window._ && window._.VERSION && lt(window._.VERSION, '4.17.21')) report('lodash', window._.VERSION, '4.17.21'); } catch (e) {}
-    try {
-      const b = document.querySelector('link[href*="bootstrap"], script[src*="bootstrap"]');
-      if (b) {
-        const src = b.getAttribute('href') || b.getAttribute('src') || '';
-        const m = src.match(/bootstrap[.\-/@](\d+\.\d+\.\d+)/i);
-        if (m && lt(m[1], '4.3.1')) report('Bootstrap', m[1], '4.3.1');
-      }
-    } catch (e) {}
-    try { if (window.Vue && window.Vue.version && window.Vue.version.startsWith('2.')) report('Vue 2.x', window.Vue.version, '3.x (Vue 2 reached end-of-life Dec 2023)'); } catch (e) {}
-    try { if (window.moment && window.moment.version) report('Moment.js', window.moment.version, 'a modern alternative (date-fns, dayjs, Luxon)'); } catch (e) {}
+    const reported = new Set();
+    const report = (name, version, minSafe, url) => {
+      const key = name + version;
+      if (reported.has(key)) return;
+      reported.add(key);
+      addVuln('Outdated Components', 'High',
+        `${name} ${version} is older than the recommended ${minSafe}, so publicly documented CVEs for this version may apply.`,
+        pageUrl,
+        `Upgrade ${name} to ${minSafe} or later, and audit regularly with Retire.js, npm audit, or Snyk.`,
+        `${name} ${version}${url ? ' — ' + url.slice(0, 90) : ''}`);
+    };
+
+    // URL-based detection (works in the isolated world).
+    const srcs = [];
+    document.querySelectorAll('script[src], link[href]').forEach(el => {
+      const u = el.getAttribute('src') || el.getAttribute('href') || '';
+      if (u) srcs.push(u);
+    });
+    const libRules = [
+      { re: /jquery[.\-/@](\d+\.\d+\.\d+)/i,     name: 'jQuery',     min: '3.5.0',  bad: v => lt(v, '3.5.0') },
+      { re: /angular[.\-/@](1\.\d+\.\d+)/i,      name: 'AngularJS',  min: '(migrate off - 1.x is end-of-life)', bad: () => true },
+      { re: /lodash[.\-/@](\d+\.\d+\.\d+)/i,     name: 'lodash',     min: '4.17.21', bad: v => lt(v, '4.17.21') },
+      { re: /bootstrap[.\-/@](\d+\.\d+\.\d+)/i,  name: 'Bootstrap',  min: '4.3.1',  bad: v => lt(v, '4.3.1') },
+      { re: /vue[.\-/@](2\.\d+\.\d+)/i,          name: 'Vue',        min: '3.x (Vue 2 is end-of-life)', bad: () => true },
+      { re: /moment[.\-/@](\d+\.\d+\.\d+)/i,     name: 'Moment.js',  min: 'a modern alternative (date-fns, dayjs, Luxon)', bad: () => true },
+    ];
+    srcs.forEach(u => {
+      libRules.forEach(r => {
+        const m = u.match(r.re);
+        if (m && r.bad(m[1])) report(r.name, m[1], r.min, u);
+      });
+    });
+
+    // window.* globals (only visible if this runs in the main world; harmless
+    // otherwise).
+    try { if (window.jQuery?.fn?.jquery && lt(window.jQuery.fn.jquery, '3.5.0')) report('jQuery', window.jQuery.fn.jquery, '3.5.0'); } catch (e) {}
+    try { if (window.angular?.version?.full?.startsWith('1.')) report('AngularJS', window.angular.version.full, '(migrate off - 1.x is end-of-life)'); } catch (e) {}
+    try { if (window._?.VERSION && lt(window._.VERSION, '4.17.21')) report('lodash', window._.VERSION, '4.17.21'); } catch (e) {}
+    try { if (window.Vue?.version?.startsWith('2.')) report('Vue', window.Vue.version, '3.x (Vue 2 is end-of-life)'); } catch (e) {}
   } catch (e) {}
 
   // 22. DOM-based XSS Sinks (source → sink in inline scripts)
@@ -882,22 +1023,24 @@ function runPageScanners(pageUrl) {
   // 24. Session / Token in URL
   try {
     const url = String(pageUrl || location.href);
-    if (/[?&#](jsessionid|phpsessid|sid|sessionid|token|access_token|id_token|auth|apikey|api_key)=/i.test(url)) {
-      addVuln('Session Token in URL', 'High', 'Session or authentication token transmitted via URL parameters.', pageUrl, 'Move tokens into the Authorization header or HttpOnly cookies. URLs are logged in proxies, browser history, and referrer headers.');
+    const m = url.match(/[?&#](jsessionid|phpsessid|sid|sessionid|token|access_token|id_token|auth|apikey|api_key)=([^&#]{4,})/i);
+    if (m) {
+      addVuln('Session Token in URL', 'High', 'A session or authentication token is being carried in the URL. URLs leak into browser history, proxy and server logs, and the Referer header sent to third parties - so this token can be captured and replayed.', pageUrl, 'Move tokens into the Authorization header or an HttpOnly cookie; never place them in query strings or fragments.', `${m[1]}=${mask(m[2])}`);
     }
   } catch (e) {}
 
-  // 25. Missing Security Headers (meta equivalents)
+  // 25. Hardening Headers - from the REAL response headers (defence-in-depth,
+  //     so Low). Skipped when headers are unreadable, so no guessing.
   try {
     const checks = [
-      { attr: 'X-Content-Type-Options', rec: 'Add X-Content-Type-Options: nosniff to prevent MIME sniffing.' },
-      { attr: 'Referrer-Policy', rec: 'Add Referrer-Policy: strict-origin-when-cross-origin (or stricter).' },
-      { attr: 'Permissions-Policy', rec: 'Add Permissions-Policy to restrict powerful features (camera, microphone, geolocation).' },
-      { attr: 'Cross-Origin-Opener-Policy', rec: 'Add Cross-Origin-Opener-Policy: same-origin to mitigate Spectre-class side-channel leaks.' },
+      { h: 'x-content-type-options', name: 'X-Content-Type-Options', rec: 'Send X-Content-Type-Options: nosniff to stop MIME sniffing.' },
+      { h: 'referrer-policy', name: 'Referrer-Policy', rec: 'Send Referrer-Policy: strict-origin-when-cross-origin (or stricter).' },
+      { h: 'permissions-policy', name: 'Permissions-Policy', rec: 'Send Permissions-Policy to switch off camera/microphone/geolocation you do not use.' },
     ];
     checks.forEach(c => {
-      if (!document.querySelector(`meta[http-equiv="${c.attr}" i]`)) {
-        addVuln(`Missing ${c.attr}`, 'Low', `No ${c.attr} meta tag detected on this page (defense-in-depth hardening, not a direct vulnerability).`, pageUrl, c.rec);
+      const v = hdr(c.h);
+      if (v !== null && !v) {
+        addVuln(`Missing ${c.name}`, 'Low', `No ${c.name} header (defence-in-depth hardening, not a direct vulnerability).`, pageUrl, c.rec, `${c.h}: (absent)`);
       }
     });
   } catch (e) {}
@@ -913,7 +1056,7 @@ function runPageScanners(pageUrl) {
     const htmlMatch = document.documentElement.innerHTML.match(re);
     if (htmlMatch) maps.add(htmlMatch[1]);
     if (maps.size > 0) {
-      addVuln('Source Map Exposure', 'Medium', `Source map reference(s) detected: ${[...maps].slice(0, 3).join(', ')}.`, pageUrl, 'Do not ship .map files to production, or restrict access via web-server rules. Source maps reveal original code.');
+      addVuln('Source Map Exposure', 'Medium', `Source map reference(s) detected. If the .map files are reachable, they reconstruct your original, unminified source code - including comments, internal paths, and any secrets left in it.`, pageUrl, 'Do not ship .map files to production, or block them at the web server. Generate source maps privately for your own debugging only.', [...maps].slice(0, 3).join('  ,  '));
     }
   } catch (e) {}
 
@@ -921,27 +1064,22 @@ function runPageScanners(pageUrl) {
   // which now favours password-manager autofill rather than discouraging it.)
 
 
-  // 28. Server / Technology Version Disclosure
+  // 28. Server / Technology Version Disclosure - prefer the REAL Server and
+  //     X-Powered-By headers, then fall back to body banners / meta generator.
   try {
     const findings = [];
+    const server = hdr('server');
+    const xpb = hdr('x-powered-by');
+    if (server && /\d/.test(server)) findings.push(`Server: ${server.slice(0, 80)}`);
+    if (xpb) findings.push(`X-Powered-By: ${xpb.slice(0, 80)}`);
     const gen = document.querySelector('meta[name="generator" i]');
-    if (gen) {
-      const v = gen.getAttribute('content') || '';
-      if (v.trim()) findings.push(`generator meta: "${v.slice(0, 80)}"`);
-    }
+    if (gen) { const v = gen.getAttribute('content') || ''; if (v.trim()) findings.push(`generator: ${v.slice(0, 80)}`); }
     const html = document.documentElement.innerHTML;
-    const banners = [
-      /WordPress\s*\d+(\.\d+)+/i,
-      /Drupal\s*\d+(\.\d+)+/i,
-      /Joomla!?\s*\d+(\.\d+)+/i,
-      /powered by [^<\n]{0,60}/i,
-      /phpMyAdmin\s+\d+(\.\d+)+/i,
-      /Apache\/\d+(\.\d+)+/i,
-      /nginx\/\d+(\.\d+)+/i,
-    ];
-    banners.forEach(re => { const m = html.match(re); if (m) findings.push(m[0].slice(0, 80)); });
-    if (findings.length > 0) {
-      addVuln('Version Disclosure', 'Low', `Framework / server version leaked: ${findings.slice(0, 3).join('; ')}.`, pageUrl, 'Remove the generator meta tag and strip server/version headers at your reverse proxy.');
+    [/WordPress\s*\d+(\.\d+)+/i, /Drupal\s*\d+(\.\d+)+/i, /Joomla!?\s*\d+(\.\d+)+/i, /phpMyAdmin\s+\d+(\.\d+)+/i, /Apache\/\d+(\.\d+)+/i, /nginx\/\d+(\.\d+)+/i]
+      .forEach(re => { const m = html.match(re); if (m) findings.push(m[0].slice(0, 80)); });
+    const uniq = [...new Set(findings)];
+    if (uniq.length > 0) {
+      addVuln('Version Disclosure', 'Low', `Software versions are being advertised: ${uniq.slice(0, 3).join('; ')}. Exact version numbers let an attacker look up known CVEs for that precise build.`, pageUrl, 'Strip version numbers from the Server / X-Powered-By headers and remove the generator meta tag.', uniq.slice(0, 3).join('  ;  '));
     }
   } catch (e) {}
 
@@ -960,7 +1098,7 @@ function runPageScanners(pageUrl) {
     });
     if (external.length > 0) {
       const hasPassword = Array.from(document.querySelectorAll('form input[type="password"]')).length > 0;
-      addVuln('External Form Action', hasPassword ? 'High' : 'Medium', `${external.length} form(s) submit to a different origin: ${external.slice(0, 3).join(', ')}.`, pageUrl, 'Only submit sensitive forms to your own backend. If an external action is intentional, verify it over HTTPS and document the dependency.');
+      addVuln('External Form Action', hasPassword ? 'High' : 'Medium', `${external.length} form(s) submit to a different origin${hasPassword ? ', and at least one contains a password field - credentials would be posted off-site' : ''}. If the external target is attacker-controlled or compromised, submitted data goes straight to them.`, pageUrl, 'Only submit sensitive forms to your own backend. If an external action is intentional, verify it over HTTPS and document the dependency.', external.slice(0, 3).join('  ,  '));
     }
   } catch (e) {}
 
@@ -975,7 +1113,7 @@ function runPageScanners(pageUrl) {
       while ((m = wsRegex.exec(scriptText)) !== null) wsHits.add(m[0].slice(0, 120));
       document.querySelectorAll('a[href^="ws://" i]').forEach(a => wsHits.add(a.getAttribute('href')));
       if (wsHits.size > 0) {
-        addVuln('Insecure WebSocket', 'High', `${wsHits.size} insecure WebSocket URL(s) (ws://) found on an HTTPS page: ${[...wsHits].slice(0, 3).join(', ')}. Traffic over ws:// is unencrypted, allowing on-path attackers to read or inject messages — and modern browsers will refuse the connection from a secure page.`, pageUrl, 'Switch every WebSocket URL to wss:// and ensure the server presents a valid TLS certificate. Keep ws:// only for local development on http://localhost.');
+        addVuln('Insecure WebSocket', 'High', `${wsHits.size} insecure WebSocket URL(s) (ws://) found on an HTTPS page. Traffic over ws:// is unencrypted, letting on-path attackers read or inject messages - and modern browsers will refuse the connection from a secure page.`, pageUrl, 'Switch every WebSocket URL to wss:// with a valid TLS certificate. Keep ws:// only for local development on http://localhost.', [...wsHits].slice(0, 3).join('  ,  '));
       }
     }
   } catch (e) {}
@@ -992,7 +1130,7 @@ function runPageScanners(pageUrl) {
     let m;
     while ((m = adminEndpointRe.exec(sources)) !== null) hits.add(m[0].slice(0, 120));
     if (hits.size > 0) {
-      addVuln('Admin Endpoint Exposure', 'High', `${hits.size} internal/admin API endpoint reference(s) found in client code: ${[...hits].slice(0, 3).join(', ')}. These paths should not be reachable by the public — leaking them in browser-visible JS makes them an obvious target.`, pageUrl, 'Remove admin/internal endpoint references from client-side JavaScript. Enforce authentication AND authorization on every such route server-side, and consider blocking the entire path at your edge / WAF for anything outside the office IP.');
+      addVuln('Admin Endpoint Exposure', 'High', `${hits.size} internal/admin API endpoint reference(s) found in client code. These paths should not be advertised to the public - leaking them in browser-visible JS hands an attacker an exact map of your privileged routes to probe.`, pageUrl, 'Remove admin/internal endpoint references from client-side JavaScript, enforce auth AND authorization on every such route server-side, and consider blocking the path at your edge / WAF outside trusted IPs.', [...hits].slice(0, 3).join('  ,  '));
     }
   } catch (e) {}
 
@@ -1006,9 +1144,9 @@ function runPageScanners(pageUrl) {
     if (cloudHits.size > 0) {
       const suspicious = [...cloudHits].filter(u => /(backup|private|internal|staging|dev|test|secret|dump|export)/i.test(u));
       if (suspicious.length > 0) {
-        addVuln('Cloud Storage Reference', 'Low', `${cloudHits.size} cloud storage URL(s) referenced; ${suspicious.length} contain suspicious words (backup/private/internal/staging): ${suspicious.slice(0, 3).join(', ')}. Verify the bucket is not publicly listable and contains only intended-public assets.`, pageUrl, "Confirm bucket policy is not public-readable for listing. On AWS S3, set 'Block Public Access' at the account level and use signed URLs for private content. On GCS / Azure / R2, the equivalent controls are 'Uniform bucket-level access' (GCS) and disabling anonymous reads.");
+        addVuln('Cloud Storage Reference', 'Low', `${cloudHits.size} cloud storage URL(s) referenced; ${suspicious.length} contain suspicious words (backup/private/internal/staging). Verify the bucket is not publicly listable and holds only intended-public assets.`, pageUrl, "Confirm the bucket is not public-readable for listing. On AWS S3, enable 'Block Public Access' and use signed URLs for private content; on GCS / Azure / R2 use 'Uniform bucket-level access' (GCS) and disable anonymous reads.", suspicious.slice(0, 3).join('  ,  '));
       } else {
-        addVuln('Cloud Storage Reference', 'Low', `${cloudHits.size} cloud storage URL(s) referenced: ${[...cloudHits].slice(0, 3).join(', ')}. Verify the bucket is not publicly listable and contains only intended-public assets.`, pageUrl, "Confirm bucket policy is not public-readable for listing. On AWS S3, set 'Block Public Access' and prefer signed URLs for private content. On GCS / Azure / R2, the equivalent controls are 'Uniform bucket-level access' (GCS) and disabling anonymous reads.");
+        addVuln('Cloud Storage Reference', 'Low', `${cloudHits.size} cloud storage URL(s) referenced. Verify the bucket is not publicly listable and holds only intended-public assets.`, pageUrl, "Confirm the bucket is not public-readable for listing. On AWS S3, enable 'Block Public Access' and prefer signed URLs; on GCS / Azure / R2 use 'Uniform bucket-level access' (GCS) and disable anonymous reads.", [...cloudHits].slice(0, 3).join('  ,  '));
       }
     }
   } catch (e) {}

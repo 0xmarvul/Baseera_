@@ -57,6 +57,7 @@ public class VulnerabilitiesController : ControllerBase
             Description = v.Description,
             Location = v.Location,
             Recommendation = v.Recommendation,
+            Evidence = v.Evidence,
             DetectedAt = v.DetectedAt
         });
 
@@ -112,6 +113,7 @@ public class VulnerabilitiesController : ControllerBase
             Description = v.Description,
             Location = v.Location,
             Recommendation = v.Recommendation,
+            Evidence = v.Evidence,
             DetectedAt = v.DetectedAt
         });
 

@@ -72,6 +72,7 @@ public class SecurityScannerDbContext : DbContext
             entity.Property(e => e.Description).IsRequired().HasMaxLength(1000);
             entity.Property(e => e.Location).IsRequired().HasMaxLength(500);
             entity.Property(e => e.Recommendation).HasMaxLength(1000);
+            entity.Property(e => e.Evidence).HasMaxLength(1000);
 
             entity.HasOne(e => e.Scan)
                   .WithMany(s => s.Vulnerabilities)

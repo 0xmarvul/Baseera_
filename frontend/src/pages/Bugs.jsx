@@ -378,6 +378,7 @@ function Bugs() {
                             <div className="vuln" key={v.id || i}>
                               <div className="vuln-head"><span className={`sev ${sevClass(v.severity)}`}><span className="d"></span>{v.severity}</span><span className="vuln-type">{v.type}</span></div>
                               {v.description && <p className="vuln-desc">{v.description}</p>}
+                              {v.evidence && <div className="vuln-evidence"><span className="ev-label">Evidence</span><code>{v.evidence}</code></div>}
                               {v.location && <div className="vuln-meta"><b>Location:</b> {v.location}</div>}
                               {v.recommendation && <div className="vuln-fix"><div className="fl">How to fix</div><p>{v.recommendation}</p></div>}
                               <Link className="ask" to="/ai-chatbot" state={{ seed: `What is ${v.type} and how do I fix it?` }}>
